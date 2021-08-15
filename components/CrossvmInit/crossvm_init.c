@@ -15,6 +15,10 @@ int run(void)
     while (1) {
         ready_wait();
         printf("Got an event\n");
+        // char src_buf[4097] = {0};
+        // memcpy((void *)src_buf, (const void *)src, 4096);
+        // printf("Response:\n%s\n", (char *)src_buf);
+        printf("Response:\n%s\n", (char *)src);
         done_emit_underlying();
     }
 

@@ -226,7 +226,7 @@ CAmkESAddImportPath(${KernelARMPlatform})
 DeclareCAmkESComponent(VM SOURCES src/cross_vm_connections.c)
 
 # Define our demo component that shares a dataport with the VM
-DeclareCAmkESComponent(CrossvmInit SOURCES components/CrossvmInit/crossvm_init.c)
+DeclareCAmkESComponent(Platam SOURCES components/CrossvmInit/crossvm_init.c)
 
 # Declare root server
 DeclareCAmkESRootserver(
