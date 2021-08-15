@@ -9,17 +9,16 @@
 
 int run(void)
 {
-    memset(dest, '\0', 4096);
-    strcpy(dest, "This is a crossvm dataport test string\n");
+    memset(am_dp, '\0', 4096);
+    strcpy(am_dp, "This is a crossvm dataport test string\n");
 
     while (1) {
         ready_wait();
         printf("Got an event\n");
-        // char src_buf[4097] = {0};
-        // memcpy((void *)src_buf, (const void *)src, 4096);
-        // printf("Response:\n%s\n", (char *)src_buf);
-        printf("Response:\n%s\n", (char *)src);
-        done_emit_underlying();
+        ((char *)am_dp)[4095] = '\0';
+        printf("Response:\n%s\n", (char *)am_dp);
+        // done_emit_underlying();
+        done_emit();
     }
 
     return 0;

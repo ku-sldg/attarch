@@ -22,14 +22,12 @@ component Platam {
     control;
     consumes Ready ready;
     emits Done done;
-    dataport Buf(4096) dest;
-    dataport Buf(4096) src;
+    dataport Buf(4096) am_dp;
 }
 
 component VM {
     VM_INIT_DEF()
-    dataport Buf(4096) crossvm_dp_0;
-    dataport Buf(4096) crossvm_dp_1;
+    dataport Buf(4096) am_dp;
     emits Ready ready;
     consumes Done done;
 }
@@ -40,14 +38,10 @@ assembly {
         VM_COMPOSITION_DEF(0)
         component Platam platam;
 
-        connection seL4Notification event_conn_0(from vm0.ready,
-                                             to platam.ready);
-        connection seL4GlobalAsynch event_conn_1(from platam.done,
-                                             to vm0.done);
-        connection seL4SharedDataWithCaps cross_vm_conn_0(from platam.dest,
-                                                              to vm0.crossvm_dp_0);
-        connection seL4SharedDataWithCaps cross_vm_conn_1(from platam.src,
-                                                              to vm0.crossvm_dp_1);
+        connection seL4Notification ready_event(from vm0.ready, to platam.ready);
+        connection seL4GlobalAsynch done_event(from platam.done, to vm0.done);
+        connection seL4SharedDataWithCaps am_dp_conn(from platam.am_dp, to vm0.am_dp);
+        
         connection seL4VMDTBPassthrough vm_dtb(from vm0.dtb_self, to vm0.dtb);
     }
     configuration {
@@ -59,10 +53,8 @@ assembly {
         vm0.cnode_size_bits = 23;
         vm0.simple_untyped24_pool = 12;
 
-        vm0.crossvm_dp_0_id = 0;
-        vm0.crossvm_dp_0_size = 4096;
-        vm0.crossvm_dp_1_id = 0;
-        vm0.crossvm_dp_1_size = 4096;
+        vm0.am_dp_id = 0;
+        vm0.am_dp_size = 4096;
 
         vm0._domain = 0;
         platam._domain = 1;

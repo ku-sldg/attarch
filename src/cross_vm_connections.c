@@ -19,12 +19,10 @@
 #endif
 
 // these are defined in the dataport's glue code
-extern dataport_caps_handle_t crossvm_dp_0_handle;
-extern dataport_caps_handle_t crossvm_dp_1_handle;
+extern dataport_caps_handle_t am_dp_handle;
 
 static struct camkes_crossvm_connection connections[] = {
-    {&crossvm_dp_0_handle, ready_emit, -1, "conn_0"},
-    {&crossvm_dp_1_handle, NULL, -1, "conn_1"}
+    {&am_dp_handle, ready_emit, -1, "am_dp_conn"}
 };
 
 static int consume_callback(vm_t *vm, void *cookie)
