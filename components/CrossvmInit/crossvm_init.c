@@ -17,7 +17,6 @@ int run(void)
         printf("Got an event\n");
         ((char *)am_dp)[4095] = '\0';
         printf("Response:\n%s\n", (char *)am_dp);
-        // done_emit_underlying();
         done_emit();
     }
 

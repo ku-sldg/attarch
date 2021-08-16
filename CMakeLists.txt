@@ -188,10 +188,18 @@ else()
 endif()
 
 # Add script to test dataport module
+# AddFileToOverlayDir(
+#     "S91crossvm_test"
+#     ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/cross_vm_test
+#     "etc/init.d"
+#     overlay
+# )
+
+# Add Platam
 AddFileToOverlayDir(
-    "S91crossvm_test"
-    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/cross_vm_test
-    "etc/init.d"
+    "platam"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/dataport_test/dptest
+    "/root"
     overlay
 )
 
