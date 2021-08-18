@@ -195,10 +195,26 @@ endif()
 #     overlay
 # )
 
-# Add Platam
+# Add UserAM
 AddFileToOverlayDir(
-    "platam"
-    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/dataport_test/dptest
+    "useram"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/userAM/useram
+    "/root"
+    overlay
+)
+
+# Add local test client
+AddFileToOverlayDir(
+    "client"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/userAM/client
+    "/root"
+    overlay
+)
+
+# Add dptest_user
+AddFileToOverlayDir(
+    "dptest"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/userAM/dptest_user
     "/root"
     overlay
 )
@@ -234,7 +250,8 @@ CAmkESAddImportPath(${KernelARMPlatform})
 DeclareCAmkESComponent(VM SOURCES src/cross_vm_connections.c)
 
 # Define our demo component that shares a dataport with the VM
-DeclareCAmkESComponent(Platam SOURCES components/CrossvmInit/crossvm_init.c)
+# DeclareCAmkESComponent(Platam SOURCES components/CrossvmInit/crossvm_init.c)
+add_subdirectory(components/Platam)
 
 # Declare root server
 DeclareCAmkESRootserver(
