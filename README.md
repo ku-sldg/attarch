@@ -27,6 +27,7 @@ Finally, you can build the project:
 ```sh
 mkdir build && cd build
 ../init-script.sh -DCAMKES_VM_APP=attarch -DPLATFORM=qemu-arm-virt
+ninja
 ```
 
 This builds a qemu image, which you can run from the build directory with `./simulate`.
