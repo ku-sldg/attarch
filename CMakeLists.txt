@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.8.2)
 
-project(attarch-cross C)
+project(attarch C)
 
 include(${CAMKES_ARM_VM_HELPERS_PATH})
 find_package(camkes-vm-linux REQUIRED)
@@ -102,79 +102,6 @@ if(BUILD_CROSSVM)
         output_module_target
     )
 
-    # Complile CrossVM Dataport Apps
-    ExternalProject_Add(
-        dataport-apps
-        URL
-        file:///${CAMKES_VM_LINUX_DIR}/camkes-linux-artifacts/camkes-linux-apps/camkes-connector-apps/pkgs/dataport
-        BINARY_DIR
-        ${CMAKE_CURRENT_BINARY_DIR}/dataport_apps
-        INSTALL_COMMAND
-        ""
-        BUILD_ALWAYS
-        ON
-        EXCLUDE_FROM_ALL
-        CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-    )
-    AddExternalProjFilesToOverlay(
-        dataport-apps
-        ${CMAKE_CURRENT_BINARY_DIR}/dataport_apps
-        overlay
-        "usr/bin"
-        FILES
-        dataport_read
-        dataport_write
-    )
-
-    # Complile CrossVM Event Apps
-    ExternalProject_Add(
-        event-apps
-        URL
-        file:///${CAMKES_VM_LINUX_DIR}/camkes-linux-artifacts/camkes-linux-apps/camkes-connector-apps/pkgs/emits_event
-        BINARY_DIR
-        ${CMAKE_CURRENT_BINARY_DIR}/emits_event_apps
-        INSTALL_COMMAND
-        ""
-        BUILD_ALWAYS
-        ON
-        EXCLUDE_FROM_ALL
-        CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-    )
-    AddExternalProjFilesToOverlay(
-        event-apps
-        ${CMAKE_CURRENT_BINARY_DIR}/emits_event_apps
-        overlay
-        "usr/bin"
-        FILES
-        emits_event_emit
-    )
-
-    # Complile CrossVM Consume Event Apps
-    ExternalProject_Add(
-        consume-event-apps
-        URL
-        file:///${CAMKES_VM_LINUX_DIR}/camkes-linux-artifacts/camkes-linux-apps/camkes-connector-apps/pkgs/consumes_event
-        BINARY_DIR
-        ${CMAKE_CURRENT_BINARY_DIR}/consume_event_apps
-        INSTALL_COMMAND
-        ""
-        BUILD_ALWAYS
-        ON
-        EXCLUDE_FROM_ALL
-        CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-    )
-    AddExternalProjFilesToOverlay(
-        consume-event-apps
-        ${CMAKE_CURRENT_BINARY_DIR}/consume_event_apps
-        overlay
-        "usr/bin"
-        FILES
-        consumes_event_wait
-    )
-
     # Add script to initialise dataport module
     AddFileToOverlayDir(
         "S90crossvm_module_init"
@@ -186,14 +113,6 @@ else()
     # User pre-configured rootfs file with crossvm modules and apps installed
     set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs_crossvm.cpio.gz")
 endif()
-
-# Add script to test dataport module
-# AddFileToOverlayDir(
-#     "S91crossvm_test"
-#     ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/cross_vm_test
-#     "etc/init.d"
-#     overlay
-# )
 
 # Add UserAM
 AddFileToOverlayDir(
@@ -207,14 +126,6 @@ AddFileToOverlayDir(
 AddFileToOverlayDir(
     "client"
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/userAM/client
-    "/root"
-    overlay
-)
-
-# Add dptest_user
-AddFileToOverlayDir(
-    "dptest"
-    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/am-cakeml/build/apps/userAM/dptest_user
     "/root"
     overlay
 )
@@ -250,12 +161,11 @@ CAmkESAddImportPath(${KernelARMPlatform})
 DeclareCAmkESComponent(VM SOURCES src/cross_vm_connections.c)
 
 # Define our demo component that shares a dataport with the VM
-# DeclareCAmkESComponent(Platam SOURCES components/CrossvmInit/crossvm_init.c)
 add_subdirectory(components/Platam)
 
 # Declare root server
 DeclareCAmkESRootserver(
-    attarch_cross.camkes
+    attarch.camkes
     CPP_FLAGS
     ${cpp_flags}
     CPP_INCLUDES
