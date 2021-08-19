@@ -5,7 +5,7 @@ An architecture for attestation. Features two Copland Attestation Managers (AMs)
 See https://github.com/gjurgensen/attarch-manifest
 
 ## Building
-First, you need to the seL4 docker scripts.
+First, you need the [seL4 docker scripts](https://docs.sel4.systems/projects/dockerfiles/).
 
 You will need to add the following lines to `dockerfiles/extra.DockerFile`:
 ```sh
