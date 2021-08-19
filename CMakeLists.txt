@@ -124,12 +124,9 @@ ExternalProject_Add(
     CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DAPP=userAM
-      -DSTATIC_LINKING=on
       -DBASIS=/cake-x64-64/basis_ffi.c
-      -DTARGET_ARCH=armv8
-      -DCAKE_FLAGS=--target=arm8;--stack_size=10;--heap_size=10
+      -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/apps/userAM/config.cmake
 )
-
 AddExternalProjFilesToOverlay(
     useram 
     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
@@ -137,7 +134,7 @@ AddExternalProjFilesToOverlay(
     "/usr/bin"
     FILES
     useram
-    client
+    useramClientTest
 )
 
 # Construct new rootfs
