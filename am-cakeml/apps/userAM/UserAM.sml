@@ -1,9 +1,15 @@
 (* Depends on: util, copland, system/sockets, am/Measurements, am/CommTypes,
    am/ServerAm, CrossVMDispatch *)
 
-val priv = BString.unshow "2E5773B2A19A2CB05FEE44650D8DC877B3D806F74C199043657C805288CD119B"
+val privEnc = BString.unshow "3CAEFB47E51EB7FFD2BC28A9A6A61AF3D544F9B7D62BC4608FF4B40571F9FDC9"
+(* val pad     = BString.unshow "12F988F544849B4F8D526CCCAB2BD284669CFF409A325423EA883457F934EC52" *)
 
-val am = userAm priv (Map.insert emptyNsMap (S (S O)) "/dev/uio0") emptyNsMap
+fun release privEnc pad = BString.xor BString.BigEndian privEnc pad
+
+(* val priv = BString.unshow "2E5773B2A19A2CB05FEE44650D8DC877B3D806F74C199043657C805288CD119B" *)
+val priv = Ref privEnc
+
+(* val am = userAm priv (Map.insert emptyNsMap (S (S O)) "/dev/uio0") emptyNsMap *)
 
 fun evalJson s =
     let val (REQ pl1 pl2 map t ev) = jsonToRequest (JsonExtra.fromString s)
@@ -13,6 +19,7 @@ fun evalJson s =
 
            It should also use "pl2" as "me"
          *)
+        val am = userAm (!priv) (Map.insert emptyNsMap (S (S O)) "/dev/uio0") emptyNsMap
         val ev' = evalTerm am ev t
         val response = RES (me am) pl1 ev'
      in JsonExtra.toString (responseToJson response)
@@ -41,10 +48,22 @@ fun handleIncoming listener =
     handle Socket.Err s     => log Error ("Socket failure: " ^ s)
          | Socket.InvalidFD => log Error "Invalid file descriptor"
 
+fun getKey () =
+    let val pad = (
+            emitDataport "/dev/uio0";
+            log Debug "Waiting for key";
+            waitDataport "/dev/uio0";
+            readDataport "/dev/uio0" 32
+        )
+     in log Debug "Received key";
+        priv := release (!priv) pad
+    end
+    
 fun startServer port qLen = 
     (* loop handleIncoming (Socket.listen port qLen) *)
     let val listener = Socket.listen port qLen
      in log Debug "Listener opened";
+        getKey ();
         loop handleIncoming listener
     end
     handle Socket.Err s => log Error ("Socket failure on listener instantiation: " ^ s)
@@ -62,5 +81,5 @@ fun main () =
                     | _ => TextIO.print_err usage)
            | _ => TextIO.print_err usage
     end
-val _ = Log.setLogDebug Log.noLog
+(* val _ = Log.setLogDebug Log.noLog *)
 val _ = main ()
