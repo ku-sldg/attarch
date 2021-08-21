@@ -31,3 +31,7 @@ ninja
 ```
 
 This builds a qemu image, which you can run from the build directory with `./simulate`.
+
+## Issues
+
+The useram and test client don't seem to re-build with `ninja`. You must do `ninja clean && ninja`.

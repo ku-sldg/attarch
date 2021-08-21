@@ -6,3 +6,22 @@
 #
 
 insmod /lib/modules/4.14.87/kernel/drivers/vmm/connection.ko
+
+# Configure useram user/group and permissions
+addgroup -S useram
+adduser -DSH -s /bin/false -G useram -g useram useram
+chown -R useram:useram /useram
+chown useram:useram /dev/uio*
+
+chmod u=srx /useram/useram
+chmod g=s   /useram/useram
+chmod o=    /useram/useram
+
+# Run useram daemon
+/useram/useram 5000 5 &
+
+# Configure attarch user/group
+addgroup attarch
+mkdir -p /home/attarch
+adduser -D -s /bin/sh -h /home/attarch -G attarch -g attarch attarch
+passwd -d attarch

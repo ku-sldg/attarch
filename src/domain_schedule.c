@@ -22,7 +22,9 @@
 #include <model/statedata.h>
 
 const dschedule_t ksDomSchedule[] = {
-    { .domain = 0, .length = 4 },
+    // VM domain
+    { .domain = 0, .length = 5 },
+    // PlatAM domain
     { .domain = 1, .length = 1 },
 };
 

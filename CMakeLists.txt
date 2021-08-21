@@ -127,13 +127,29 @@ ExternalProject_Add(
       -DBASIS=/cake-x64-64/basis_ffi.c
       -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/apps/userAM/config.cmake
 )
+# AddExternalProjFilesToOverlay(
+#     useram 
+#     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
+#     overlay
+#     "/usr/bin"
+#     FILES
+#     useram
+#     useramClientTest
+# )
+AddExternalProjFilesToOverlay(
+    useram 
+    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
+    overlay
+    "/useram"
+    FILES
+    useram
+)
 AddExternalProjFilesToOverlay(
     useram 
     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
     overlay
     "/usr/bin"
     FILES
-    useram
     useramClientTest
 )
 
