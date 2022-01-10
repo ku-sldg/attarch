@@ -32,6 +32,12 @@ ninja
 
 This builds a qemu image, which you can run from the build directory with `./simulate`.
 
+## Running
+
+Use username "root" to login to the shell".
+
+The useram will have started automatically, listening on port 5000. You may test it by running `useramClientTest 127.0.0.1`.
+
 ## Issues
 
 The useram and test client don't seem to re-build with `ninja`. You must do `ninja clean && ninja`.

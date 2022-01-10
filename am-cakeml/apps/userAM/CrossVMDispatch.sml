@@ -35,7 +35,7 @@ fun userAMDispatch me crossVMMap netMap pl =
 fun userAm privKey crossVMMap netMap = Am
     O
     (userAMDispatch O crossVMMap netMap)
-    usmMap
+    defaultUsmMap
     privKey
     Crypto.signMsg
     Crypto.hash
