@@ -2,7 +2,7 @@
 An architecture for attestation. Features two Copland Attestation Managers (AMs): one in the VM, and one at the CAmkES level.
 
 ## Checking out the source
-See https://github.com/gjurgensen/attarch-manifest
+See https://github.com/ku-sldg/attarch-manifest
 
 ## Building
 First, you need the [seL4 docker scripts](https://docs.sel4.systems/projects/dockerfiles/).
