@@ -1,157 +1,154 @@
-
-# Copyright 2019, Data61, CSIRO (ABN 41 687 119 230)
+#
+# Copyright 2020, Data61, CSIRO (ABN 41 687 119 230)
 #
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
 cmake_minimum_required(VERSION 3.8.2)
 
-project(attarch C)
+project(camkes-vm-introspect C)
 
 include(${CAMKES_ARM_VM_HELPERS_PATH})
 find_package(camkes-vm-linux REQUIRED)
 include(${CAMKES_VM_LINUX_HELPERS_PATH})
 include(${CAMKES_VM_LINUX_MODULE_HELPERS_PATH})
 include(${CAMKES_VM_LINUX_SOURCE_HELPERS_PATH})
-include(${CAMKES_VM_LINUX_MODULE_HELPERS_PATH})
 include(ExternalProject)
 include(external-project-helpers)
 
-# Create our CPP Flags based on ARM VM config variables
-if("${KernelARMPlatform}" STREQUAL "exynos5422")
-    set(cpp_flags "-DKERNELARMPLATFORM_EXYNOS5422")
-    set(linux_repo "https://github.com/hardkernel/linux.git")
-    set(linux_tag "4.14.87-153")
-    set(linux_arch "arm")
-    set(linux_cross_compile "arm-linux-gnueabi-")
-elseif("${KernelARMPlatform}" STREQUAL "qemu-arm-virt")
-    set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
-    set(linux_repo "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git")
-    set(linux_tag "v4.9.189")
-    set(linux_arch "arm64")
-    set(linux_cross_compile "aarch64-linux-gnu-")
-    include(simulation)
-    set(SIMULATION ON CACHE BOOL "Generate simulation script to run qemu with the proper arguments")
-    if(SIMULATION)
-        GenerateSimulateScript()
-    endif()
+# ==================================================================================================
+# SECTION do this stuff because always qemu-arm-virt
+# ==================================================================================================
+set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
+#set(linux_repo "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git")
+#set(linux_tag "v4.9.189")
+#set(linux_arch "arm64")
+#set(linux_cross_compile "aarch64-linux-gnu-")
+include(simulation)
+set(SIMULATION ON CACHE BOOL "Generate simulation script to run qemu with the proper arguments")
+if(SIMULATION)
+    GenerateSimulateScript()
 endif()
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
 
-AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/linux")
+AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/newLinux")
+# AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/linux")
 
-set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs.cpio.gz")
-# Checkout and configure linux to build crossvm module
+# set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs_crossvm.cpio.gz")
+set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/rootfs.cpio.gz")
+
+# ==================================================================================================
+# SECTION compile linux kernel modules
+# ==================================================================================================
+
+# Setup and Configure Linux Sources
+set(linux_config "${CAMKES_VM_LINUX_DIR}/linux_configs/4.9.y/64/config")
+set(linux_symvers "${CAMKES_VM_LINUX_DIR}/linux_configs/4.9.y/64/Module.symvers")
+
+# linux_dir should point to wherever you built the kernel
+set(linux_dir "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/linux-stable")
+
+# DON'T DO THIS
+# ConfigureLinux(${linux_dir} ${linux_config} ${linux_symvers} configure_vm_linux)
+# IT BREAKS THE MODULES COMPILATION SETUP
+
+# Add the external signal module project
+ExternalProject_Add(signal-module
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/signal-module
+    BUILD_ALWAYS ON
+    STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/signal-module-stamp
+    EXCLUDE_FROM_ALL
+    INSTALL_COMMAND ""
+    CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DCMAKE_TOOLCHAIN_FILE=${LINUX_64BIT_TOOLCHAIN}
+        -DLINUX_KERNEL_DIR=${linux_dir}
+        -DMODULE_HELPERS_FILE=${CAMKES_VM_LINUX_DIR}/linux-module-helpers.cmake
+)
+# Add our module binary to the overlay
+AddExternalProjFilesToOverlay(signal-module
+${CMAKE_CURRENT_BINARY_DIR}/signal-module overlay "lib/modules/4.9.275/kernel/drivers/vmm"
+    FILES signal.ko)
+
+# Add the external poison module project
+ExternalProject_Add(poison-module
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/poison-module
+    BUILD_ALWAYS ON
+    STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/poison-module-stamp
+    EXCLUDE_FROM_ALL
+    INSTALL_COMMAND ""
+    CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DCMAKE_TOOLCHAIN_FILE=${LINUX_64BIT_TOOLCHAIN}
+        -DLINUX_KERNEL_DIR=${linux_dir}
+        -DMODULE_HELPERS_FILE=${CAMKES_VM_LINUX_DIR}/linux-module-helpers.cmake
+)
+# Add our module binary to the overlay
+AddExternalProjFilesToOverlay(poison-module
+${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.275/kernel/drivers/vmm"
+    FILES poison.ko)
+
+# does this do anything?
+# no, we removed that init script in favor of cannibalizing the other
+# AddFileToOverlayDir("init" ${CMAKE_CURRENT_SOURCE_DIR}/init "/etc/init.d" overlay)
+
+
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
+
+
+
+# ==================================================================================================
+# SECTION: external projects
+# ==================================================================================================
+
 ExternalProject_Add(
-    checkout_linux
-    GIT_REPOSITORY
-    ${linux_repo}
-    GIT_TAG
-    ${linux_tag}
-    GIT_SHALLOW
-    1
-    GIT_PROGRESS
-    1
-    BUILD_COMMAND
-    ""
-    INSTALL_COMMAND
-    ""
-    CONFIGURE_COMMAND
-    ""
-    SOURCE_DIR
-    ${CMAKE_CURRENT_BINARY_DIR}/linux_out
-)
-# Linux config and symvers are to be copied to unpacked archive
-set(linux_config "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/linux_configs/config")
-set(linux_symvers "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/linux_configs/Module.symvers")
-# Configure unpacked archive with config and symvers
-ConfigureLinux(
-    ${CMAKE_CURRENT_BINARY_DIR}/linux_out
-    ${linux_config}
-    ${linux_symvers}
-    configure_vm_linux
-    ARCH
-    ${linux_arch}
-    CROSS_COMPILE
-    ${linux_cross_compile}
-    DEPENDS
-    checkout_linux
-)
-
-# Compile CrossVM Dataport Module
-DefineLinuxModule(
-    ${CAMKES_VM_LINUX_DIR}/camkes-linux-artifacts/camkes-linux-modules/camkes-connector-modules/connection
-    output_module
-    output_module_target
-    KERNEL_DIR
-    ${CMAKE_CURRENT_BINARY_DIR}/linux_out
-    ARCH
-    ${linux_arch}
-    CROSS_COMPILE
-    ${linux_cross_compile}
-    DEPENDS
-    checkout_linux
-    configure_vm_linux
-)
-AddFileToOverlayDir(
-    "connection.ko"
-    ${output_module}
-    "lib/modules/4.14.87/kernel/drivers/vmm"
-    overlay
-    DEPENDS
-    output_module_target
-)
-
-# Add script to initialise dataport module
-AddFileToOverlayDir(
-    "S90crossvm_module_init"
-    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/cross_vm_module_init
-    "etc/init.d"
-    overlay
-)
-
-# Cross-compile useram binaries for the VM
-ExternalProject_Add(
-    useram
+    introspect-app
     URL
-    file:///${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml
+    file:///${CAMKES_VM_LINUX_DIR}/camkes-linux-artifacts/camkes-linux-apps/camkes-introspect-app/pkgs/introspect
     BINARY_DIR
-    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml
+    ${CMAKE_CURRENT_BINARY_DIR}/introspect-app
     INSTALL_COMMAND
     ""
     BUILD_ALWAYS
     ON
     EXCLUDE_FROM_ALL
     CMAKE_ARGS
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DAPP=userAM
-      -DBASIS=/cake-x64-64/basis_ffi.c
-      -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/apps/userAM/config.cmake
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
 )
-# AddExternalProjFilesToOverlay(
-#     useram 
-#     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
-#     overlay
-#     "/usr/bin"
-#     FILES
-#     useram
-#     useramClientTest
-# )
+
 AddExternalProjFilesToOverlay(
-    useram 
-    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
+    introspect-app
+    ${CMAKE_CURRENT_BINARY_DIR}/introspect-app
     overlay
-    "/useram"
+    "usr/bin"
     FILES
-    useram
+    introspect
 )
-AddExternalProjFilesToOverlay(
-    useram 
-    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
+
+# Add script to initialise dataport module
+AddFileToOverlayDir(
+    "S90crossvm_module_init"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/introspect_dataport_init
+    "etc/init.d"
     overlay
-    "/usr/bin"
-    FILES
-    useramClientTest
 )
+
+AddFileToOverlayDir(
+    "S91crossvm_test"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/introspect_vm_test
+    "etc/init.d"
+    overlay
+)
+
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
 
 # Construct new rootfs
 AddOverlayDirToRootfs(
@@ -163,6 +160,7 @@ AddOverlayDirToRootfs(
     rootfs_target
     GZIP
 )
+
 AddToFileServer("linux-initrd" ${output_overlayed_rootfs_location} DEPENDS rootfs_target)
 
 AddCamkesCPPFlag(
@@ -181,14 +179,52 @@ DefineCAmkESVMFileServer()
 CAmkESAddImportPath(${KernelARMPlatform})
 
 # Define our VM Component with out cross vm dataports glue code
-DeclareCAmkESComponent(VM SOURCES src/cross_vm_connections.c)
+DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ram.c)
 
-# Define our demo component that shares a dataport with the VM
-add_subdirectory(components/Platam)
+set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/include_gcc_cross)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/include_usr)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/include_usr/x86_64-linux-gnu)
+
+# Compiling sphlib
+#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/sphlib)
+#add_subdirectory(component/sphlib)
+# End compiling sphlib
+
+# compiling hacl
+set(hacl_dir "${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist")
+set(hacl_path "${hacl_dir}/gcc-compatible")
+set(karamel_path "{hacl_dir}/karamel/include")
+set(karalib_path "${hacl_dir}/karamel/krmllib/dist/minimal")
+
+# not sure if these three includes are necessary
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist/gcc-compatible)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist/karamel/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist/karamel/krmllib/dist/minimal)
+
+set(hacl_sources ${hacl_path}/Hacl_Hash_SHA2.c)
+add_library(hacl STATIC ${hacl_sources})
+target_link_libraries(hacl)
+
+DeclareCAmkESComponent(
+    introspect_memdev
+    SOURCES
+        component/introspect_component.c
+    INCLUDES
+        component/includes
+        component/hacl-star/dist/gcc-compatible
+        component/hacl-star/dist/karamel/include
+        component/hacl-star/dist/karamel/krmllib/dist/minimal
+        #component/sphlib
+    LIBS
+        hacl
+        #sph
+)
 
 # Declare root server
 DeclareCAmkESRootserver(
-    attarch.camkes
+    vm_introspect.camkes
     CPP_FLAGS
     ${cpp_flags}
     CPP_INCLUDES
