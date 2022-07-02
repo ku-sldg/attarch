@@ -183,44 +183,8 @@ DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ra
 
 set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/include_gcc_cross)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/include_usr)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/include_usr/x86_64-linux-gnu)
-
-# Compiling sphlib
-#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/sphlib)
-#add_subdirectory(component/sphlib)
-# End compiling sphlib
-
-# compiling hacl
-set(hacl_dir "${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist")
-set(hacl_path "${hacl_dir}/gcc-compatible")
-set(karamel_path "{hacl_dir}/karamel/include")
-set(karalib_path "${hacl_dir}/karamel/krmllib/dist/minimal")
-
-# not sure if these three includes are necessary
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist/gcc-compatible)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist/karamel/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/component/hacl-star/dist/karamel/krmllib/dist/minimal)
-
-set(hacl_sources ${hacl_path}/Hacl_Hash_SHA2.c)
-add_library(hacl STATIC ${hacl_sources})
-target_link_libraries(hacl)
-
-DeclareCAmkESComponent(
-    introspect_memdev
-    SOURCES
-        component/introspect_component.c
-    INCLUDES
-        component/includes
-        component/hacl-star/dist/gcc-compatible
-        component/hacl-star/dist/karamel/include
-        component/hacl-star/dist/karamel/krmllib/dist/minimal
-        #component/sphlib
-    LIBS
-        hacl
-        #sph
-)
+# add_subdirectory(components/Platam)
+add_subdirectory(components/Measurement)
 
 # Declare root server
 DeclareCAmkESRootserver(
