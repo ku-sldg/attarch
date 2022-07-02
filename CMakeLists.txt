@@ -20,10 +20,6 @@ include(external-project-helpers)
 # SECTION do this stuff because always qemu-arm-virt
 # ==================================================================================================
 set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
-#set(linux_repo "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git")
-#set(linux_tag "v4.9.189")
-#set(linux_arch "arm64")
-#set(linux_cross_compile "aarch64-linux-gnu-")
 include(simulation)
 set(SIMULATION ON CACHE BOOL "Generate simulation script to run qemu with the proper arguments")
 if(SIMULATION)
@@ -33,8 +29,7 @@ endif()
 # END SECTION
 # ==================================================================================================
 
-AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/newLinux")
-# AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/linux")
+AddToFileServer("linux" "${CMAKE_CURRENT_SOURCE_DIR}/linux/arch/arm64/boot/Image")
 
 # set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs_crossvm.cpio.gz")
 set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/rootfs.cpio.gz")
@@ -44,15 +39,11 @@ set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/rootfs.cpio.gz")
 # ==================================================================================================
 
 # Setup and Configure Linux Sources
-set(linux_config "${CAMKES_VM_LINUX_DIR}/linux_configs/4.9.y/64/config")
-set(linux_symvers "${CAMKES_VM_LINUX_DIR}/linux_configs/4.9.y/64/Module.symvers")
+set(linux_config "${CMAKE_CURRENT_SOURCE_DIR}/linux/.config")
+set(linux_symvers "${CMAKE_CURRENT_SOURCE_DIR}/linux/Module.symvers")
 
 # linux_dir should point to wherever you built the kernel
-set(linux_dir "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/linux-stable")
-
-# DON'T DO THIS
-# ConfigureLinux(${linux_dir} ${linux_config} ${linux_symvers} configure_vm_linux)
-# IT BREAKS THE MODULES COMPILATION SETUP
+set(linux_dir "${CMAKE_CURRENT_SOURCE_DIR}/linux")
 
 # Add the external signal module project
 ExternalProject_Add(signal-module
