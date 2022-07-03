@@ -46,11 +46,11 @@ set(linux_symvers "${CMAKE_CURRENT_SOURCE_DIR}/linux/Module.symvers")
 set(linux_dir "${CMAKE_CURRENT_SOURCE_DIR}/linux")
 
 # Add the external signal module project
-ExternalProject_Add(signal-module
+ExternalProject_Add(connection-module
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/signal-module
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/connection-module
     BUILD_ALWAYS ON
-    STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/signal-module-stamp
+    STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/connection-module-stamp
     EXCLUDE_FROM_ALL
     INSTALL_COMMAND ""
     CMAKE_ARGS
@@ -60,9 +60,9 @@ ExternalProject_Add(signal-module
         -DMODULE_HELPERS_FILE=${CAMKES_VM_LINUX_DIR}/linux-module-helpers.cmake
 )
 # Add our module binary to the overlay
-AddExternalProjFilesToOverlay(signal-module
-${CMAKE_CURRENT_BINARY_DIR}/signal-module overlay "lib/modules/4.9.275/kernel/drivers/vmm"
-    FILES signal.ko)
+AddExternalProjFilesToOverlay(connection-module
+${CMAKE_CURRENT_BINARY_DIR}/connection-module overlay "lib/modules/4.9.307/kernel/drivers/vmm"
+    FILES connection.ko)
 
 # Add the external poison module project
 ExternalProject_Add(poison-module
@@ -80,13 +80,8 @@ ExternalProject_Add(poison-module
 )
 # Add our module binary to the overlay
 AddExternalProjFilesToOverlay(poison-module
-${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.275/kernel/drivers/vmm"
+${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.307/kernel/drivers/vmm"
     FILES poison.ko)
-
-# does this do anything?
-# no, we removed that init script in favor of cannibalizing the other
-# AddFileToOverlayDir("init" ${CMAKE_CURRENT_SOURCE_DIR}/init "/etc/init.d" overlay)
-
 
 # ==================================================================================================
 # END SECTION
