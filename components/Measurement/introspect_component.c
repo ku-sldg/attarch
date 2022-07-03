@@ -286,7 +286,7 @@ void ShaTest()
 int run(void)
 {
     while (1) {
-        ready_wait();
+        //ready_wait();
         ShaTest();
         printf("introspect: Got an event\n");
 
@@ -333,7 +333,7 @@ int run(void)
             printf("\n");
         }
 
-        done_emit();
+        //done_emit();
     }
 
     return 0;
