@@ -6,10 +6,11 @@
 
 #include <string.h>
 #include <camkes.h>
-#include <Hacl_Hash_SHA2.h>
+#include <Hacl_Hash.h>
 
 #define RAM_BASE 0x40000000
 #define N 10
+// TODO collect this list_head_address as part of the build process
 #define LIST_HEAD_ADDR 0xFB61E0
 uint32_t fib_buf[N];
 
