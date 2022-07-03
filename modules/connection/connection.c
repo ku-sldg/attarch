@@ -101,7 +101,7 @@ static int connector_pci_probe(struct pci_dev *dev,
             break;
         }
         uio->mem[i].size = pci_resource_len(dev, i);
-        uio->mem[i].memtype = UIO_MEM_IOVA;
+        uio->mem[i].memtype = UIO_MEM_PHYS;
 
         last_bar = i;
     }

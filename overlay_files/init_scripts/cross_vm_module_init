@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-insmod /lib/modules/4.9.309/kernel/drivers/vmm/connection.ko
+insmod /lib/modules/4.9.307/kernel/drivers/vmm/connection.ko
 
 # Configure useram user/group and permissions
 addgroup -S useram
@@ -28,4 +28,5 @@ passwd -d attarch#!/bin/sh
 
 
 # a sample module to detect via introspection
-insmod /lib/modules/4.9.309/kernel/drivers/vmm/poison.ko
+insmod /lib/modules/4.9.307/kernel/drivers/vmm/poison.ko
+
