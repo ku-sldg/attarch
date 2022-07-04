@@ -34,14 +34,14 @@ fun evalJson am s =
 
 (* string -> () *)
 fun respond dp = (
-    log Debug "Waiting for am_dp";
+    log Debug "platam: Waiting for am_dp";
     waitDataport dp;
     let val request = BString.toCString (readDataport dp 4096)
         val respStr = (
-            log Debug ("Got request: " ^ request);
+            log Debug ("platam: Got request: " ^ request);
             evalJson platAm request
         )
-     in log Debug ("Sending response: " ^ respStr);
+     in log Debug ("platam: Sending response: " ^ respStr);
         writeDataport dp (BString.nullTerminated respStr);
         emitDataport dp
     end)
@@ -55,22 +55,25 @@ local
 in 
     fun releaseUserAMKey dp = 
         if appraiseUserAM () then (
-            log Debug "UserAM passed initial appraisal, releasing key";
+            log Debug "platam: UserAM passed initial appraisal. Waiting for UserAM green light.";
             waitDataport dp;
+            log Debug "platam: releasing key to UserAM.";
             writeDataport dp pad;
-            emitDataport dp;
+            log Debug "platam: waiting for UserAM to finish.";
+            waitDataport dp;
+            log Debug "platam: key release finished.";
             True
         ) else (
-            log Debug "UserAM failed initial appraisal, key not released";
+            log Debug "platam: UserAM failed initial appraisal, key not released";
             False
         )
 end
 
 fun main () = (
-    log Debug "PlatAM started";
+    log Debug "platam: PlatAM started";
     setConnsFromList [("am_dp", 0)];
     writeDataport "am_dp" (BString.nulls 4096);
-    log Debug "am_dp initialized";
+    log Debug "platam: am_dp initialized";
     if releaseUserAMKey "am_dp" then
         loop respond "am_dp"
     else ()

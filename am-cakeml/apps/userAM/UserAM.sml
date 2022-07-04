@@ -50,13 +50,15 @@ fun handleIncoming listener =
 
 fun getKey () =
     let val pad = (
+            log Debug "useram: Signal ready for key. Waiting...";
             emitDataport "/dev/uio0";
-            log Debug "Waiting for key";
-            waitDataport "/dev/uio0";
+            (* We do not need to wait here, because the platAM preempts execution of the userAM *)
+            log Debug "useram: Collecting key.";
             readDataport "/dev/uio0" 32
         )
-     in log Debug "Received key";
-        priv := release (!priv) pad
+     in log Debug "useram: Received key.";
+        priv := release (!priv) pad;
+        emitDataport "/dev/uio0"
     end
     
 fun startServer port qLen = 

@@ -128,17 +128,15 @@ AddExternalProjFilesToOverlay(
     useramClientTest
 )
 
-# Add script to initialise dataport module
 AddFileToOverlayDir(
-    "S90crossvm_module_init"
-    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/introspect_dataport_init
+    "S90cross_vm_init"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/cross_vm_module_init
     "etc/init.d"
     overlay
 )
-
 AddFileToOverlayDir(
-    "S91crossvm_test"
-    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/introspect_vm_test
+    "S91cross_vm_test"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/cross_vm_test
     "etc/init.d"
     overlay
 )
