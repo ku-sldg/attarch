@@ -21,6 +21,10 @@ component Platam {
     consumes Ready ready;
     emits Done done;
     dataport Buf(4096) am_dp;
+
+    emits Ready ms_ready;
+    consumes Done ms_done;
+    dataport Buf(4096) ms_dp;
 }
 
 component introspect_memdev {
@@ -28,9 +32,9 @@ component introspect_memdev {
     //guest memory connection
     dataport Buf memdev;
 
-    //signals
-    //consumes Ready ready;
-    //emits Done done;
+    consumes Ready ready;
+    emits Done done;
+    dataport Buf(4096) ms_dp;
 }
 
 component VM {
@@ -62,6 +66,10 @@ assembly {
 
         component introspect_memdev md;
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
+
+        connection seL4Notification event_conn_2(from platam.ms_ready, to md.ready);
+        connection seL4GlobalAsynch event_conn_3(from md.done, to platam.ms_done);
+        connection seL4SharedDataWithCaps ms_dp_conn(from platam.ms_dp, to md.ms_dp);
     }
     configuration {
         VM_GENERAL_CONFIGURATION_DEF()
