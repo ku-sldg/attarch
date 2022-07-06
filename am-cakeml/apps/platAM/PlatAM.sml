@@ -48,8 +48,6 @@ fun respond dp = (
 
 (* Placeholder for real measurement *)
 fun appraiseUserAM () = 
-    emitDataport "ms_dp";
-    waitDataport "ms_dp";
     True
 (* fun appraiseUserAM () = False *)
 
@@ -77,9 +75,9 @@ fun main () = (
     setConnsFromList [("am_dp", 0)];
     writeDataport "am_dp" (BString.nulls 4096);
     log Debug "platam: am_dp initialized";
-    setConnsFromList [("ms_dp", 1)];
+    (*setConnsFromList [("ms_dp", 1)];
     writeDataport "ms_dp" (BString.nulls 4096);
-    log Debug "platam: ms_dp initialized";
+    log Debug "platam: ms_dp initialized";*)
     if releaseUserAMKey "am_dp" then
         loop respond "am_dp"
     else ()
