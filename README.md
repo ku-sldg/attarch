@@ -1,12 +1,16 @@
 ## About
 An architecture for attestation. Features two Copland Attestation Managers (AMs): one in the VM, and one at the CAmkES level.
 
+
 ## Prerequisites
 First, you need the [seL4 docker scripts](https://docs.sel4.systems/projects/dockerfiles/).
-
-You will need to add the following lines to `dockerfiles/extra.DockerFile`:
 ```sh
-RUN curl https://cakeml.org/regression/artefacts/1241/cake-x64-32.tar.gz > cake-x64-64.tar.gz \
+git clone https://github.com/seL4/seL4-CAmkES-L4v-dockerfiles.git
+```
+
+You will need to add the following lines to `seL4-CAmkES-L4v-dockerfiles/dockerfiles/extras.DockerFile`:
+```sh
+RUN curl https://cakeml.org/regression/artefacts/1241/cake-x64-32.tar.gz > cake-x64-32.tar.gz \
      && tar -xvzf cake-x64-32.tar.gz && cd cake-x64-32 && make cake \
      && mv cake /usr/bin/cake32
 
@@ -24,6 +28,10 @@ You will also need the python ordered-set module.
 ```sh
 pip3 install ordered-set
 ```
+
+
+
+
 
 ## Checking out the source and Building
 ```sh
