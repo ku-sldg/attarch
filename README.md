@@ -1,10 +1,7 @@
 ## About
 An architecture for attestation. Features two Copland Attestation Managers (AMs): one in the VM, and one at the CAmkES level.
 
-## Checking out the source
-See https://github.com/ku-sldg/attarch-manifest
-
-## Building
+## Prerequisites
 First, you need the [seL4 docker scripts](https://docs.sel4.systems/projects/dockerfiles/).
 
 You will need to add the following lines to `dockerfiles/extra.DockerFile`:
@@ -22,6 +19,18 @@ This downloads an older version of the CakeML compiler. Now, launch the docker s
 ```sh
 make user HOST_DIR=<attarch-src-base-dir>
 ```
+
+You will also need the python ordered-set module.
+```sh
+pip3 install ordered-set
+```
+
+## Checking out the source and Building
+`repo init -u https://github.com/ku-sldg/attarch-manifest.git -b measurement_integration`
+`repo sync`
+`cd attarch && ./buildLinux.sh`
+
+## Building
 
 Finally, you can build the project:
 ```sh
