@@ -26,9 +26,11 @@ pip3 install ordered-set
 ```
 
 ## Checking out the source and Building
-`repo init -u https://github.com/ku-sldg/attarch-manifest.git -b measurement_integration`
-`repo sync`
-`cd attarch && ./buildLinux.sh`
+```sh
+repo init -u https://github.com/ku-sldg/attarch-manifest.git -b measurement_integration
+repo sync
+cd attarch && ./buildLinux.sh
+```
 
 ## Building
 
