@@ -8,10 +8,9 @@ fun crossVMDispatch me nsMap pl ev t =
         val req     = REQ pl me nsMap t ev
         val reqStr  = JsonExtra.toString (requestToJson req)
         val resp = (
-            log Debug ("Writing to " ^ name ^ ": " ^ reqStr);
+            log Debug ("useram: Writing to " ^ name ^ ": " ^ reqStr);
             writeDataport name (BString.nullTerminated reqStr);
             emitDataport name;
-            waitDataport name;
             (* TODO: make length flexible and/or parameterized *)
             (*   Perhaps the conns table could have length parameter, and a `readAll` function *)
             readDataport name 4096

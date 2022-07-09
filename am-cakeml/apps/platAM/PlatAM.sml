@@ -47,8 +47,12 @@ fun respond dp = (
     end)
 
 (* Placeholder for real measurement *)
-fun appraiseUserAM () = 
-    True
+fun appraiseUserAM () = (
+    log Debug "platam: requesting measurement. Waiting...";
+    emitDataport "ms_dp";
+    waitDataport "ms_dp";
+    log Debug "platam: finished measurement.";
+    True)
 (* fun appraiseUserAM () = False *)
 
 local 
@@ -56,9 +60,7 @@ local
 in 
     fun releaseUserAMKey dp = 
         if appraiseUserAM () then (
-            log Debug "platam: UserAM passed initial appraisal. Waiting for UserAM green light.";
-            waitDataport dp;
-            log Debug "platam: releasing key to UserAM.";
+            log Debug "platam: UserAM passed initial appraisal. Releasing key to UserAM.";
             writeDataport dp pad;
             log Debug "platam: waiting for UserAM to finish.";
             waitDataport dp;
@@ -72,12 +74,14 @@ end
 
 fun main () = (
     log Debug "platam: PlatAM started";
-    setConnsFromList [("am_dp", 0)];
+    setConnsFromList [("am_dp", 0), ("ms_dp", 1)];
     writeDataport "am_dp" (BString.nulls 4096);
     log Debug "platam: am_dp initialized";
-    (*setConnsFromList [("ms_dp", 1)];
     writeDataport "ms_dp" (BString.nulls 4096);
-    log Debug "platam: ms_dp initialized";*)
+    log Debug "platam: ms_dp initialized";
+    log Debug "platam: Wait for linux to boot.";
+    waitDataport "am_dp";
+    log Debug "platam: Linux booted. Appraising.";
     if releaseUserAMKey "am_dp" then
         loop respond "am_dp"
     else ()

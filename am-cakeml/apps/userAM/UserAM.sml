@@ -40,7 +40,8 @@ fun respondToMsg client =
     end
 
 fun handleIncoming listener =
-    let val client = Socket.accept listener
+    let val _ = log Debug ("useram: Waiting.")
+        val client = Socket.accept listener
      in log Debug "useram: Incoming connection accepted";
         respondToMsg client;
         Socket.close client
