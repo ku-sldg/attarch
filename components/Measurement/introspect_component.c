@@ -263,7 +263,7 @@ void printerateChars(int physAddr, int numBytes)
 
 void ShaTest()
 {
-    printf("The Sha512 digest of 'abc' is:\n");
+    printf("Measurement: The Sha512 digest of 'abc' is:\n");
     uint8_t* output = malloc(64);
     Hacl_Hash_SHA2_hash_512("abc", 3, output);
     PrintDigest(output);
@@ -285,12 +285,22 @@ void ShaTest()
 
 int run(void)
 {
-    while (1) {
+    bool debug = false;
+    void debugPrint(char* msg)
+    {
+        if(debug)
+        {
+            printf(msg);
+        }
+    }
+    ShaTest();
+    while (1)
+    {
+        printf("DEBUG: Measurement: Waiting.\n");
         ready_wait();
-        ShaTest();
-        printf("introspect: Got an event\n");
+        printf("DEBUG: Measurement: Beginning measurement.\n");
 
-        printf("Collecting module pointers...\n");
+        debugPrint("Collecting module pointers...\n");
         /* modulePtrs is a list of offsets into memdev that refer to kernel
         ** modules. They are physical memory addresses with the RAM_BASE
         ** already subtracted. Assume there are no more than 128 modules.
@@ -312,7 +322,7 @@ int run(void)
             module_pointer = TranslationTableWalk(modLongPtr[0]);
         }
 
-        printf("Collecting digests over module rodata...\n");
+        debugPrint("Collecting digests over module rodata...\n");
         uint8_t* module_digests = malloc(64 * 128);
         for(int i=0; i<64*128; i++)
         {
@@ -326,7 +336,7 @@ int run(void)
             }
         }
 
-        printf("Digests collected:\n");
+        printf("DEBUG: Measurement: Presenting evidence\n");
         for(int i=0; i<4; i++)
         {
             PrintDigest(module_digests+i*64);
