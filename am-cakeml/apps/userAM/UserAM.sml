@@ -24,29 +24,29 @@ fun evalJson s =
         val response = RES (me am) pl1 ev'
      in JsonExtra.toString (responseToJson response)
     end
-    handle Json.ERR s1 s2 => (log Error ("JSON error" ^ s1 ^ ": " ^ s2); "Invalid JSON/Copland term")
-         | USMexpn s      => (log Error ("USM error: " ^ s); "USM failure")
-         | DispatchErr s  => (log Error ("Dispatch error: " ^ s); "Dispatch error")
+    handle Json.ERR s1 s2 => (log Error ("useram: JSON error" ^ s1 ^ ": " ^ s2); "Invalid JSON/Copland term")
+         | USMexpn s      => (log Error ("useram: USM error: " ^ s); "USM failure")
+         | DispatchErr s  => (log Error ("useram: Dispatch error: " ^ s); "Dispatch error")
 
 (* fun respondToMsg client = Socket.output client (evalJson (Socket.inputAll client)) *)
 fun respondToMsg client = 
     let val req  = Socket.inputAll client
         val resp = (
-            log Debug ("Recieved request: " ^ req);
+            log Debug ("useram: Received request: " ^ req);
             evalJson req
         )
-     in log Debug ("Sending back response: " ^ resp);
+     in log Debug ("useram: Sending back response: " ^ resp);
         Socket.output client resp
     end
 
 fun handleIncoming listener =
     let val client = Socket.accept listener
-     in log Debug "Incoming connection accepted";
+     in log Debug "useram: Incoming connection accepted";
         respondToMsg client;
         Socket.close client
     end
-    handle Socket.Err s     => log Error ("Socket failure: " ^ s)
-         | Socket.InvalidFD => log Error "Invalid file descriptor"
+    handle Socket.Err s     => log Error ("useram: Socket failure: " ^ s)
+         | Socket.InvalidFD => log Error "useram: Invalid file descriptor"
 
 fun getKey () =
     let val pad = (
@@ -64,13 +64,13 @@ fun getKey () =
 fun startServer port qLen = 
     (* loop handleIncoming (Socket.listen port qLen) *)
     let val listener = Socket.listen port qLen
-     in log Debug "Listener opened";
+     in log Debug "useram: Listener opened";
         getKey ();
         loop handleIncoming listener
     end
-    handle Socket.Err s => log Error ("Socket failure on listener instantiation: " ^ s)
-         | Crypto.Err s => log Error ("Crypto error: " ^ s)
-         | _            => log Error "Fatal: unknown error"
+    handle Socket.Err s => log Error ("useram: Socket failure on listener instantiation: " ^ s)
+         | Crypto.Err s => log Error ("useram: Crypto error: " ^ s)
+         | _            => log Error "useram: Fatal: unknown error"
 
 fun main () =
     let val name  = CommandLine.name ()
