@@ -160,6 +160,11 @@ int run(void)
                 printf("DEBUG: Measurement: %s module: Appraisal Failed.\n", module_names[i]);
             }
         }
+        printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", ultimateAppraisalResult ? "Passed" : "Failed.");
+
+        char* resultMsg = ultimateAppraisalResult ? "1" : "0";
+        memset(ms_dp, '0', 4096);
+        strcpy(ms_dp, resultMsg);
 
         done_emit();
     }

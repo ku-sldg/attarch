@@ -46,14 +46,18 @@ fun respond dp = (
         emitDataport dp
     end)
 
-(* Placeholder for real measurement *)
-fun appraiseUserAM () = (
-    log Debug "platam: requesting measurement. Waiting...";
-    emitDataport "ms_dp";
-    waitDataport "ms_dp";
-    log Debug "platam: finished measurement.";
-    True)
-(* fun appraiseUserAM () = False *)
+fun appraiseUserAM () =
+    let
+        val _ = log Debug "platam: requesting measurement. Waiting..."
+        val _ = emitDataport "ms_dp"
+        val _ = waitDataport "ms_dp"
+        val _ = log Debug "platam: finished measurement."
+        val result = BString.toCString (readDataport "ms_dp" 1)
+    in
+        case result of
+            "1" => True
+            | _ => False
+    end
 
 local 
     val pad = BString.unshow "12F988F544849B4F8D526CCCAB2BD284669CFF409A325423EA883457F934EC52"
