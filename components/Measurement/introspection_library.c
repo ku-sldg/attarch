@@ -147,22 +147,22 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
     return thisModule;
 }
 
-void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest)
+void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* name)
 {
     if(debug)
     {
         printf("Module Address: %016X\n", inputAddress);
     }
 
-    char module_name[56];
     for(int j=16; j<56+16; j++)
     {
-        module_name[j-16] = ((char*)memdev)[inputAddress+j];
+        name[j-16] = ((char*)memdev)[inputAddress+j];
     }
+
     printf("DEBUG: Measurement: Found Module: ");
     for(int j=0; j<56; j++)
     {
-        printf("%c", module_name[j]);
+        printf("%c", name[j]);
     }
     printf("\n");
 
