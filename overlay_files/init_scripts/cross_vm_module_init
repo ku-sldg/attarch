@@ -5,6 +5,10 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
+# a sample module to detect via introspection
+insmod /lib/modules/4.9.307/kernel/drivers/vmm/poison.ko
+
+# the module which allows communication to the platform AM
 insmod /lib/modules/4.9.307/kernel/drivers/vmm/connection.ko
 
 # Configure useram user/group and permissions
@@ -27,6 +31,4 @@ adduser -D -s /bin/sh -h /home/attarch -G attarch -g attarch attarch
 passwd -d attarch#!/bin/sh
 
 
-# a sample module to detect via introspection
-insmod /lib/modules/4.9.307/kernel/drivers/vmm/poison.ko
 
