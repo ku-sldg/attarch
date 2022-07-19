@@ -10,15 +10,28 @@
 
 #define RAM_BASE 0x40000000
 
+// TODO collect this list_head address as part of the build process
+#define LIST_HEAD_ADDR 0xFB61E0
+
 bool debug = false;
 void debugPrint(char* msg)
 {
     if(debug){printf(msg);}
 }
 
-struct list_head {
-    struct list_head *next, *prev;
-};
+bool IsThisAValidModuleMeasurement(char* moduleName)
+{
+    for(int i=0; i<56; i++)
+    {
+        if(moduleName[i] != '\0')
+        {
+            // an invalid (unused) module name should be completely
+            // zeroed out
+            return true;
+        }
+    }
+    return false;
+}
 
 uint64_t TranslationTableWalk(uint64_t inputAddr)
 {
@@ -194,3 +207,41 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     //printerateChars(basePtr, thisModuleLayout.ro_size);
 }
 
+void MeasureKernelModules(uint8_t** module_digests, char** module_names)
+{
+    printf("DEBUG: Measurement: Beginning measurement.\n");
+
+    debugPrint("Collecting module pointers...\n");
+    /* modulePtrs is a list of offsets into memdev that refer to kernel
+    ** modules. They are physical memory addresses with the RAM_BASE
+    ** already subtracted. Assume there are no more than 128 modules.
+    */
+    uint64_t modulePtrs[128];
+    for(int i=0; i<128; i++)
+    {
+        modulePtrs[i] = 0;
+    }
+    int numModulePtrs = 0;
+    uint64_t* list_head_ptr = (uint64_t*)(((char*)memdev)+LIST_HEAD_ADDR);
+    uint64_t module_pointer = TranslationTableWalk(list_head_ptr[0]);
+    while(module_pointer != LIST_HEAD_ADDR)
+    {
+        modulePtrs[numModulePtrs] = module_pointer;
+        numModulePtrs++;
+        char* modBytePtr = ((char*)memdev)+module_pointer;
+        uint64_t* modLongPtr = (uint64_t*)modBytePtr;
+        module_pointer = TranslationTableWalk(modLongPtr[0]);
+    }
+
+    debugPrint("Collecting digests over module rodata...\n");
+
+    //debug
+
+    for(int i=0; i<128; i++)
+    {
+        if(modulePtrs[i] != 0)
+        {
+            InterpretKernelModule(modulePtrs[i], module_digests[i], module_names[i]);
+        }
+    }
+}

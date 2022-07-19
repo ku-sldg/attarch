@@ -10,9 +10,6 @@
 #include "introspection_library.c"
 #include "appraisal.c"
 
-// TODO collect this list_head_address as part of the build process
-#define LIST_HEAD_ADDR 0xFB61E0
-
 void PrintDigest(uint8_t* digest, char* name)
 {
     printf("Module Name: %s\nModule Rodata Digest:\n", name);
@@ -38,73 +35,15 @@ int run(void)
     {
         printf("DEBUG: Measurement: Waiting.\n");
         ready_wait();
-        printf("DEBUG: Measurement: Beginning measurement.\n");
 
-        debugPrint("Collecting module pointers...\n");
-        /* modulePtrs is a list of offsets into memdev that refer to kernel
-        ** modules. They are physical memory addresses with the RAM_BASE
-        ** already subtracted. Assume there are no more than 128 modules.
-        */
-        uint64_t modulePtrs[128];
-        for(int i=0; i<128; i++)
-        {
-            modulePtrs[i] = 0;
-        }
-        int numModulePtrs = 0;
-        uint64_t* list_head_ptr = (uint64_t*)(((char*)memdev)+LIST_HEAD_ADDR);
-        uint64_t module_pointer = TranslationTableWalk(list_head_ptr[0]);
-        while(module_pointer != LIST_HEAD_ADDR)
-        {
-            modulePtrs[numModulePtrs] = module_pointer;
-            numModulePtrs++;
-            char* modBytePtr = ((char*)memdev)+module_pointer;
-            uint64_t* modLongPtr = (uint64_t*)modBytePtr;
-            module_pointer = TranslationTableWalk(modLongPtr[0]);
-        }
-
-        debugPrint("Collecting digests over module rodata...\n");
         uint8_t** module_digests = calloc(128, sizeof(uint8_t*));
         char** module_names = calloc(128, sizeof(char*));
-        bool* module_appraisal_results = calloc(128, sizeof(bool));
         for(int i=0; i<128; i++)
         {
             module_digests[i] = calloc(1, 64 * sizeof(uint8_t));
             module_names[i] = calloc(1, 56 * sizeof(char));
-            module_appraisal_results[i] = false;
         }
-
-        //debug
-        bool IsThisAValidModuleMeasurement(char* moduleName)
-        {
-            // just need to check if this is the empty string
-            // <=> the first char is the 0 byte
-            /*
-            if(moduleName[0] == '/0')
-            {
-                return false;
-            }
-            return true;
-            */
-
-            for(int i=0; i<56; i++)
-            {
-                if(moduleName[i] != '\0')
-                {
-                    // an invalid (unused) module name should be completely
-                    // zeroed out
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        for(int i=0; i<128; i++)
-        {
-            if(modulePtrs[i] != 0)
-            {
-                InterpretKernelModule(modulePtrs[i], module_digests[i], module_names[i]);
-            }
-        }
+        MeasureKernelModules(module_digests, module_names);
 
         printf("DEBUG: Measurement: Presenting evidence\n");
         for(int i=0; i<128; i++)
@@ -117,6 +56,7 @@ int run(void)
         }
 
         printf("DEBUG: Measurement: Appraising digests\n");
+        bool* module_appraisal_results = calloc(128, sizeof(bool));
         for(int i=0; i<128; i++)
         {
             if(IsThisAValidModuleMeasurement(module_names[i]))
