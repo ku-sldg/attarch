@@ -13,12 +13,6 @@
 // TODO collect this list_head_address as part of the build process
 #define LIST_HEAD_ADDR 0xFB61E0
 
-void Sha512(uint8_t* inputBytes, uint32_t inputLength, uint8_t* outputBytes)
-{
-    // hacl implementation
-    Hacl_Hash_SHA2_hash_512(inputBytes, inputLength, outputBytes);
-}
-
 void PrintDigest(uint8_t* digest, char* name)
 {
     printf("Module Name: %s\nModule Rodata Digest:\n", name);

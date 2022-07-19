@@ -186,8 +186,8 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
         rodata[i] = ((char*)memdev)[basePtr+i];
     }
 
-    // digest the read-only data with Sha512 from sphlib
-    Sha512(rodata, thisModuleLayout.ro_size, rodataDigest);
+    // digest the read-only data with Sha512 from HACL
+    Hacl_Hash_SHA2_hash_512(rodata, thisModuleLayout.ro_size, rodataDigest);
     free(rodata);
 
     // can print out the rodata here to see strings from the source
