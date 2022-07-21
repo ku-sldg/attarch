@@ -14,10 +14,19 @@
 #define LIST_HEAD_ADDR 0xFB61E0
 #define INIT_TASK_ADDR 0xF92280
 
-bool debug = false;
-void debugPrint(char* msg)
+void introLog(int args, ...)
 {
-    if(debug){printf(msg);}
+    if(true)
+    {
+        printf("DEBUG: Introspection: ");
+        va_list ptr;
+        va_start(ptr, args);
+        for(int i=0; i<args; i++)
+        {
+            printf("%s", va_arg(ptr,char*));
+        }
+        printf("\n");
+    }
 }
 
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
@@ -42,13 +51,15 @@ bool IsThisAValidModuleMeasurement(char* moduleName)
 
 uint64_t TranslationTableWalk(uint64_t inputAddr)
 {
+    bool TTWalkDebug = false;
+
     uint64_t PGDindex = (inputAddr & 0x0000FF8000000000) >> 39;
     uint64_t PUDindex = (inputAddr & 0x0000007FC0000000) >> 30;
     uint64_t PMDindex = (inputAddr & 0x000000003FE00000) >> 21;
     uint64_t PTEindex = (inputAddr & 0x00000000001FF000) >> 12;
     uint64_t PAGindex = (inputAddr & 0x0000000000000FFF) >>  0;
 
-    if(debug)
+    if(TTWalkDebug)
     {
         printf("input %016X,\nPGDindex %016X,\nPUDindex %016X,\nPMDindex %016X,\nPTEindex %016X\n", inputAddr, PGDindex, PUDindex, PMDindex, PTEindex); 
         printf("PGDindex %d,\nPUDindex %d,\nPMDindex %d,\nPTEindex %X\n", PGDindex, PUDindex, PMDindex, PTEindex); 
@@ -57,7 +68,7 @@ uint64_t TranslationTableWalk(uint64_t inputAddr)
     uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
     uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
-    if(debug)
+    if(TTWalkDebug)
     {
         printf("Here is the PGD\n");
         for(int i=0; i<0x4; i++)
@@ -73,7 +84,7 @@ uint64_t TranslationTableWalk(uint64_t inputAddr)
     uint64_t* PUDTable = (uint64_t*)pudTablePtr;
     uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
-    if(debug)
+    if(TTWalkDebug)
     {
         printf("Here is the PUD\n");
         for(int i=0; i<0x4; i++)
@@ -87,7 +98,7 @@ uint64_t TranslationTableWalk(uint64_t inputAddr)
     uint64_t* pmdTable = (uint64_t*)pmdTablePtr;
     uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
-    if(debug)
+    if(TTWalkDebug)
     {
         printf("Here is the pmd\n");
         for(int i=0; i<0x4; i++)
@@ -102,7 +113,7 @@ uint64_t TranslationTableWalk(uint64_t inputAddr)
     uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE;
     uint64_t finalPaddr = offsetAddr | PAGindex;
 
-    if(debug)
+    if(TTWalkDebug)
     {
         printf("Here is the pte at 1C2\n");
         for(int i=0x1C2; i<0x1C6; i++)
@@ -166,7 +177,8 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
 
 void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* name)
 {
-    if(debug)
+    bool IKMDebug = false;
+    if(IKMDebug)
     {
         printf("Module Address: %016X\n", inputAddress);
     }
@@ -176,17 +188,21 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
         name[j-16] = ((char*)memdev)[inputAddress+j];
     }
 
+    char msg[13] = "Found Module ";
+    introLog(2, msg, name);
+    /*
     printf("DEBUG: Measurement: Found Module: ");
     for(int j=0; j<56; j++)
     {
         printf("%c", name[j]);
     }
+    */
     printf("\n");
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead((int)inputAddress);
     uint64_t basePtr = TranslationTableWalk(thisModuleLayout.base);
 
-    if(debug)
+    if(IKMDebug)
     {
         printf("base: %016X\n", thisModuleLayout.base);
         printf("size: %08X\n", thisModuleLayout.size);
@@ -213,9 +229,12 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
 
 void MeasureKernelModules(uint8_t** module_digests, char** module_names)
 {
+    bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
-
-    debugPrint("Collecting module pointers...\n");
+    if(MKMDebug)
+    {
+        printf("Collecting module pointers...\n");
+    }
     /* modulePtrs is a list of offsets into memdev that refer to kernel
     ** modules. They are physical memory addresses with the RAM_BASE
     ** already subtracted. Assume there are no more than 128 modules.
@@ -236,11 +255,10 @@ void MeasureKernelModules(uint8_t** module_digests, char** module_names)
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
         module_pointer = TranslationTableWalk(modLongPtr[0]);
     }
-
-    debugPrint("Collecting digests over module rodata...\n");
-
-    //debug
-
+    if(MKMDebug)
+    {
+        printf("Collecting digests over module rodata...\n");
+    }
     for(int i=0; i<128; i++)
     {
         if(modulePtrs[i] != 0)
@@ -470,7 +488,7 @@ void PrintTaskName(uint64_t task)
             return;
         }
     }
-    printf("name is %s\n", name);
+    introLog("Task Name: ", name);
 }
 
 bool ValidateTaskStruct(uint64_t task)
@@ -480,7 +498,6 @@ bool ValidateTaskStruct(uint64_t task)
         //printf("out of range\n");
         return false;
     }
-    // verify we're a real task
     int nameLoc = task + 1640;
     if(((char*)memdev+nameLoc)[0] == '\0')
     {
@@ -491,9 +508,7 @@ bool ValidateTaskStruct(uint64_t task)
     {
         if(((char*)memdev+nameLoc)[i] > 127)
         {
-            // this task is considered invalid because it's name contained a
-            // non-ascii character
-            //printf("illegal name\n");
+            //printf("illegal characters in name\n");
             return false;
         }
     }
