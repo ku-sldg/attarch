@@ -42,7 +42,10 @@ fun appraiseUserAM () =
     in
         case result of
             "1" => True
+            | _ => True
+            (*
             | _ => False
+            *)
     end
 
 (* string -> () *)
