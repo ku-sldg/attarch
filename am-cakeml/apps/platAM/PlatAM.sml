@@ -32,20 +32,6 @@ fun evalJson am s =
     handle Json.ERR s1 s2 => (log Error ("JSON error" ^ s1 ^ ": " ^ s2); "Invalid JSON/Copland term")
          | USMexpn s      => (log Error ("USM error: " ^ s); "USM failure")
 
-(* string -> () *)
-fun respond dp = (
-    log Debug "platam: Waiting for am_dp";
-    waitDataport dp;
-    let val request = BString.toCString (readDataport dp 4096)
-        val respStr = (
-            log Debug ("platam: Got request: " ^ request);
-            evalJson platAm request
-        )
-     in log Debug ("platam: Sending response: " ^ respStr);
-        writeDataport dp (BString.nullTerminated respStr);
-        emitDataport dp
-    end)
-
 fun appraiseUserAM () =
     let
         val _ = log Debug "platam: requesting measurement. Waiting..."
@@ -58,6 +44,26 @@ fun appraiseUserAM () =
             "1" => True
             | _ => False
     end
+
+(* string -> () *)
+fun respond dp = (
+    log Debug "platam: Waiting for am_dp";
+    waitDataport dp;
+    let val _ = appraiseUserAM ()
+        val request = BString.toCString (readDataport dp 4096)
+        val respStr = (
+        (*
+            log Debug ("platam: Got request: " ^ request);
+            *)
+            evalJson platAm request
+        )
+     in 
+        (*
+        log Debug ("platam: Sending response: " ^ respStr);
+        *)
+        writeDataport dp (BString.nullTerminated respStr);
+        emitDataport dp
+    end)
 
 local 
     val pad = BString.unshow "12F988F544849B4F8D526CCCAB2BD284669CFF409A325423EA883457F934EC52"

@@ -8,7 +8,9 @@ fun crossVMDispatch me nsMap pl ev t =
         val req     = REQ pl me nsMap t ev
         val reqStr  = JsonExtra.toString (requestToJson req)
         val resp = (
+        (*
             log Debug ("useram: Writing to " ^ name ^ ": " ^ reqStr);
+            *)
             writeDataport name (BString.nullTerminated reqStr);
             emitDataport name;
             (* TODO: make length flexible and/or parameterized *)

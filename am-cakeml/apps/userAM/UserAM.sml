@@ -32,10 +32,15 @@ fun evalJson s =
 fun respondToMsg client = 
     let val req  = Socket.inputAll client
         val resp = (
+        (*
             log Debug ("useram: Received request: " ^ req);
+            *)
             evalJson req
         )
-     in log Debug ("useram: Sending back response: " ^ resp);
+     in 
+     (*
+        log Debug ("useram: Sending back response: " ^ resp);
+        *)
         Socket.output client resp
     end
 
