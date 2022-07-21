@@ -100,6 +100,10 @@ int run(void)
         memset(ms_dp, '0', 4096);
         strcpy(ms_dp, resultMsg);
 
+
+        MeasureProcesses();
+
+
         done_emit();
     }
 

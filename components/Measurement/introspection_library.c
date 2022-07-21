@@ -12,11 +12,18 @@
 
 // TODO collect this list_head address as part of the build process
 #define LIST_HEAD_ADDR 0xFB61E0
+#define INIT_TASK_ADDR 0xF92280
 
 bool debug = false;
 void debugPrint(char* msg)
 {
     if(debug){printf(msg);}
+}
+
+uint64_t intro_virt_to_phys(uint64_t virtaddr)
+{
+    //return((virtaddr & 0xFFFFFFFF) + 0x40000000);
+    return(virtaddr & 0xFFFFFFFF);
 }
 
 bool IsThisAValidModuleMeasurement(char* moduleName)
@@ -35,7 +42,6 @@ bool IsThisAValidModuleMeasurement(char* moduleName)
 
 uint64_t TranslationTableWalk(uint64_t inputAddr)
 {
-    bool isDebugLog = false;
     uint64_t PGDindex = (inputAddr & 0x0000FF8000000000) >> 39;
     uint64_t PUDindex = (inputAddr & 0x0000007FC0000000) >> 30;
     uint64_t PMDindex = (inputAddr & 0x000000003FE00000) >> 21;
@@ -139,15 +145,13 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
     index += 8; // gpl_syms
     index += 8; // gpl_crcs
     index += 1; //async_probe_requested
+    index += 3; // to fill a 4-byte buffer
     index += 8; // gpl_future_syms
     index += 8; // gpl_future_crcs
     index += 4; // num_gpl_future_syms
     index += 4; // num_exentries
     index += 8; // extable
     index += 8; // (*init*(void)
-
-    // a correction ?
-    index += 3;
 
     //by inspection
     //printerate(physAddr + 47 * 8, 3);
@@ -209,7 +213,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
 
 void MeasureKernelModules(uint8_t** module_digests, char** module_names)
 {
-    printf("DEBUG: Measurement: Beginning measurement.\n");
+    printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
 
     debugPrint("Collecting module pointers...\n");
     /* modulePtrs is a list of offsets into memdev that refer to kernel
@@ -245,3 +249,360 @@ void MeasureKernelModules(uint8_t** module_digests, char** module_names)
         }
     }
 }
+
+void introspectScan(int* head, int size, char* name)
+{
+    printf("%s: ", name);
+    //for(int i=0; i<size; i++)
+    for(int i=size-1; i>=0; i--)
+    {
+        printf("%02X",((char*)memdev+*head)[i]);
+    }
+    printf("\n");
+    *head += size;
+}
+void introspectScanChar(int* head, int size, char* name)
+{
+    printf("%s: ", name);
+    for(int i=0; i<size; i++)
+    //for(int i=size; i>0; i--)
+    {
+        printf("%c",((char*)memdev+*head)[i]);
+    }
+    printf("\n");
+    *head += size;
+}
+void introspectScanInt(int* head, int size, char* name)
+{
+    printf("%s: ", name);
+    int* val = (int*)((char*)memdev+*head);
+    printf("%d", *val);
+    printf("\n");
+    *head += size;
+}
+void scanTaskStruct()
+{
+    //int index = inputAddress;
+    int index = 0;
+    introspectScan(&index, 8, "volatile  long , state");
+    introspectScan(&index, 8, "void *, stack");
+    introspectScan(&index, 4, "atomic_t , usage");
+    introspectScan(&index, 4, "unsigned int , flags");
+    introspectScan(&index, 4, "unsigned int , ptrace");
+    introspectScan(&index, 8, "struct llist_node , wake_entry");
+    introspectScan(&index, 4, "int , on_cpu");
+    introspectScan(&index, 4, "unsigned int , wakee_flips");
+    introspectScan(&index, 8, "unsigned long , wakee_flip_decay_ts");
+    introspectScan(&index, 8, "struct task_struct *, last_wakee");
+    introspectScan(&index, 4, "int , wake_cpu");
+    introspectScan(&index, 4, "int , on_rq");
+    introspectScanInt(&index, 4, "int , prio");
+    introspectScanInt(&index, 4, "int , static_prio");
+    introspectScanInt(&index, 4, "int , normal_prio");
+    introspectScanInt(&index, 4, "unsigned int , rt_priority");
+    //TODO explain:
+    introspectScan(&index, 48, "compensation");
+    introspectScan(&index, 8, "const struct sched_class *, sched_class");
+    introspectScan(&index, 512, "struct sched_entity , se");
+    introspectScan(&index, 48, "struct sched_rt_entity , rt");
+    introspectScan(&index, 8, "struct task_group *, sched_task_group");
+    introspectScan(&index, 160, "struct sched_dl_entity , dl");
+    introspectScan(&index, 8, "struct hlist_head , preempt_notifiers");
+    introspectScan(&index, 4, "unsigned int , btrace_seq");
+    introspectScanInt(&index, 4, "unsigned int , policy");
+    introspectScanInt(&index, 4, "int , nr_cpus_allowed");
+    introspectScan(&index, 32, "cpumask_t , cpus_allowed");
+    introspectScan(&index, 32, "struct sched_info , sched_info");
+    introspectScan(&index, 16, "struct list_head , tasks");
+    introspectScan(&index, 40, "struct plist_node , pushable_tasks");
+    introspectScan(&index, 24, "struct rb_node , pushable_dl_tasks");
+    introspectScan(&index, 8, "struct mm_struct *, mm");
+    introspectScan(&index, 8, "struct mm_struct *, active_mm");
+    introspectScan(&index, 8, "u64 , vmacache_seqnum");
+    introspectScan(&index, 8, "struct vm_area_struct *, vmacache1");
+    introspectScan(&index, 8, "struct vm_area_struct *, vmacache2");
+    introspectScan(&index, 8, "struct vm_area_struct *, vmacache3");
+    introspectScan(&index, 8, "struct vm_area_struct *, vmacache4");
+    introspectScan(&index, 20, "struct  task_rss_stat   , rss_stat");
+    introspectScanInt(&index, 4, "int , exit_state");
+    introspectScanInt(&index, 4, "int , exit_code");
+    introspectScanInt(&index, 4, "int , exit_signal");
+    introspectScanInt(&index, 4, "int , pdeath_signal");
+    introspectScan(&index, 8, "unsigned long , jobctl");
+    introspectScan(&index, 4, "unsigned int , personality");
+    introspectScan(&index, 4, "unsigned int , bits1");
+    introspectScan(&index, 4, "unsigned int , bits2");
+    introspectScan(&index, 8, "unsigned long , atomic_flags");
+    introspectScan(&index, 48, "struct restart_block , restart_block");
+    introspectScanInt(&index, 4, "pid_t , pid");
+    introspectScanInt(&index, 4, "pid_t , tgid");
+    introspectScan(&index, 8, "unsigned long , stack_canary");
+    introspectScan(&index, 8, "struct task_struct __rcu *, real_parent");
+    introspectScan(&index, 8, "struct task_struct __rcu *, parent");
+    introspectScan(&index, 16, "struct list_head , children");
+    introspectScan(&index, 16, "struct list_head , sibling");
+    introspectScan(&index, 8, "struct task_struct *, group_leader");
+    introspectScan(&index, 16, "struct list_head , ptraced");
+    introspectScan(&index, 16, "struct list_head , ptrace_entry");
+    introspectScan(&index, 24, "struct pid_link , pids1");
+    introspectScan(&index, 24, "struct pid_link , pids2");
+    introspectScan(&index, 24, "struct pid_link , pids3");
+    introspectScan(&index, 16, "struct list_head , thread_group");
+    introspectScan(&index, 16, "struct list_head , thread_node");
+    introspectScan(&index, 8, "struct completion *, vfork_done");
+    introspectScan(&index, 8, "int __user *, set_child_tid");
+    introspectScan(&index, 8, "int __user *, clear_child_tid");
+    introspectScan(&index, 8, "cputime_t , utime");
+    introspectScan(&index, 8, "cputime_t , stime");
+    introspectScan(&index, 8, "cputime_t , utimescaled");
+    introspectScan(&index, 8, "cputime_t , stimescaled");
+    introspectScan(&index, 8, "cputime_t , gtime");
+    introspectScan(&index, 24, "struct prev_cputime , prev_cputime");
+    introspectScan(&index, 8, "unsigned long , nvcsw");
+    introspectScan(&index, 8, "unsigned long , nivcsw");
+    introspectScan(&index, 8, "u64 , start_time");
+    introspectScan(&index, 8, "u64 , real_start_time");
+    introspectScan(&index, 8, "unsigned long , min_flt");
+    introspectScan(&index, 8, "unsigned long , maj_flt");
+    introspectScan(&index, 24, "struct task_cputime , cputime_expires");
+    introspectScan(&index, 16, "struct list_head , cpu_timers1");
+    introspectScan(&index, 16, "struct list_head , cpu_timers2");
+    introspectScan(&index, 16, "struct list_head , cpu_timers3");
+    introspectScan(&index, 8, "const struct cred __rcu *, ptracer_cred");
+    introspectScan(&index, 8, "const struct cred __rcu *, real_cred");
+    introspectScan(&index, 8, "const struct cred __rcu *, cred");
+    introspectScanChar(&index, 16, "char , comm");
+    introspectScan(&index, 8, "struct nameidata *, nameidata");
+    introspectScan(&index, 8, "struct sysv_sem , sysvsem");
+    introspectScan(&index, 16, "struct sysv_shm , sysvshm");
+    introspectScan(&index, 8, "unsigned long , last_switch_count");
+    introspectScan(&index, 8, "struct fs_struct *, fs");
+    introspectScan(&index, 8, "struct files_struct *, files");
+    introspectScan(&index, 8, "struct nsproxy *, nsproxy");
+    introspectScan(&index, 8, "struct signal_struct *, signal");
+    introspectScan(&index, 8, "struct sighand_struct *, sighand");
+    introspectScan(&index, 8, "sigset_t , blocked");
+    introspectScan(&index, 8, "sigset_t , real_blocked");
+    introspectScan(&index, 8, "sigset_t , saved_sigmask");
+    introspectScan(&index, 24, "struct sigpending , pending");
+    introspectScan(&index, 8, "unsigned long , sas_ss_sp");
+    introspectScan(&index, 8, "size_t , sas_ss_size");
+    introspectScan(&index, 4, "unsigned , sas_ss_flags");
+    introspectScan(&index, 8, "struct callback_head *, task_works");
+    introspectScan(&index, 8, "struct audit_context *, audit_context");
+    introspectScan(&index, 4, "kuid_t , loginuid");
+    introspectScan(&index, 4, "unsigned int , sessionid");
+    introspectScan(&index, 16, "struct seccomp , seccomp");
+    introspectScan(&index, 8, "u64 , parent_exec_id");
+    introspectScan(&index, 8, "u64 , self_exec_id");
+    introspectScan(&index, 4, "spinlock_t , alloc_lock");
+    introspectScan(&index, 4, "raw_spinlock_t , pi_lock");
+    introspectScan(&index, 8, "struct wake_q_node , wake_q");
+    introspectScan(&index, 8, "struct rb_root , pi_waiters");
+    introspectScan(&index, 8, "struct rb_node *, pi_waiters_leftmost");
+    introspectScan(&index, 8, "struct rt_mutex_waiter *, pi_blocked_on");
+    introspectScan(&index, 8, "void *, journal_info");
+    introspectScan(&index, 8, "struct bio_list *, bio_list");
+    introspectScan(&index, 8, "struct blk_plug *, plug");
+    introspectScan(&index, 8, "struct reclaim_state *, reclaim_state");
+    introspectScan(&index, 8, "struct backing_dev_info *, backing_dev_info");
+    introspectScan(&index, 8, "struct io_context *, io_context");
+    introspectScan(&index, 8, "unsigned long , ptrace_message");
+    introspectScan(&index, 8, "siginfo_t *, last_siginfo");
+    introspectScan(&index, 56, "struct task_io_accounting , ioac");
+    introspectScan(&index, 8, "u64 , acct_rss_mem1");
+    introspectScan(&index, 8, "u64 , acct_vm_mem1");
+    introspectScan(&index, 8, "cputime_t , acct_timexpd");
+    introspectScan(&index, 8, "nodemask_t , mems_allowed");
+    introspectScan(&index, 4, "seqcount_t , mems_allowed_seq");
+    introspectScan(&index, 4, "int , cpuset_mem_spread_rotor");
+    introspectScan(&index, 4, "int , cpuset_slab_spread_rotor");
+    introspectScan(&index, 8, "struct css_set __rcu *, cgroups");
+    introspectScan(&index, 16, "struct list_head , cg_list");
+    introspectScan(&index, 8, "struct robust_list_head __user *, robust_list");
+    introspectScan(&index, 8, "struct compat_robust_list_head __user *, compat_robust_list");
+    introspectScan(&index, 16, "struct list_head , pi_state_list");
+    introspectScan(&index, 8, "struct futex_pi_state *, pi_state_cache");
+    introspectScan(&index, 40, "struct mutex , futex_exit_mutex");
+    introspectScan(&index, 4, "unsigned int , futex_state");
+    introspectScan(&index, 8, "struct perf_event_context *, perf_event_ctxp1");
+    introspectScan(&index, 8, "struct perf_event_context *, perf_event_ctxp2");
+    introspectScan(&index, 40, "struct mutex , perf_event_mutex");
+    introspectScan(&index, 16, "struct list_head , perf_event_list");
+    introspectScan(&index, 16, "struct rcu_head , rcu");
+    introspectScan(&index, 8, "struct pipe_inode_info *, splice_pipe");
+    introspectScan(&index, 16, "struct page_frag , task_frag");
+    introspectScan(&index, 8, "struct task_delay_info *, delays");
+    introspectScan(&index, 4, "int , nr_dirtied");
+    introspectScan(&index, 4, "int , nr_dirtied_pause");
+    introspectScan(&index, 8, "unsigned long , dirty_paused_when");
+    introspectScan(&index, 8, "u64 , timer_slack_ns");
+    introspectScan(&index, 8, "u64 , default_timer_slack_ns");
+    introspectScan(&index, 4, "int , curr_ret_stack");
+    introspectScan(&index, 8, "struct ftrace_ret_stack *, ret_stack");
+    introspectScan(&index, 8, "unsigned long long , ftrace_timestamp");
+    introspectScan(&index, 4, "atomic_t , trace_overrun");
+    introspectScan(&index, 4, "atomic_t , tracing_graph_pause");
+    introspectScan(&index, 8, "unsigned long , trace");
+    introspectScan(&index, 8, "unsigned long , trace_recursion");
+    introspectScan(&index, 8, "struct mem_cgroup *, memcg_in_oom");
+    introspectScan(&index, 4, "gfp_t , memcg_oom_gfp_mask");
+    introspectScan(&index, 4, "int , memcg_oom_order");
+    introspectScan(&index, 4, "unsigned int , memcg_nr_pages_over_high");
+    introspectScan(&index, 4, "unsigned  int   , sequential_io");
+    introspectScan(&index, 4, "unsigned  int   , sequential_io_avg");
+    introspectScan(&index, 4, "int , pagefault_disabled");
+    introspectScan(&index, 8, "struct task_struct *, oom_reaper_list");
+    introspectScan(&index, 960, "struct thread_struct , thread");
+}
+
+void PrintTaskName(uint64_t task)
+{
+    char* name = calloc(1, 16);
+    int nameLoc = task + 1640;
+    for(int i=0; i<16; i++)
+    {
+        name[i] = ((char*)memdev+nameLoc)[i];
+        if(name[i] > 127)
+        {
+            // this task is considered invalid because it's name contained a
+            // non-ascii character
+            return;
+        }
+    }
+    printf("name is %s\n", name);
+}
+
+bool ValidateTaskStruct(uint64_t task)
+{
+    if(task > 0x8001000)
+    {
+        //printf("out of range\n");
+        return false;
+    }
+    // verify we're a real task
+    int nameLoc = task + 1640;
+    if(((char*)memdev+nameLoc)[0] == '\0')
+    {
+        //printf("null name\n");
+        return false;
+    }
+    for(int i=0; i<16; i++)
+    {
+        if(((char*)memdev+nameLoc)[i] > 127)
+        {
+            // this task is considered invalid because it's name contained a
+            // non-ascii character
+            //printf("illegal name\n");
+            return false;
+        }
+    }
+    return true;
+}
+
+void InterpretTaskStruct(uint64_t inputAddress, uint64_t* children, uint64_t* sibling)
+{
+    // get a child pointer
+    int childLoc = inputAddress + 1232;
+    uint64_t firstChild = ((uint64_t*)((char*)memdev+childLoc))[0];
+    *children = intro_virt_to_phys(firstChild)+392-1640;
+    if(!ValidateTaskStruct(*children))
+    {
+        *children = TranslationTableWalk(firstChild)+392-1640;
+    }
+
+    // get a sibling pointer
+    int siblingLoc = inputAddress + 1232 + 16;
+    uint64_t leftSibling = ((uint64_t*)((char*)memdev+siblingLoc))[0];
+    *sibling = intro_virt_to_phys(leftSibling)+392-1640;
+    if(!ValidateTaskStruct(*sibling))
+    {
+        *sibling = TranslationTableWalk(leftSibling)+392-1640;
+    }
+}
+
+void CrawlSiblings(uint64_t og_task, uint64_t task, uint64_t sibling)
+{
+    //printf("crawlsibs top\n");
+    if(og_task==task)
+    {
+        return;
+    }
+    // do some job
+    PrintTaskName(task);
+
+    // check whether we've been to every sibling
+    if(sibling==og_task)
+    {
+        return;
+    }
+
+    // crawl to my left sibling if I have one
+    if(ValidateTaskStruct(sibling))
+    {
+        uint64_t siblingChild;
+        uint64_t siblingSibling;
+        InterpretTaskStruct(sibling, &siblingChild, &siblingSibling);
+        CrawlSiblings(og_task, sibling, siblingSibling);
+    }
+}
+
+void CrawlProcesses(uint64_t task, uint64_t leftChild, uint64_t sibling)
+{
+    //printf("crawlprocs top\n");
+    // verify we're a real task
+    if(!ValidateTaskStruct(task))
+    {
+        return;
+    }
+
+    // do some job
+    PrintTaskName(task);
+
+    // crawl to my siblings
+    if(ValidateTaskStruct(sibling))
+    {
+        uint64_t siblingChild;
+        uint64_t siblingSibling;
+        InterpretTaskStruct(sibling, &siblingChild, &siblingSibling);
+        CrawlSiblings(task, sibling, siblingSibling);
+    }
+
+    // crawl to my left child
+    if(ValidateTaskStruct(leftChild))
+    {
+        uint64_t leftmostgrandchild;
+        uint64_t leftChildSibling;
+        InterpretTaskStruct(leftChild, &leftmostgrandchild, &leftChildSibling);
+        CrawlProcesses(leftChild, leftmostgrandchild, leftChildSibling);
+    }
+
+}
+
+void MeasureProcesses()
+{
+    printf("DEBUG: Measurement: Beginning process measurement.\n");
+
+    printf("Collecting task pointers...\n");
+    /* taskPtrs is a list of offsets into memdev that refer to task
+    ** structs. They are physical memory addresses with the RAM_BASE
+    ** already subtracted. Assume there are no more than 100 processes.
+    ** See `cat /proc/sys/kernel/pid_max`
+    */
+    int pid_max = 100;
+    uint64_t taskPtrs[pid_max];
+    for(int i=0; i<pid_max; i++)
+    {
+        taskPtrs[i] = 0;
+    }
+
+    uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
+
+    uint64_t children;
+    uint64_t sibling;
+    InterpretTaskStruct(init_task_ptr, &children, &sibling);
+
+    CrawlProcesses(init_task_ptr, children, sibling);
+}
+
+
