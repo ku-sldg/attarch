@@ -488,7 +488,7 @@ void PrintTaskName(uint64_t task)
             return;
         }
     }
-    introLog("Task Name: ", name);
+    introLog(2, "Task Name: ", name);
 }
 
 bool ValidateTaskStruct(uint64_t task)
