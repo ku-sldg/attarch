@@ -536,35 +536,8 @@ void InterpretTaskStruct(uint64_t inputAddress, uint64_t* children, uint64_t* si
     }
 }
 
-void CrawlSiblings(uint64_t og_task, uint64_t task, uint64_t sibling)
+void CrawlProcesses(uint64_t task, uint64_t leadSibling)
 {
-    //printf("crawlsibs top\n");
-    if(og_task==task)
-    {
-        return;
-    }
-    // do some job
-    PrintTaskName(task);
-
-    // check whether we've been to every sibling
-    if(sibling==og_task)
-    {
-        return;
-    }
-
-    // crawl to my left sibling if I have one
-    if(ValidateTaskStruct(sibling))
-    {
-        uint64_t siblingChild;
-        uint64_t siblingSibling;
-        InterpretTaskStruct(sibling, &siblingChild, &siblingSibling);
-        CrawlSiblings(og_task, sibling, siblingSibling);
-    }
-}
-
-void CrawlProcesses(uint64_t task, uint64_t leftChild, uint64_t sibling)
-{
-    //printf("crawlprocs top\n");
     // verify we're a real task
     if(!ValidateTaskStruct(task))
     {
@@ -574,50 +547,23 @@ void CrawlProcesses(uint64_t task, uint64_t leftChild, uint64_t sibling)
     // do some job
     PrintTaskName(task);
 
-    // crawl to my siblings
-    if(ValidateTaskStruct(sibling))
-    {
-        uint64_t siblingChild;
-        uint64_t siblingSibling;
-        InterpretTaskStruct(sibling, &siblingChild, &siblingSibling);
-        CrawlSiblings(task, sibling, siblingSibling);
-    }
+    // prepare to crawl
+    uint64_t myChild;
+    uint64_t mySibling;
+    InterpretTaskStruct(task, &myChild, &mySibling);
 
-    // crawl to my left child
-    if(ValidateTaskStruct(leftChild))
+    // crawl a la breadth-first-search
+    if(mySibling != leadSibling)
     {
-        uint64_t leftmostgrandchild;
-        uint64_t leftChildSibling;
-        InterpretTaskStruct(leftChild, &leftmostgrandchild, &leftChildSibling);
-        CrawlProcesses(leftChild, leftmostgrandchild, leftChildSibling);
+        CrawlProcesses(mySibling, task);
     }
-
+    CrawlProcesses(myChild, myChild);
 }
 
 void MeasureProcesses()
 {
     printf("DEBUG: Measurement: Beginning process measurement.\n");
-
-    printf("Collecting task pointers...\n");
-    /* taskPtrs is a list of offsets into memdev that refer to task
-    ** structs. They are physical memory addresses with the RAM_BASE
-    ** already subtracted. Assume there are no more than 100 processes.
-    ** See `cat /proc/sys/kernel/pid_max`
-    */
-    int pid_max = 100;
-    uint64_t taskPtrs[pid_max];
-    for(int i=0; i<pid_max; i++)
-    {
-        taskPtrs[i] = 0;
-    }
-
     uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
-
-    uint64_t children;
-    uint64_t sibling;
-    InterpretTaskStruct(init_task_ptr, &children, &sibling);
-
-    CrawlProcesses(init_task_ptr, children, sibling);
+    CrawlProcesses(init_task_ptr, init_task_ptr);
 }
-
 
