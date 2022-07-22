@@ -457,6 +457,31 @@ void inform()
     printk("PHYS_OFFSET is %X\n", PHYS_OFFSET);
     printk("kimage_voffset is %X\n", kimage_voffset);
 
+    printk("struct cred %ld\n", sizeof(struct cred));
+    printk("atomic_t %ld\n", sizeof(atomic_t));
+    printk("void * %ld\n", sizeof(void *));
+    printk("unsigned %ld\n", sizeof(unsigned));
+    printk("kuid_t %ld\n", sizeof(kuid_t));
+    printk("kgid_t %ld\n", sizeof(kgid_t));
+    printk("kernel_cap_t %ld\n", sizeof(kernel_cap_t));
+    printk("unsigned char %ld\n", sizeof(unsigned char));
+    printk("struct key * %ld\n", sizeof(struct key *));
+#if defined(CONFIG_DEBUG_CREDENTIALS)
+    printk("CONFIG_DEBUG_CREDENTIALS is defined\n");
+#else
+    printk("CONFIG_DEBUG_CREDENTIALS is not defined\n");
+#endif
+#if defined(CONFIG_KEYS)
+    printk("CONFIG_KEYS is defined\n");
+#else
+    printk("CONFIG_KEYS is not defined\n");
+#endif
+#if defined(CONFIG_SECURITY)
+    printk("CONFIG_SECURITY is defined\n");
+#else
+    printk("CONFIG_SECURITY is not defined\n");
+#endif
+
     return 0;
 }
 
