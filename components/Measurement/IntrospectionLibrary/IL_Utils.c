@@ -16,7 +16,6 @@ void introLog(int args, ...)
         {
             printf("%s", va_arg(ptr,char*));
         }
-        printf("\n");
     }
 }
 
@@ -103,6 +102,16 @@ uint64_t TranslationTableWalk(uint64_t inputAddr)
     }
 
     return finalPaddr;
+}
+
+uint64_t GetPhysAddr(uint64_t virt)
+{
+    uint64_t out = intro_virt_to_phys(virt);
+    if(out > 0x8001000)
+    {
+        return TranslationTableWalk(virt);
+    }
+    return out;
 }
 
 void introspectScan(int* head, int size, char* name)
