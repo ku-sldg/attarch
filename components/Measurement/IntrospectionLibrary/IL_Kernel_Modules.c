@@ -66,7 +66,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     }
 
     char msg[13] = "Found Module ";
-    introLog(2, msg, name);
+    introLog(3, msg, name, "\n");
     /*
     printf("DEBUG: Measurement: Found Module: ");
     for(int j=0; j<56; j++)
