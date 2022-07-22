@@ -7,12 +7,24 @@
 
 #include "IL_Struct_Interp.c"
 
+struct cred {
+    int usage;
+    int uid, gid, suid, sgid, euid, egid, fsuid, fsgid;
+    int securebits;
+    uint64_t cap_inheritable, cap_permitted, cap_effective, cap_bset, cap_ambient;
+    char jit_keyring;
+    uint64_t session_keyring, process_keyring, thread_keyring, request_key_auth, security;
+    uint64_t user_struct, user_namespace, group_info;
+};
+
 struct TaskMeasurement
 {
     char name[16];
+    int uid;
     uint32_t myPid;
     uint32_t parentPid;
     uint32_t flags;
+    struct cred cred;
 };
 
 void GetTaskName(uint64_t task, char* name)
@@ -66,6 +78,38 @@ void GetPIDs(uint64_t task, int* myPid, int* parentPid)
     }
 }
 
+void InterpretCred(uint64_t task, struct cred* cred)
+{
+    uint64_t credAddrLoc = task + 1640 - 8 - 8; //"real_cred"
+    uint64_t credVaddr = ((uint64_t*)((char*)memdev+credAddrLoc))[0];
+    uint64_t credPaddr = GetPhysAddr(credVaddr);
+    
+    cred->usage = ((int*)((char*)memdev+credPaddr))[0];
+    cred->uid = ((int*)((char*)memdev+credPaddr+4))[0];
+    cred->gid = ((int*)((char*)memdev+credPaddr+8))[0];
+    cred->suid = ((int*)((char*)memdev+credPaddr+12))[0];
+    cred->sgid = ((int*)((char*)memdev+credPaddr+16))[0];
+    cred->euid = ((int*)((char*)memdev+credPaddr+20))[0];
+    cred->egid = ((int*)((char*)memdev+credPaddr+24))[0];
+    cred->fsuid = ((int*)((char*)memdev+credPaddr+28))[0];
+    cred->fsgid = ((int*)((char*)memdev+credPaddr+32))[0];
+    cred->securebits = ((int*)((char*)memdev+credPaddr+36))[0];
+    cred->cap_inheritable = ((uint64_t*)((char*)memdev+credPaddr+40))[0];
+    cred->cap_permitted = ((uint64_t*)((char*)memdev+credPaddr+48))[0];
+    cred->cap_effective = ((uint64_t*)((char*)memdev+credPaddr+56))[0];
+    cred->cap_bset = ((uint64_t*)((char*)memdev+credPaddr+64))[0];
+    cred->cap_ambient = ((uint64_t*)((char*)memdev+credPaddr+72))[0];
+    cred->jit_keyring = ((char*)memdev+credPaddr+80)[0];
+    cred->session_keyring = ((uint64_t*)((char*)memdev+credPaddr+88))[0];
+    cred->process_keyring = ((uint64_t*)((char*)memdev+credPaddr+96))[0];
+    cred->thread_keyring = ((uint64_t*)((char*)memdev+credPaddr+104))[0];
+    cred->request_key_auth = ((uint64_t*)((char*)memdev+credPaddr+112))[0];
+    cred->security = ((uint64_t*)((char*)memdev+credPaddr+120))[0];
+    cred->user_struct = ((uint64_t*)((char*)memdev+credPaddr+128))[0];
+    cred->user_namespace = ((uint64_t*)((char*)memdev+credPaddr+136))[0];
+    cred->group_info = ((uint64_t*)((char*)memdev+credPaddr+144))[0];
+}
+
 void InterpretTaskStruct(uint64_t inputAddress, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
 {
     int childLoc = inputAddress + 1232;
@@ -89,6 +133,11 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     // Collect a Measurement
     GetTaskName(task, &results[taskID].name);
     GetPIDs(task, &results[taskID].myPid, &results[taskID].parentPid);
+    InterpretCred(task, &results[taskID].cred);
+
+    if(strcmp(&results[taskID].name, "useram")==0)
+    {
+    }
 
     // prepare to crawl
     uint64_t myChild;
@@ -109,7 +158,9 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     sprintf(myPid, "%ld", msmt->myPid);
     char parentPid[10];
     sprintf(parentPid, "%ld", msmt->parentPid);
-    introLog(7, "Task Evidence:\n\tName: ", msmt->name, "\n\tPID: ", &myPid, "\n\tParent PID: ", &parentPid, "\n");
+    char suid[10];
+    sprintf(suid, "%d", msmt->cred.suid);
+    introLog(9, "Task Evidence:\n\tName: ", msmt->name, "\n\tPID: ", &myPid, "\n\tParent PID: ", &parentPid, "\n\tSUID: ", &suid, "\n");
 }
 
 void MeasureProcesses()
