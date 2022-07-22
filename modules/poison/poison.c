@@ -35,7 +35,7 @@ static int __init poison_init(void)
     printk("you give: %p\n", init_task_addr);
     printk("i give: %p\n", virt_to_phys(init_task_addr));
     */
-
+/*
 #if defined(CONFIG_SLOB)
 printk("CONFIG_SLOB is defined\n");
 #else
@@ -301,8 +301,9 @@ printk("CONFIG_BCACHE_MODULE is defined\n");
 #else
 printk("CONFIG_BCACHE_MODULE is not defined\n");
 #endif
+*/
 
-
+/*
     printk("VMACACHE_SIZE is %d\n", VMACACHE_SIZE);
     printk("PIDTYPE_MAX is %d\n", PIDTYPE_MAX);
     printk("perf_nr_task_contexts is %d\n", perf_nr_task_contexts);
@@ -476,8 +477,9 @@ printk("CONFIG_BCACHE_MODULE is not defined\n");
     printk("int  pagefault_disabled %ld\n", sizeof(int ));
     printk("struct task_struct * oom_reaper_list %ld\n", sizeof(struct task_struct *));
     printk("struct thread_struct  thread %ld\n", sizeof(struct thread_struct ));
+    */
 
-
+    /*
     printk("prio should be %d\n", MAX_PRIO-20);
     printk("CPU_MASK_ALL is %X\n", CPU_MASK_ALL);
 
@@ -489,6 +491,7 @@ printk("CONFIG_BCACHE_MODULE is not defined\n");
     printk("~PAGE_OFFSET is %X\n", ~PAGE_OFFSET);
     printk("PHYS_OFFSET is %X\n", PHYS_OFFSET);
     printk("kimage_voffset is %X\n", kimage_voffset);
+    */
 
     return 0;
 }
