@@ -13,6 +13,7 @@ void ScanTaskStruct(uint64_t inputAddress)
     introspectScan(&index, 4, "atomic_t , usage");
     introspectScan(&index, 4, "unsigned int , flags");
     introspectScan(&index, 4, "unsigned int , ptrace");
+    introspectScan(&index, 4, "compensation for word alignment");
     introspectScan(&index, 8, "struct llist_node , wake_entry");
     introspectScan(&index, 4, "int , on_cpu");
     introspectScan(&index, 4, "unsigned int , wakee_flips");
@@ -20,21 +21,26 @@ void ScanTaskStruct(uint64_t inputAddress)
     introspectScan(&index, 8, "struct task_struct *, last_wakee");
     introspectScan(&index, 4, "int , wake_cpu");
     introspectScan(&index, 4, "int , on_rq");
-    introspectScanInt(&index, 4, "int , prio");
-    introspectScanInt(&index, 4, "int , static_prio");
-    introspectScanInt(&index, 4, "int , normal_prio");
-    introspectScanInt(&index, 4, "unsigned int , rt_priority");
-    //TODO explain:
-    introspectScan(&index, 48, "compensation");
+    introspectScanInt(&index, "int , prio");
+    introspectScanInt(&index, "int , static_prio");
+    introspectScanInt(&index, "int , normal_prio");
+    introspectScanInt(&index, "unsigned int , rt_priority");
     introspectScan(&index, 8, "const struct sched_class *, sched_class");
+    //TODO explain.
+    // This true as given by successive calls to "offsetof(task_struct, etc)"
+    // But these 32 bytes are a mystery to me
+    // It's as if the following struct is aligned to a 64-byte boundary, which
+    // is odd.
+    introspectScan(&index, 32, "alignment compensation");
     introspectScan(&index, 512, "struct sched_entity , se");
     introspectScan(&index, 48, "struct sched_rt_entity , rt");
     introspectScan(&index, 8, "struct task_group *, sched_task_group");
     introspectScan(&index, 160, "struct sched_dl_entity , dl");
     introspectScan(&index, 8, "struct hlist_head , preempt_notifiers");
     introspectScan(&index, 4, "unsigned int , btrace_seq");
-    introspectScanInt(&index, 4, "unsigned int , policy");
-    introspectScanInt(&index, 4, "int , nr_cpus_allowed");
+    introspectScanInt(&index, "unsigned int , policy");
+    introspectScanInt(&index, "int , nr_cpus_allowed");
+    introspectScan(&index, 4, "compensation for word alignment");
     introspectScan(&index, 32, "cpumask_t , cpus_allowed");
     introspectScan(&index, 32, "struct sched_info , sched_info");
     introspectScan(&index, 16, "struct list_head , tasks");
@@ -48,27 +54,28 @@ void ScanTaskStruct(uint64_t inputAddress)
     introspectScan(&index, 8, "struct vm_area_struct *, vmacache3");
     introspectScan(&index, 8, "struct vm_area_struct *, vmacache4");
     introspectScan(&index, 20, "struct  task_rss_stat   , rss_stat");
-    introspectScanInt(&index, 4, "int , exit_state");
-    introspectScanInt(&index, 4, "int , exit_code");
-    introspectScanInt(&index, 4, "int , exit_signal");
-    introspectScanInt(&index, 4, "int , pdeath_signal");
+    introspectScanInt(&index, "int , exit_state");
+    introspectScanInt(&index, "int , exit_code");
+    introspectScanInt(&index, "int , exit_signal");
+    introspectScanInt(&index, "int , pdeath_signal");
+    introspectScan(&index, 4, "compensation for word alignment");
     introspectScan(&index, 8, "unsigned long , jobctl");
     introspectScan(&index, 4, "unsigned int , personality");
     introspectScan(&index, 4, "unsigned int , bits1");
     introspectScan(&index, 4, "unsigned int , bits2");
     introspectScan(&index, 8, "unsigned long , atomic_flags");
     introspectScan(&index, 48, "struct restart_block , restart_block");
-    introspectScanInt(&index, 4, "pid_t , pid");
-    introspectScanInt(&index, 4, "pid_t , tgid");
+    introspectScanInt(&index, "pid_t , pid");
+    introspectScanInt(&index, "pid_t , tgid");
     introspectScan(&index, 8, "unsigned long , stack_canary");
     introspectScan(&index, 8, "struct task_struct __rcu *, real_parent");
     introspectScan(&index, 8, "struct task_struct __rcu *, parent");
     introspectScan(&index, 16, "struct list_head , children");
     introspectScan(&index, 16, "struct list_head , sibling");
-    /*
     introspectScan(&index, 8, "struct task_struct *, group_leader");
     introspectScan(&index, 16, "struct list_head , ptraced");
     introspectScan(&index, 16, "struct list_head , ptrace_entry");
+    /*
     introspectScan(&index, 24, "struct pid_link , pids1");
     introspectScan(&index, 24, "struct pid_link , pids2");
     introspectScan(&index, 24, "struct pid_link , pids3");
