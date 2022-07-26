@@ -17,6 +17,24 @@ struct cred {
     uint64_t user_struct, user_namespace, group_info;
 };
 
+struct intro_mm_struct {
+    uint64_t start_code;
+    uint64_t end_code;
+    uint64_t start_data;
+    uint64_t end_data;
+    uint64_t start_brk;
+    uint64_t brk;
+    uint64_t start_stack;
+    uint64_t args_start;
+    uint64_t args_end;
+    uint64_t env_start;
+    uint64_t env_end;
+};
+
+struct memory_evidence {
+    uint64_t ptr;    
+};
+
 struct TaskMeasurement
 {
     char name[16];
@@ -25,6 +43,7 @@ struct TaskMeasurement
     uint32_t parentPid;
     uint32_t flags;
     struct cred cred;
+    struct intro_mm_struct memory_info;
 };
 
 void GetTaskName(uint64_t task, char* name)
@@ -58,6 +77,170 @@ bool ValidateTaskStruct(uint64_t task)
         }
     }
     return true;
+}
+
+void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
+{
+    uint64_t mmAddrLoc = task + 1024;
+    uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
+    //printf("retrieved mm_struct addr %p\n", mmAddr);
+    uint64_t mm = GetPhysAddr(mmAddr);
+    uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
+    uint64_t mmap = GetPhysAddr(mmapAddr);
+
+    /*
+    ** Print out the whole mm_struct
+    for(int i=0; i<272+88; i++)
+    {
+        if(i%48==0){printf("\n");}
+        if(i%8==0){printf(" ");}
+        printf("%02X", ((char*)memdev+mm)[i]);
+    }
+    */
+    printf("\n");
+
+    uint64_t start_code = ((uint64_t*)((char*)memdev+mm+232))[0];
+    uint64_t end_code = ((uint64_t*)((char*)memdev+mm+232))[1];
+    uint64_t start_data = ((uint64_t*)((char*)memdev+mm+232))[2];
+    uint64_t end_data = ((uint64_t*)((char*)memdev+mm+232))[3];
+
+    /*
+    printf("\tstart code: %p\n\tend code: %p\n", start_code, end_code);
+    printf("\tstart data vaddr: %p\n\tend data: %p\n", start_data, end_data);
+    
+    uint64_t start_vm = ((uint64_t*)((char*)memdev+mmap))[0];
+    uint64_t end_vm = ((uint64_t*)((char*)memdev+mmap))[1];
+    printf("\tstart vm: %p\n\tend vm: %p\n", start_vm, end_vm);
+
+    uint64_t startData = GetPhysAddr(start_data);
+    printf("\tstart data: %lu\n", startData);
+    introspectScanMaybeChar(startData, end_data-start_data, "Task Data: ");
+    */
+
+
+    uint64_t mmap_base = ((uint64_t*)((char*)memdev+mm+32))[0];
+
+    uint64_t pgdVaddr = ((uint64_t*)((char*)memdev+mm+64))[0];
+    uint64_t pgdPaddr = GetPhysAddr(pgdVaddr);
+
+    uint64_t stPaddr = TranslationTableWalkSuppliedPGD(start_code, pgdPaddr);
+
+    printf("size %ld\n", end_code-start_code);
+    /*
+    for(int i=0; i<end_code-start_code; i++)
+    {
+        printf("%X", ((char*)memdev+stPaddr)[i]);
+    }
+    printf("\n");
+    */
+
+    uint8_t codeDigest[64];
+    Hacl_Hash_SHA2_hash_512( ((char*)memdev+stPaddr), end_code-start_code, &codeDigest);
+    for(int i=0; i<64; i++)
+    {
+        if(i%32==0){printf("\n");}
+        if(i%8==0){printf(" ");}
+        printf("%02X", codeDigest[i]);
+    }
+    printf("\n");
+
+    void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags)
+    {
+
+        /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
+        /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
+        /* printf("vm_next\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[2]); */
+        /* printf("vm_prev\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[3]); */
+        /* printf("vm_rb\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[4]); */
+        /* printf("rb_subtree_gap\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[7]); */
+        /* printf("vm_mm\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[8]); */
+        /* printf("page_prot\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[9]); */
+        /* printf("page_flags\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[10]); */
+
+        uint64_t vm_start = ((uint64_t*)((char*)memdev+vma))[0];
+        *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
+        *size = ((uint64_t*)((char*)memdev+vma))[1] - ((uint64_t*)((char*)memdev+vma))[0];
+        *next = GetPhysAddr(((uint64_t*)((char*)memdev+vma))[2]);
+        *flags = ((uint64_t*)((char*)memdev+vma))[10];
+    }
+    void CrawlVMAs(uint64_t vma)
+    {
+        uint64_t start;
+        uint64_t size;
+        uint64_t next;
+        uint64_t flags;
+        InterpVMA(vma, &start, &size, &next, &flags);
+
+        printf("start: %p\n", start);
+        printf("size: %016X\n", size);
+        printf("Next: %p\n", next);
+        printf("Flags: %016X\n", flags);
+        
+        if(start + size < 0x8000000)
+        {
+            uint8_t thisAreaDigest[64];
+            Hacl_Hash_SHA2_hash_512( ((char*)memdev+start), size, &thisAreaDigest);
+            for(int i=0; i<64; i++)
+            {
+                if(i%32==0&&i>0){printf("\n");}
+                if(i%8==0&&i%32!=0){printf(" ");}
+                printf("%02X", thisAreaDigest[i]);
+            }
+            printf("\n");
+        }
+
+        printf("\n");
+        if(next != 0)
+        {
+            CrawlVMAs(next);
+        }
+    }
+
+    CrawlVMAs(mmap);
+
+    /*
+    */
+
+    /*
+    uint64_t head = mm;
+    introspectScanAddr(&head, "mmap");
+    introspectScanAddr(&head, "sbroot");
+    introspectScanAddr(&head, "vma_cache_seqnum");
+    introspectScanAddr(&head, "get_unmapped area");
+    introspectScanAddr(&head, "mmap_base");
+    introspectScanAddr(&head, "mmap_legacy_base");
+    introspectScanAddr(&head, "task_size");
+    introspectScanAddr(&head, "higest_vm_end");
+    introspectScanAddr(&head, "pgd_ptr");
+    introspectScanInt(&head, "mm_users");
+    introspectScanInt(&head, "mm_count");
+    introspectScanAddr(&head, "nr_ptes");
+    introspectScanInt(&head, "map_count");
+    introspectScanInt(&head, "map_count compensation");
+    introspectScanAddr(&head, "page_tble_lock");
+    introspectScan(&head, 40, "struct rw_semaphore mmap_sem");
+    introspectScan(&head, 16, "list_head mmlist");
+    introspectScan(&head, 8, "hiwater_rss");
+    introspectScan(&head, 8, "hiwater_vm");
+    introspectScan(&head, 8, "total_vm"); //total pages mapped
+    introspectScan(&head, 8, "locked_vm"); //locked pages
+    introspectScan(&head, 8, "pinned_vm");
+    introspectScan(&head, 8, "data_vm"); // pages which are write-only
+    introspectScan(&head, 8, "exec_vm"); // pages which are exec-only
+    introspectScan(&head, 8, "stack_vm"); // pages which belong to the stack
+    introspectScan(&head, 8, "def_flags");
+    introspectScanAddr(&head, "start_code");
+    introspectScanAddr(&head, "end_code");
+    introspectScanAddr(&head, "start_data");
+    introspectScanAddr(&head, "end_data");
+    introspectScanAddr(&head, "strt_brk");
+    introspectScanAddr(&head, "brk");
+    introspectScanAddr(&head, "start_stack");
+    introspectScanAddr(&head, "arg_start");
+    introspectScanAddr(&head, "arg_end");
+    introspectScanAddr(&head, "env_start");
+    introspectScanAddr(&head, "env_end");
+    */
 }
 
 void GetPID(uint64_t task, int* myPid)
@@ -137,6 +320,8 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
 
     if(strcmp(&results[taskID].name, "useram")==0)
     {
+        //ScanTaskStruct(task);
+        InterpretMemory(task, &results[taskID].memory_info);
     }
 
     // prepare to crawl
@@ -175,7 +360,8 @@ void MeasureProcesses()
 
     for(int i=0; i<100; i++)
     {
-        if(taskMsmts[i].name[0] != '\0')
+        //if(taskMsmts[i].name[0] != '\0')
+        if(strcmp(taskMsmts[i].name, "useram")==0)
         {
             PrintTaskEvidence(&taskMsmts[i]);
         }
