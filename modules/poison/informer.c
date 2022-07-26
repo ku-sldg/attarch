@@ -482,6 +482,81 @@ void inform()
     printk("CONFIG_SECURITY is not defined\n");
 #endif
 
+    printk("spinlock_t %ld\n", sizeof(spinlock_t));
+    printk("struct mm_struct %ld\n", sizeof(struct mm_struct));
+    printk("struct rb_root %ld\n", sizeof(struct rb_root));
+    printk("spinlock_t %ld\n", sizeof(spinlock_t));
+    printk("struct rw_semaphore %ld\n", sizeof(struct rw_semaphore));
+#if defined(CONFIG_MMU)
+    printk("CONFIG_MMU is defined\n");
+#else
+    printk("CONFIG_MMU is not defined\n");
+#endif
+#if defined(CONFIG_PGTABLES)
+    printk("CONFIG_PGTABLE_LEVELS is %d\n", CONFIG_PGTABLE_LEVELS);
+#else
+    printk("CONFIG_PGTABLE_LEVELS is not defined\n");
+#endif
+    printk("struct rb_node %ld\n", sizeof(struct rb_node));
+    printk("pgprot_t %ld\n", sizeof(pgprot_t));
+
+    printk("PAGE_SHIFT is %d\n", PAGE_SHIFT);
+    printk("PMD_SHIFT is %d\n", PMD_SHIFT);
+    printk("PGDIR_SHIFT is %d\n", PGDIR_SHIFT);
+
+#if defined(CONFIG_AIO)
+    printk("CONFIG_AIO is defined\n");
+#else
+    printk("CONFIG_AIO is not defined\n");
+#endif
+#if defined(CONFIG_MEMCG)
+    printk("CONFIG_MEMCG is defined\n");
+#else
+    printk("CONFIG_MEMCG is not defined\n");
+#endif
+#if defined(CONFIG_MMU_NOTIFIER)
+    printk("CONFIG_MMU_NOTIFIER is defined\n");
+#else
+    printk("CONFIG_MMU_NOTIFIER is not defined\n");
+#endif
+#if defined(CONFIG_TRANSPARENT_HUGEPAGE)
+    printk("CONFIG_TRANSPARENT_HUGEPAGE is defined\n");
+#else
+    printk("CONFIG_TRANSPARENT_HUGEPAGE is not defined\n");
+#endif
+#if defined(CONFIG_CPUMASK_OFFSTACK)
+    printk("CONFIG_CPUMASK_OFFSTACK is defined\n");
+#else
+    printk("CONFIG_CPUMASK_OFFSTACK is not defined\n");
+#endif
+#if defined(CONFIG_COMPACTION)
+    printk("CONFIG_COMPACTION is defined\n");
+#else
+    printk("CONFIG_COMPACTION is not defined\n");
+#endif
+#if defined(CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH)
+    printk("CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH is defined\n");
+#else
+    printk("CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH is not defined\n");
+#endif
+#if defined(CONFIG_X86_INTEL_MPX)
+    printk("CONFIG_X86_INTEL_MPX is defined\n");
+#else
+    printk("CONFIG_X86_INTEL_MPX is not defined\n");
+#endif
+#if defined(CONFIG_HUGETLB_PAGE)
+    printk("CONFIG_HUGETLB_PAGE is defined\n");
+#else
+    printk("CONFIG_HUGETLB_PAGE is not defined\n");
+#endif
+#if defined(USE_SPLIT_PMD_PTLOCKS)
+    printk("USE_SPLIT_PMD_PTLOCKS is %d\n", USE_SPLIT_PMD_PTLOCKS);
+#else
+    printk("USE_SPLIT_PMD_PTLOCKS is not defined\n");
+#endif
+
+
+
     return 0;
 }
 
