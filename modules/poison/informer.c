@@ -1,9 +1,6 @@
-void inform()
-{
-    void* init_task_addr = (void*)0xFFFF000008F92280;
-    printk("you give: %p\n", init_task_addr);
-    printk("i give: %p\n", virt_to_phys(init_task_addr));
 
+void informTaskConfig()
+{
 #if defined(CONFIG_SLOB)
     printk("CONFIG_SLOB is defined\n");
 #else
@@ -269,7 +266,10 @@ void inform()
 #else
     printk("CONFIG_BCACHE_MODULE is not defined\n");
 #endif
+}
 
+void informTaskStructFieldSizes()
+{
     printk("VMACACHE_SIZE is %d\n", VMACACHE_SIZE);
     printk("PIDTYPE_MAX is %d\n", PIDTYPE_MAX);
     printk("perf_nr_task_contexts is %d\n", perf_nr_task_contexts);
@@ -448,15 +448,14 @@ void inform()
     printk("prio should be %d\n", MAX_PRIO-20);
     printk("CPU_MASK_ALL is %X\n", CPU_MASK_ALL);
 
-    void* child_task_addr = (void*)0xFFFF8000060bb2e0;
-    printk("you give: %p\n", child_task_addr);
-    printk("i give: %p\n", virt_to_phys(child_task_addr));
-
     printk("BIT(VA_BITS - 1) is %X\n", BIT(VA_BITS - 1));
     printk("~PAGE_OFFSET is %X\n", ~PAGE_OFFSET);
     printk("PHYS_OFFSET is %X\n", PHYS_OFFSET);
     printk("kimage_voffset is %X\n", kimage_voffset);
+}
 
+void informCredStruct()
+{
     printk("struct cred %ld\n", sizeof(struct cred));
     printk("atomic_t %ld\n", sizeof(atomic_t));
     printk("void * %ld\n", sizeof(void *));
@@ -481,7 +480,10 @@ void inform()
 #else
     printk("CONFIG_SECURITY is not defined\n");
 #endif
+}
 
+void informMMStruct()
+{
     printk("spinlock_t %ld\n", sizeof(spinlock_t));
     printk("struct mm_struct %ld\n", sizeof(struct mm_struct));
     printk("struct rb_root %ld\n", sizeof(struct rb_root));
@@ -499,10 +501,6 @@ void inform()
 #endif
     printk("struct rb_node %ld\n", sizeof(struct rb_node));
     printk("pgprot_t %ld\n", sizeof(pgprot_t));
-
-    printk("PAGE_SHIFT is %d\n", PAGE_SHIFT);
-    printk("PMD_SHIFT is %d\n", PMD_SHIFT);
-    printk("PGDIR_SHIFT is %d\n", PGDIR_SHIFT);
 
 #if defined(CONFIG_AIO)
     printk("CONFIG_AIO is defined\n");
@@ -556,6 +554,189 @@ void inform()
 #endif
 
 
+}
+
+void informAddress()
+{
+    void* init_task_addr = (void*)0xFFFF000008F92280;
+    printk("you give: %p\n", init_task_addr);
+    printk("i give: %p\n", virt_to_phys(init_task_addr));
+    printk("PAGE_SHIFT is %d\n", PAGE_SHIFT);
+    printk("PMD_SHIFT is %d\n", PMD_SHIFT);
+    printk("PGDIR_SHIFT is %d\n", PGDIR_SHIFT);
+}
+
+
+void informTaskStructOffsets()
+{
+    printf("offset of volatile long state \t %d\n", offsetof(struct task_struct, state));	
+    printf("offset of void stack \t %d\n", offsetof(struct task_struct, stack));
+    printf("offset of atomic_t usage \t %d\n", offsetof(struct task_struct, usage));
+    printf("offset of unsigned int flags \t %d\n", offsetof(struct task_struct, flags));	
+    printf("offset of unsigned int ptrace \t %d\n", offsetof(struct task_struct, ptrace));
+    printf("offset of struct llist_node wake_entry \t %d\n", offsetof(struct task_struct, wake_entry));
+    printf("offset of int on_cpu \t %d\n", offsetof(struct task_struct, on_cpu));
+    printf("offset of unsigned int wakee_flips \t %d\n", offsetof(struct task_struct, wakee_flips));
+    printf("offset of unsigned long wakee_flip_decay_ts \t %d\n", offsetof(struct task_struct, wakee_flip_decay_ts));
+    printf("offset of struct task_struct last_wakee \t %d\n", offsetof(struct task_struct, last_wakee));
+    printf("offset of int wake_cpu \t %d\n", offsetof(struct task_struct, wake_cpu));
+    printf("offset of int on_rq \t %d\n", offsetof(struct task_struct, on_rq));
+    printf("offset of int prio \t %d\n", offsetof(struct task_struct, prio));
+    printf("offset of int static_prio \t %d\n", offsetof(struct task_struct, static_prio));
+    printf("offset of int normal_prio \t %d\n", offsetof(struct task_struct, normal_prio));
+    printf("offset of unsigned int rt_priority \t %d\n", offsetof(struct task_struct, rt_priority));
+    printf("offset of const struct sched_class sched_class \t %d\n", offsetof(struct task_struct, sched_class));
+    printf("offset of struct sched_entity se \t %d\n", offsetof(struct task_struct, se));
+    printf("offset of struct sched_rt_entity rt \t %d\n", offsetof(struct task_struct, rt));
+    printf("offset of struct task_group sched_task_group \t %d\n", offsetof(struct task_struct, sched_task_group));
+    printf("offset of struct sched_dl_entity dl \t %d\n", offsetof(struct task_struct, dl));
+    printf("offset of struct hlist_head preempt_notifiers \t %d\n", offsetof(struct task_struct, preempt_notifiers));
+    printf("offset of unsigned int btrace_seq \t %d\n", offsetof(struct task_struct, btrace_seq));
+    printf("offset of unsigned int policy \t %d\n", offsetof(struct task_struct, policy));
+    printf("offset of int nr_cpus_allowed \t %d\n", offsetof(struct task_struct, nr_cpus_allowed));
+    printf("offset of cpumask_t cpus_allowed \t %d\n", offsetof(struct task_struct, cpus_allowed));
+    printf("offset of struct sched_info sched_info \t %d\n", offsetof(struct task_struct, sched_info));
+    printf("offset of struct list_head tasks \t %d\n", offsetof(struct task_struct, tasks));
+    printf("offset of struct plist_node pushable_tasks \t %d\n", offsetof(struct task_struct, pushable_tasks));
+    printf("offset of struct rb_node pushable_dl_tasks \t %d\n", offsetof(struct task_struct, pushable_dl_tasks));
+    printf("offset of struct mm_struct mm \t %d\n", offsetof(struct task_struct, mm));
+    printf("offset of struct mm_struct active_mm \t %d\n", offsetof(struct task_struct, active_mm));
+    printf("offset of u64 vmacache_seqnum \t %d\n", offsetof(struct task_struct, vmacache_seqnum));
+    printf("offset of struct vm_area_struct vmacache1 \t %d\n", offsetof(struct task_struct, vmacache1));
+    printf("offset of struct vm_area_struct vmacache2 \t %d\n", offsetof(struct task_struct, vmacache2));
+    printf("offset of struct vm_area_struct vmacache3 \t %d\n", offsetof(struct task_struct, vmacache3));
+    printf("offset of struct vm_area_struct vmacache4 \t %d\n", offsetof(struct task_struct, vmacache4));
+    printf("offset of struct task_rss_stat rss_stat \t %d\n", offsetof(struct task_struct, rss_stat));
+    printf("offset of int exit_state \t %d\n", offsetof(struct task_struct, exit_state));
+    printf("offset of int exit_code \t %d\n", offsetof(struct task_struct, exit_code));
+    printf("offset of int exit_signal \t %d\n", offsetof(struct task_struct, exit_signal));
+    printf("offset of int pdeath_signal \t %d\n", offsetof(struct task_struct, pdeath_signal));  
+    printf("offset of unsigned long jobctl \t %d\n", offsetof(struct task_struct, jobctl));	
+    printf("offset of unsigned int personality \t %d\n", offsetof(struct task_struct, personality));
+    printf("offset of unsigned int bits1 \t %d\n", offsetof(struct task_struct, bits1));
+    printf("offset of unsigned int bits2 \t %d\n", offsetof(struct task_struct, bits2));
+    printf("offset of unsigned long atomic_flags \t %d\n", offsetof(struct task_struct, atomic_flags)); 
+    printf("offset of struct restart_block restart_block \t %d\n", offsetof(struct task_struct, restart_block));
+    printf("offset of pid_t pid \t %d\n", offsetof(struct task_struct, pid));
+    printf("offset of pid_t tgid \t %d\n", offsetof(struct task_struct, tgid));
+    printf("offset of unsigned long stack_canary \t %d\n", offsetof(struct task_struct, stack_canary));
+    printf("offset of struct task_struct __rcu real_parent \t %d\n", offsetof(struct task_struct, real_parent)); 
+    printf("offset of struct task_struct __rcu parent \t %d\n", offsetof(struct task_struct, parent)); 
+    printf("offset of struct list_head children \t %d\n", offsetof(struct task_struct, children));	
+    printf("offset of struct list_head sibling \t %d\n", offsetof(struct task_struct, sibling));	
+    printf("offset of struct task_struct group_leader \t %d\n", offsetof(struct task_struct, group_leader));	
+    printf("offset of struct list_head ptraced \t %d\n", offsetof(struct task_struct, ptraced));
+    printf("offset of struct list_head ptrace_entry \t %d\n", offsetof(struct task_struct, ptrace_entry));
+    printf("offset of struct pid_link pids1 \t %d\n", offsetof(struct task_struct, pids1));
+    printf("offset of struct pid_link pids2 \t %d\n", offsetof(struct task_struct, pids2));
+    printf("offset of struct pid_link pids3 \t %d\n", offsetof(struct task_struct, pids3));
+    printf("offset of struct list_head thread_group \t %d\n", offsetof(struct task_struct, thread_group));
+    printf("offset of struct list_head thread_node \t %d\n", offsetof(struct task_struct, thread_node));
+    printf("offset of struct completion vfork_done \t %d\n", offsetof(struct task_struct, vfork_done));		
+    printf("offset of int __user set_child_tid \t %d\n", offsetof(struct task_struct, set_child_tid));		
+    printf("offset of int __user clear_child_tid \t %d\n", offsetof(struct task_struct, clear_child_tid));		
+    printf("offset of cputime_t utime \t %d\n", offsetof(struct task_struct, utime));
+    printf("offset of cputime_t stime \t %d\n", offsetof(struct task_struct, stime));
+    printf("offset of cputime_t utimescaled \t %d\n", offsetof(struct task_struct, utimescaled));
+    printf("offset of cputime_t stimescaled \t %d\n", offsetof(struct task_struct, stimescaled));
+    printf("offset of cputime_t gtime \t %d\n", offsetof(struct task_struct, gtime));
+    printf("offset of struct prev_cputime prev_cputime \t %d\n", offsetof(struct task_struct, prev_cputime));
+    printf("offset of unsigned long nvcsw \t %d\n", offsetof(struct task_struct, nvcsw)); 
+    printf("offset of unsigned long nivcsw \t %d\n", offsetof(struct task_struct, nivcsw)); 
+    printf("offset of u64 start_time \t %d\n", offsetof(struct task_struct, start_time));		
+    printf("offset of u64 real_start_time \t %d\n", offsetof(struct task_struct, real_start_time));	
+    printf("offset of unsigned long min_flt \t %d\n", offsetof(struct task_struct, min_flt));
+    printf("offset of unsigned long maj_flt \t %d\n", offsetof(struct task_struct, maj_flt));
+    printf("offset of struct task_cputime cputime_expires \t %d\n", offsetof(struct task_struct, cputime_expires));
+    printf("offset of struct list_head cpu_timers1 \t %d\n", offsetof(struct task_struct, cpu_timers1));
+    printf("offset of struct list_head cpu_timers2 \t %d\n", offsetof(struct task_struct, cpu_timers2));
+    printf("offset of struct list_head cpu_timers3 \t %d\n", offsetof(struct task_struct, cpu_timers3));
+    printf("offset of const struct cred __rcu ptracer_cred \t %d\n", offsetof(struct task_struct, ptracer_cred)); 
+    printf("offset of const struct cred __rcu real_cred \t %d\n", offsetof(struct task_struct, real_cred));
+    printf("offset of const struct cred __rcu cred \t %d\n", offsetof(struct task_struct, cred));
+    printf("offset of char comm \t %d\n", offsetof(struct task_struct, comm));
+    printf("offset of struct nameidata nameidata \t %d\n", offsetof(struct task_struct, nameidata));
+    printf("offset of struct sysv_sem sysvsem \t %d\n", offsetof(struct task_struct, sysvsem));
+    printf("offset of struct sysv_shm sysvshm \t %d\n", offsetof(struct task_struct, sysvshm));
+    printf("offset of unsigned long last_switch_count \t %d\n", offsetof(struct task_struct, last_switch_count));
+    printf("offset of struct fs_struct fs \t %d\n", offsetof(struct task_struct, fs));
+    printf("offset of struct files_struct files \t %d\n", offsetof(struct task_struct, files));
+    printf("offset of struct nsproxy nsproxy \t %d\n", offsetof(struct task_struct, nsproxy));
+    printf("offset of struct signal_struct signal \t %d\n", offsetof(struct task_struct, signal));
+    printf("offset of struct sighand_struct sighand \t %d\n", offsetof(struct task_struct, sighand));
+    printf("offset of sigset_t blocked \t %d\n", offsetof(struct task_struct, blocked));
+    printf("offset of sigset_t real_blocked \t %d\n", offsetof(struct task_struct, real_blocked));
+    printf("offset of sigset_t saved_sigmask \t %d\n", offsetof(struct task_struct, saved_sigmask));	
+    printf("offset of struct sigpending pending \t %d\n", offsetof(struct task_struct, pending));
+    printf("offset of unsigned long sas_ss_sp \t %d\n", offsetof(struct task_struct, sas_ss_sp));
+    printf("offset of size_t sas_ss_size \t %d\n", offsetof(struct task_struct, sas_ss_size));
+    printf("offset of unsigned sas_ss_flags \t %d\n", offsetof(struct task_struct, sas_ss_flags));
+    printf("offset of struct callback_head task_works \t %d\n", offsetof(struct task_struct, task_works));
+    printf("offset of struct audit_context audit_context \t %d\n", offsetof(struct task_struct, audit_context));
+    printf("offset of kuid_t loginuid \t %d\n", offsetof(struct task_struct, loginuid));
+    printf("offset of unsigned int sessionid \t %d\n", offsetof(struct task_struct, sessionid));
+    printf("offset of struct seccomp seccomp \t %d\n", offsetof(struct task_struct, seccomp));
+    printf("offset of u64 parent_exec_id \t %d\n", offsetof(struct task_struct, parent_exec_id));
+    printf("offset of u64 self_exec_id \t %d\n", offsetof(struct task_struct, self_exec_id));
+    printf("offset of spinlock_t alloc_lock \t %d\n", offsetof(struct task_struct, alloc_lock));
+    printf("offset of raw_spinlock_t pi_lock \t %d\n", offsetof(struct task_struct, pi_lock));
+    printf("offset of struct wake_q_node wake_q \t %d\n", offsetof(struct task_struct, wake_q));
+    printf("offset of struct rb_root pi_waiters \t %d\n", offsetof(struct task_struct, pi_waiters));
+    printf("offset of struct rb_node pi_waiters_leftmost \t %d\n", offsetof(struct task_struct, pi_waiters_leftmost));
+    printf("offset of struct rt_mutex_waiter pi_blocked_on \t %d\n", offsetof(struct task_struct, pi_blocked_on));
+    printf("offset of void journal_info \t %d\n", offsetof(struct task_struct, journal_info));
+    printf("offset of struct bio_list bio_list \t %d\n", offsetof(struct task_struct, bio_list));
+    printf("offset of struct blk_plug plug \t %d\n", offsetof(struct task_struct, plug));
+    printf("offset of struct reclaim_state reclaim_state \t %d\n", offsetof(struct task_struct, reclaim_state));
+    printf("offset of struct backing_dev_info backing_dev_info \t %d\n", offsetof(struct task_struct, backing_dev_info));
+    printf("offset of struct io_context io_context \t %d\n", offsetof(struct task_struct, io_context));
+    printf("offset of unsigned long ptrace_message \t %d\n", offsetof(struct task_struct, ptrace_message));
+    printf("offset of siginfo_t last_siginfo \t %d\n", offsetof(struct task_struct, last_siginfo)); 
+    printf("offset of struct task_io_accounting ioac \t %d\n", offsetof(struct task_struct, ioac));
+    printf("offset of u64 acct_rss_mem1 \t %d\n", offsetof(struct task_struct, acct_rss_mem1));	
+    printf("offset of u64 acct_vm_mem1 \t %d\n", offsetof(struct task_struct, acct_vm_mem1));	
+    printf("offset of cputime_t acct_timexpd \t %d\n", offsetof(struct task_struct, acct_timexpd));	
+    printf("offset of nodemask_t mems_allowed \t %d\n", offsetof(struct task_struct, mems_allowed));	
+    printf("offset of seqcount_t mems_allowed_seq \t %d\n", offsetof(struct task_struct, mems_allowed_seq));	
+    printf("offset of int cpuset_mem_spread_rotor \t %d\n", offsetof(struct task_struct, cpuset_mem_spread_rotor));
+    printf("offset of int cpuset_slab_spread_rotor \t %d\n", offsetof(struct task_struct, cpuset_slab_spread_rotor));
+    printf("offset of struct css_set __rcu cgroups \t %d\n", offsetof(struct task_struct, cgroups));
+    printf("offset of struct list_head cg_list \t %d\n", offsetof(struct task_struct, cg_list));
+    printf("offset of struct robust_list_head __user robust_list \t %d\n", offsetof(struct task_struct, robust_list));
+    printf("offset of struct compat_robust_list_head __user compat_robust_list \t %d\n", offsetof(struct task_struct, compat_robust_list));
+    printf("offset of struct list_head pi_state_list \t %d\n", offsetof(struct task_struct, pi_state_list));
+    printf("offset of struct futex_pi_state pi_state_cache \t %d\n", offsetof(struct task_struct, pi_state_cache));
+    printf("offset of struct mutex futex_exit_mutex \t %d\n", offsetof(struct task_struct, futex_exit_mutex));
+    printf("offset of unsigned int futex_state \t %d\n", offsetof(struct task_struct, futex_state));
+    printf("offset of struct perf_event_context perf_event_ctxp1 \t %d\n", offsetof(struct task_struct, perf_event_ctxp1));
+    printf("offset of struct perf_event_context perf_event_ctxp2 \t %d\n", offsetof(struct task_struct, perf_event_ctxp2));
+    printf("offset of struct mutex perf_event_mutex \t %d\n", offsetof(struct task_struct, perf_event_mutex));
+    printf("offset of struct list_head perf_event_list \t %d\n", offsetof(struct task_struct, perf_event_list));
+    printf("offset of struct rcu_head rcu \t %d\n", offsetof(struct task_struct, rcu));
+    printf("offset of struct pipe_inode_info splice_pipe \t %d\n", offsetof(struct task_struct, splice_pipe));
+    printf("offset of struct page_frag task_frag \t %d\n", offsetof(struct task_struct, task_frag));
+    printf("offset of struct task_delay_info delays \t %d\n", offsetof(struct task_struct, delays));
+    printf("offset of int nr_dirtied \t %d\n", offsetof(struct task_struct, nr_dirtied));
+    printf("offset of int nr_dirtied_pause \t %d\n", offsetof(struct task_struct, nr_dirtied_pause));
+    printf("offset of unsigned long dirty_paused_when \t %d\n", offsetof(struct task_struct, dirty_paused_when)); 
+    printf("offset of u64 timer_slack_ns \t %d\n", offsetof(struct task_struct, timer_slack_ns));
+    printf("offset of u64 default_timer_slack_ns \t %d\n", offsetof(struct task_struct, default_timer_slack_ns));
+    printf("offset of int curr_ret_stack \t %d\n", offsetof(struct task_struct, curr_ret_stack));
+    printf("offset of struct ftrace_ret_stack ret_stack \t %d\n", offsetof(struct task_struct, ret_stack));
+    printf("offset of unsigned long long ftrace_timestamp \t %d\n", offsetof(struct task_struct, ftrace_timestamp));
+    printf("offset of atomic_t trace_overrun \t %d\n", offsetof(struct task_struct, trace_overrun));
+    printf("offset of atomic_t tracing_graph_pause \t %d\n", offsetof(struct task_struct, tracing_graph_pause));
+    printf("offset of unsigned long trace \t %d\n", offsetof(struct task_struct, trace));
+    printf("offset of unsigned long trace_recursion \t %d\n", offsetof(struct task_struct, trace_recursion));
+    printf("offset of struct mem_cgroup memcg_in_oom \t %d\n", offsetof(struct task_struct, memcg_in_oom));
+    printf("offset of gfp_t memcg_oom_gfp_mask \t %d\n", offsetof(struct task_struct, memcg_oom_gfp_mask));
+    printf("offset of int memcg_oom_order \t %d\n", offsetof(struct task_struct, memcg_oom_order));
+    printf("offset of unsigned int memcg_nr_pages_over_high \t %d\n", offsetof(struct task_struct, memcg_nr_pages_over_high));
+    printf("offset of unsigned int sequential_io \t %d\n", offsetof(struct task_struct, sequential_io));
+    printf("offset of unsigned int sequential_io_avg \t %d\n", offsetof(struct task_struct, sequential_io_avg));
+    printf("offset of int pagefault_disabled \t %d\n", offsetof(struct task_struct, pagefault_disabled));
+    printf("offset of struct task_struct oom_reaper_list \t %d\n", offsetof(struct task_struct, oom_reaper_list));
+    printf("offset of struct thread_struct thread \t %d\n", offsetof(struct task_struct, thread));
 
     return 0;
 }
