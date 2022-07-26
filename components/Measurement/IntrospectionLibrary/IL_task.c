@@ -5,7 +5,7 @@
  * 21 July 2022
  */
 
-#include "IL_Struct_Interp.c"
+#include "IL_struct_interp.c"
 
 struct cred {
     int usage;
@@ -147,7 +147,7 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
     void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags)
     {
 
-        /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
+        printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]);
         /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
         /* printf("vm_next\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[2]); */
         /* printf("vm_prev\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[3]); */
@@ -171,10 +171,31 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
         uint64_t flags;
         InterpVMA(vma, &start, &size, &next, &flags);
 
-        printf("start: %p\n", start);
-        printf("size: %016X\n", size);
-        printf("Next: %p\n", next);
-        printf("Flags: %016X\n", flags);
+        printf("start:\t\t%p\n", start);
+        printf("size:\t\t%016X\n", size);
+        /* printf("Next: %p\n", next); */
+        /* printf("Flags: %016X\n", flags); */
+
+        if(start == 0x7c7000)
+        {
+            // TODO
+            // Why does this have the ELF magic number header ?
+            for(int i=0; i<4096; i++)
+            {
+                if(i%32==0&&i>0){printf("\n");}
+                if(i%8==0&&i%32!=0){printf(" ");}
+                char head = ((char*)memdev+start)[i];
+                if(31 < head && head < 128)
+                {
+                    printf("%c", ((char*)memdev+start)[i]);
+                }
+                else
+                {
+                    printf("%02X", ((char*)memdev+start)[i]);
+                }
+            }
+            printf("\n");
+        }
         
         if(start + size < 0x8000000)
         {
@@ -189,7 +210,7 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
             printf("\n");
         }
 
-        printf("\n");
+        /* printf("\n"); */
         if(next != 0)
         {
             CrawlVMAs(next);

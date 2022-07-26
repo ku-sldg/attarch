@@ -14,6 +14,6 @@
 #define LIST_HEAD_ADDR 0xFB61E0
 #define INIT_TASK_ADDR 0xF92280
 
-#include "IL_Utils.c"
-#include "IL_Kernel_Modules.c"
-#include "IL_Tasks.c"
+#include "IL_utils.c"
+#include "IL_kernel_modules.c"
+#include "IL_task.c"
