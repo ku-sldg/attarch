@@ -7,7 +7,7 @@
 #include <string.h>
 #include <camkes.h>
 #include <Hacl_Hash.h>
-#include "IntrospectionLibrary/IL_Library.c"
+#include "IntrospectionLibrary/IL_library.c"
 #include "appraisal.c"
 
 void PrintDigest(uint8_t* digest, char* name)
