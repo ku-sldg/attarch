@@ -73,8 +73,8 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     {
         printf("%c", name[j]);
     }
-    */
     printf("\n");
+    */
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead((int)inputAddress);
     uint64_t basePtr = TranslationTableWalk(thisModuleLayout.base);

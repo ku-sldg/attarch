@@ -45,7 +45,18 @@ struct TaskMeasurement
     uint32_t flags;
     struct cred cred;
     struct intro_mm_struct memory_info;
+    char rodataDigest[64];
 };
+void PrintTaskEvidence(struct TaskMeasurement* msmt)
+{
+    char myPid[10];
+    sprintf(myPid, "%ld", msmt->myPid);
+    char parentPid[10];
+    sprintf(parentPid, "%ld", msmt->parentPid);
+    char suid[10];
+    sprintf(suid, "%d", msmt->cred.suid);
+    introLog(9, "Task Evidence:\n\tName: ", msmt->name, "\n\tPID: ", &myPid, "\n\tParent PID: ", &parentPid, "\n\tSUID: ", &suid, "\n");
+}
 
 void GetTaskName(uint64_t task, char* name)
 {
@@ -98,8 +109,8 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
         if(i%8==0){printf(" ");}
         printf("%02X", ((char*)memdev+mm)[i]);
     }
-    */
     printf("\n");
+    */
 
     uint64_t start_code = ((uint64_t*)((char*)memdev+mm+232))[0];
     uint64_t end_code = ((uint64_t*)((char*)memdev+mm+232))[1];
@@ -127,8 +138,8 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
 
     uint64_t stPaddr = TranslationTableWalkSuppliedPGD(start_code, pgdPaddr);
 
-    printf("size %ld\n", end_code-start_code);
     /*
+    printf("size %ld\n", end_code-start_code);
     for(int i=0; i<end_code-start_code; i++)
     {
         printf("%X", ((char*)memdev+stPaddr)[i]);
@@ -364,17 +375,6 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
         CrawlProcesses(mySibling, task, results, ++taskID);
     }
     CrawlProcesses(myChild, myChild, results, ++taskID);
-}
-
-void PrintTaskEvidence(struct TaskMeasurement* msmt)
-{
-    char myPid[10];
-    sprintf(myPid, "%ld", msmt->myPid);
-    char parentPid[10];
-    sprintf(parentPid, "%ld", msmt->parentPid);
-    char suid[10];
-    sprintf(suid, "%d", msmt->cred.suid);
-    introLog(9, "Task Evidence:\n\tName: ", msmt->name, "\n\tPID: ", &myPid, "\n\tParent PID: ", &parentPid, "\n\tSUID: ", &suid, "\n");
 }
 
 void MeasureProcesses()
