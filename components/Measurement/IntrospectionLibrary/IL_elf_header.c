@@ -215,24 +215,15 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd)
         struct elf64shdr thisShdr = CollectSectionHeader(sectionPtr, elf->RamOffset);
         /* PrintSectionHeaderData(&thisShdr, false); */
         sectionPtr+=elf->e_shentsize;
-
         if(IsThisTheHeaderName(elf, &thisShdr, shstrtabPtr, ".rodata"))
         {
             uint64_t sectionFileOffset = thisShdr.sh_offset;
             uint64_t sectionVaddr = thisShdr.sh_addr;
             uint64_t sectionPaddr = TranslationTableWalkSuppliedPGD(sectionVaddr, pgd);
-
-            uint8_t codeDigest[64];
-            Hacl_Hash_SHA2_hash_512( ((char*)memdev+sectionPaddr), thisShdr.sh_size, &codeDigest );
+            uint8_t rodataDigest[64];
+            HashMeasure( ((char*)memdev+sectionPaddr), thisShdr.sh_size, &rodataDigest );
             printf("ELF .rodata section digest is:\n");
-            for(int i=0; i<64; i++)
-            {
-                if(i%32==0&&i!=0){printf("\n");}
-                if(i%8==0&&i!=0){printf(" ");}
-                printf("%02X", codeDigest[i]);
-            }
-            printf("\n");
-
+            PrintDigest(&rodataDigest);
         }
     }
 }

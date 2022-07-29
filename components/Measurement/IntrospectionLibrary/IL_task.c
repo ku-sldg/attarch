@@ -137,15 +137,9 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
     */
 
     uint8_t codeDigest[64];
-    Hacl_Hash_SHA2_hash_512( ((char*)memdev+stPaddr), end_code-start_code, &codeDigest);
+    HashMeasure( ((char*)memdev+stPaddr), end_code-start_code, &codeDigest);
     printf("mm_struct \"code\" digest is:\n");
-    for(int i=0; i<64; i++)
-    {
-        if(i%32==0&&i!=0){printf("\n");};
-        if(i%8==0&&i!=0){printf(" ");}
-        printf("%02X", codeDigest[i]);
-    }
-    printf("\n");
+    PrintDigest(&codeDigest);
 
     void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags)
     {
@@ -205,22 +199,16 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
             /* printf("\n"); */
 
             uint8_t thisAreaDigest[64];
-            Hacl_Hash_SHA2_hash_512( ((char*)memdev+start), size, &thisAreaDigest);
+            HashMeasure( ((char*)memdev+start), size, &thisAreaDigest);
             printf("ELF header digest is:\n");
-            for(int i=0; i<64; i++)
-            {
-                if(i%32==0&&i>0){printf("\n");}
-                if(i%8==0&&i%32!=0){printf(" ");}
-                printf("%02X", thisAreaDigest[i]);
-            }
-            printf("\n");
-
+            PrintDigest(&thisAreaDigest);
         }
         
         /* if(start + size < 0x8000000) */
         /* { */
         /*     uint8_t thisAreaDigest[64]; */
-        /*     Hacl_Hash_SHA2_hash_512( ((char*)memdev+start), size, &thisAreaDigest); */
+        /*     HashMeasure( ((char*)memdev+start), size, &thisAreaDigest); */
+        /*     PrintDigest(&thisAreaDigest); */
         /*     for(int i=0; i<64; i++) */
         /*     { */
         /*         if(i%32==0&&i>0){printf("\n");} */

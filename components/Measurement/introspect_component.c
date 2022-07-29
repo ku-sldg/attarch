@@ -4,29 +4,10 @@
  * 11 July 2022
  */
 
-#include <string.h>
 #include <camkes.h>
-#include <Hacl_Hash.h>
+#include "hash.h"
 #include "IntrospectionLibrary/IL_library.c"
 #include "appraisal.c"
-
-void PrintDigest(uint8_t* digest, char* name)
-{
-    printf("Module Name: %s\nModule Rodata Digest:\n", name);
-    for(int i=0; i<64; i++)
-    {
-        //if(i>0&&i%16==0){printf("\n");}
-        printf("%02X", digest[i]);
-    }
-    printf("\n");
-}
-
-void ShaTest()
-{
-    uint8_t* output = malloc(64);
-    Hacl_Hash_SHA2_hash_512("abc", 3, output);
-    PrintDigest(output, "abc");
-}
 
 int run(void)
 {
@@ -50,8 +31,8 @@ int run(void)
         {
             if(IsThisAValidModuleMeasurement(module_names[i]))
             {
-                PrintDigest(module_digests[i], module_names[i]);
-                printf("\n");
+                printf("module name: %s\nmodule_digest:\n", module_names[i]);
+                PrintDigest(module_digests[i]);
             }
         }
 
