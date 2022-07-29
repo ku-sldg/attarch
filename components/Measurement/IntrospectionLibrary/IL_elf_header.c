@@ -9,7 +9,6 @@
 /* https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html */
 /* https://web.mit.edu/freebsd/head/sys/sys/elf64.h */
 
-
 struct elf64header {
     uint64_t      RamOffset;
     unsigned char   e_ident[16];
@@ -202,7 +201,7 @@ void PrintElfHeaderData(struct elf64header* header)
     printf("shstrndx: %d\n", header->e_shstrndx);
 }
 
-void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd)
+void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests, int* dPtr)
 {
     uint64_t shstrtabHdrPtr = elf->RamOffset
                             + elf->e_shoff
@@ -221,16 +220,20 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd)
             uint64_t sectionVaddr = thisShdr.sh_addr;
             uint64_t sectionPaddr = TranslationTableWalkSuppliedPGD(sectionVaddr, pgd);
             uint8_t rodataDigest[64];
-            HashMeasure( ((char*)memdev+sectionPaddr), thisShdr.sh_size, &rodataDigest );
-            printf("ELF .rodata section digest is:\n");
-            PrintDigest(&rodataDigest);
+            HashMeasure( ((char*)memdev+sectionPaddr), thisShdr.sh_size, digests+(64*(*dPtr)) );
+            /* printf("ELF .rodata section digest is:\n"); */
+            /* PrintDigest(digests+(64*(*dPtr))); */
+            /* int scanHead = sectionPaddr; */
+            /* introspectScanMaybeChar(&scanHead, thisShdr.sh_size, "rodata: "); */
+            /* printf("Wow, that rodata size was %d\n", thisShdr.sh_size); */
+            *dPtr = *dPtr + 1;
         }
     }
 }
 
-void InterpretElfHeader(uint64_t elfAddr, uint64_t pgd)
+void InterpretElfHeader(uint64_t elfAddr, uint64_t pgd, uint8_t* rodataDigestList, int* rodataDigestListPtr)
 {
     struct elf64header elf = CollectElfHeaderData(elfAddr);
     /* PrintElfHeaderData(&elf); */
-    CrawlSectionHeaders(&elf, pgd);
+    CrawlSectionHeaders(&elf, pgd, rodataDigestList, rodataDigestListPtr);
 }

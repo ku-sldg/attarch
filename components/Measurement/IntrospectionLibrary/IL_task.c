@@ -32,10 +32,6 @@ struct intro_mm_struct {
     uint64_t env_end;
 };
 
-struct memory_evidence {
-    uint64_t ptr;    
-};
-
 struct TaskMeasurement
 {
     char name[16];
@@ -44,7 +40,6 @@ struct TaskMeasurement
     uint32_t parentPid;
     uint32_t flags;
     struct cred cred;
-    struct intro_mm_struct memory_info;
     char rodataDigest[64];
 };
 void PrintTaskEvidence(struct TaskMeasurement* msmt)
@@ -55,7 +50,17 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     sprintf(parentPid, "%ld", msmt->parentPid);
     char suid[10];
     sprintf(suid, "%d", msmt->cred.suid);
-    introLog(9, "Task Evidence:\n\tName: ", msmt->name, "\n\tPID: ", &myPid, "\n\tParent PID: ", &parentPid, "\n\tSUID: ", &suid, "\n");
+    introLog(9,
+        "Task Evidence:\n\tName: ",
+        msmt->name,
+        "\n\tPID: ",
+        &myPid,
+        "\n\tParent PID: ",
+        &parentPid,
+        "\n\tSUID: ",
+        &suid,
+        "\n\tRead-only Data SHA512 Digest:\n");
+    PrintDigest(msmt->rodataDigest);
 }
 
 void GetTaskName(uint64_t task, char* name)
@@ -91,66 +96,58 @@ bool ValidateTaskStruct(uint64_t task)
     return true;
 }
 
-void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
+void InterpretMemory(uint64_t task, uint8_t* rodataDigest)
 {
+    /* There probably won't be more than 100 rodata sections? */
+    uint8_t rodataDigests[64 * 100];
+    int numRodataDigests = 0;
 
     uint64_t mmAddrLoc = task + 1024;
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
     //printf("retrieved mm_struct addr %p\n", mmAddr);
     uint64_t mm = GetPhysAddr(mmAddr);
+
     uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
     uint64_t mmap = GetPhysAddr(mmapAddr);
 
-    /*
-    ** Print out the whole mm_struct
-    for(int i=0; i<272+88; i++)
-    {
-        if(i%48==0){printf("\n");}
-        if(i%8==0){printf(" ");}
-        printf("%02X", ((char*)memdev+mm)[i]);
-    }
-    printf("\n");
-    */
+    /* // Print out the whole mm_struct */
+    /* for(int i=0; i<272+88; i++) */
+    /* { */
+    /*     if(i%48==0){printf("\n");} */
+    /*     if(i%8==0){printf(" ");} */
+    /*     printf("%02X", ((char*)memdev+mm)[i]); */
+    /* } */
+    /* printf("\n"); */
 
-    uint64_t start_code = ((uint64_t*)((char*)memdev+mm+232))[0];
-    uint64_t end_code = ((uint64_t*)((char*)memdev+mm+232))[1];
-    uint64_t start_data = ((uint64_t*)((char*)memdev+mm+232))[2];
-    uint64_t end_data = ((uint64_t*)((char*)memdev+mm+232))[3];
+    /* uint64_t start_code = ((uint64_t*)((char*)memdev+mm+232))[0]; */
+    /* uint64_t end_code = ((uint64_t*)((char*)memdev+mm+232))[1]; */
+    /* uint64_t start_data = ((uint64_t*)((char*)memdev+mm+232))[2]; */
+    /* uint64_t end_data = ((uint64_t*)((char*)memdev+mm+232))[3]; */
 
-    /*
-    printf("\tstart code: %p\n\tend code: %p\n", start_code, end_code);
-    printf("\tstart data vaddr: %p\n\tend data: %p\n", start_data, end_data);
     
-    uint64_t start_vm = ((uint64_t*)((char*)memdev+mmap))[0];
-    uint64_t end_vm = ((uint64_t*)((char*)memdev+mmap))[1];
-    printf("\tstart vm: %p\n\tend vm: %p\n", start_vm, end_vm);
-
-    uint64_t startData = GetPhysAddr(start_data);
-    printf("\tstart data: %lu\n", startData);
-    introspectScanMaybeChar(startData, end_data-start_data, "Task Data: ");
-    */
-
-
-    uint64_t mmap_base = ((uint64_t*)((char*)memdev+mm+32))[0];
+    /* printf("\tstart code: %p\n\tend code: %p\n", start_code, end_code); */
+    /* printf("\tstart data vaddr: %p\n\tend data: %p\n", start_data, end_data); */
+    /* uint64_t start_vm = ((uint64_t*)((char*)memdev+mmap))[0]; */
+    /* uint64_t end_vm = ((uint64_t*)((char*)memdev+mmap))[1]; */
+    /* printf("\tstart vm: %p\n\tend vm: %p\n", start_vm, end_vm); */
+    /* uint64_t startData = GetPhysAddr(start_data); */
+    /* printf("\tstart data: %lu\n", startData); */
+    /* introspectScanMaybeChar(startData, end_data-start_data, "Task Data: "); */
 
     uint64_t pgdVaddr = ((uint64_t*)((char*)memdev+mm+64))[0];
     uint64_t pgdPaddr = GetPhysAddr(pgdVaddr);
 
-    uint64_t stPaddr = TranslationTableWalkSuppliedPGD(start_code, pgdPaddr);
-
-    /*
-    printf("size %ld\n", end_code-start_code);
-    for(int i=0; i<end_code-start_code; i++)
-    {
-        printf("%X", ((char*)memdev+stPaddr)[i]);
-    }
-    printf("\n");
-    */
-
-    uint8_t codeDigest[64];
-    HashMeasure( ((char*)memdev+stPaddr), end_code-start_code, &codeDigest);
-    printf("mm_struct \"code\" digest is:\n");
-    PrintDigest(&codeDigest);
+    /* uint64_t stPaddr = TranslationTableWalkSuppliedPGD(start_code, pgdPaddr); */
+    /* printf("size %ld\n", end_code-start_code); */
+    /* for(int i=0; i<end_code-start_code; i++) */
+    /* { */
+    /*     printf("%X", ((char*)memdev+stPaddr)[i]); */
+    /* } */
+    /* printf("\n"); */
+    /* uint8_t codeDigest[64]; */
+    /* HashMeasure( ((char*)memdev+stPaddr), end_code-start_code, &codeDigest); */
+    /* printf("mm_struct \"code\" digest is:\n"); */
+    /* PrintDigest(&codeDigest); */
 
     void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags)
     {
@@ -191,7 +188,7 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
         {
 
             /* printf("Found elf header!\n"); */
-            InterpretElfHeader(start, pgdPaddr);
+            InterpretElfHeader(start, pgdPaddr, &rodataDigests, &numRodataDigests);
 
             /* for(int i=0; i<4096; i++) */
             /* { */
@@ -209,10 +206,11 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
             /* } */
             /* printf("\n"); */
 
-            uint8_t thisAreaDigest[64];
-            HashMeasure( ((char*)memdev+start), size, &thisAreaDigest);
-            printf("ELF header digest is:\n");
-            PrintDigest(&thisAreaDigest);
+            /* uint8_t thisAreaDigest[64]; */
+            /* HashMeasure( ((char*)memdev+start), size, &thisAreaDigest); */
+            /* printf("ELF header digest is:\n"); */
+            /* PrintDigest(&thisAreaDigest); */
+
         }
         
         /* if(start + size < 0x8000000) */
@@ -237,9 +235,8 @@ void InterpretMemory(uint64_t task, struct intro_mm_struct* mem_info)
     }
 
     CrawlVMAs(mmap);
-
-    /*
-    */
+    HashHashes(&rodataDigests, numRodataDigests, rodataDigest);
+    printf("We hashed %d rodata sections. Then we hashed their ordered concatentation.\n", numRodataDigests);
 
     /*
     uint64_t head = mm;
@@ -358,10 +355,13 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     GetPIDs(task, &results[taskID].myPid, &results[taskID].parentPid);
     InterpretCred(task, &results[taskID].cred);
 
+    /* printf("interp mem for %s\n", &results[taskID].name); */
+    /* InterpretMemory(task, &results[taskID].rodataDigest); */
+
     if(strcmp(&results[taskID].name, "useram")==0)
     {
         //ScanTaskStruct(task);
-        InterpretMemory(task, &results[taskID].memory_info);
+        InterpretMemory(task, &results[taskID].rodataDigest);
     }
 
     // prepare to crawl
