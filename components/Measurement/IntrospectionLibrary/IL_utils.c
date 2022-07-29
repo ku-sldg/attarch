@@ -186,12 +186,21 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
 
 uint64_t GetPhysAddr(uint64_t virt)
 {
-    uint64_t out = intro_virt_to_phys(virt);
-    if(out > 0x8001000)
+    uint64_t out1 = intro_virt_to_phys(virt);
+    uint64_t out2 = TranslationTableWalk(virt);
+    if(out1 > 0x8001000 && out2 < 0x8001000)
     {
-        return TranslationTableWalk(virt);
+        return out2;
     }
-    return out;
+    if(out2 > 0x8001000 && out1 < 0x8001000)
+    {
+        return out1;
+    }
+    // TODO how to tell the difference between a kernel vaddr and a user vaddr?
+    // Not sure if we ever get here, but maybe there's a way to tell from the
+    // address itself?
+    printf("\n\nERROR: I'm not sure how to decode that vaddr...\n\n");
+    return 0;
 }
 
 void introspectScan(int* head, int size, char* name)

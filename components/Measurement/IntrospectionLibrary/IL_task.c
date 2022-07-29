@@ -96,7 +96,61 @@ bool ValidateTaskStruct(uint64_t task)
     return true;
 }
 
-bool InterpretMemory(uint64_t task, uint8_t* rodataDigest)
+void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr, bool isKernelTask)
+{
+    /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
+    /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
+    /* printf("vm_next\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[2]); */
+    /* printf("vm_prev\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[3]); */
+    /* printf("vm_rb\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[4]); */
+    /* printf("rb_subtree_gap\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[7]); */
+    /* printf("vm_mm\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[8]); */
+    /* printf("page_prot\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[9]); */
+    /* printf("page_flags\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[10]); */
+
+    uint64_t vm_start = ((uint64_t*)((char*)memdev+vma))[0];
+    /* printf("before interpvma translate\n"); */
+    //TODO
+    /* uint64_t test = isKernelTask ? intro_virt_to_phys(vm_start) : TranslationTableWalk(vm_start); */
+    /* uint64_t test = GetPhysAddr(vm_start); */
+    /* printf("middle interpvma translate\n"); */
+    *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
+    /* printf("after interpvma translate\n"); */
+    *size = ((uint64_t*)((char*)memdev+vma))[1] - ((uint64_t*)((char*)memdev+vma))[0];
+    uint64_t nextVaddr = ((uint64_t*)((char*)memdev+vma))[2];
+    //TODO
+    /* *next = GetPhysAddr(nextVaddr); */
+    *next = intro_virt_to_phys(nextVaddr);
+    /* *next = isKernelTask ? intro_virt_to_phys(nextVaddr) : TranslationTableWalk(nextVaddr); */
+    *flags = ((uint64_t*)((char*)memdev+vma))[10];
+}
+
+void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigests, int* numRodataDigests, bool isKernelTask)
+{
+    uint64_t start;
+    uint64_t size;
+    uint64_t next;
+    uint64_t flags;
+    InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr, isKernelTask);
+
+    if( start + size < 0x8001000
+        && ((char*)memdev+start)[0] == 0x7f
+        && ((char*)memdev+start)[1] == 'E' 
+        && ((char*)memdev+start)[2] == 'L' 
+        && ((char*)memdev+start)[3] == 'F' )
+    {
+        printf("found an elf\n");
+        InterpretElfHeader(start, pgdPaddr, rodataDigests, numRodataDigests, isKernelTask);
+        printf("goodbye elf\n");
+    }
+
+    if(next != 0)
+    {
+        CrawlVMAs(next, pgdPaddr, rodataDigests, numRodataDigests, isKernelTask);
+    }
+}
+
+bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
 {
     /* There probably won't be more than 100 rodata sections? */
     uint8_t rodataDigests[64 * 100];
@@ -106,153 +160,36 @@ bool InterpretMemory(uint64_t task, uint8_t* rodataDigest)
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
     if(mmAddr==0)
     {
-        // this task has no memory to interpret
-        return false;
+        // try active_mm instead
+        mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc+8))[0];
+        if(mmAddr==0)
+        {
+            // this task has no memory to interpret
+            return false;
+        }
+        printf("defaulting to active_mm\n");
     }
-    //printf("retrieved mm_struct addr %p\n", mmAddr);
-    uint64_t mm = GetPhysAddr(mmAddr);
-
-    uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
-    uint64_t mmap = GetPhysAddr(mmapAddr);
-
-
-    /* // Print out the whole mm_struct */
-    /* for(int i=0; i<272+88; i++) */
-    /* { */
-    /*     if(i%48==0){printf("\n");} */
-    /*     if(i%8==0){printf(" ");} */
-    /*     printf("%02X", ((char*)memdev+mm)[i]); */
-    /* } */
-    /* printf("\n"); */
-
-    /* uint64_t start_code = ((uint64_t*)((char*)memdev+mm+232))[0]; */
-    /* uint64_t end_code = ((uint64_t*)((char*)memdev+mm+232))[1]; */
-    /* uint64_t start_data = ((uint64_t*)((char*)memdev+mm+232))[2]; */
-    /* uint64_t end_data = ((uint64_t*)((char*)memdev+mm+232))[3]; */
-
-    
-    /* printf("\tstart code: %p\n\tend code: %p\n", start_code, end_code); */
-    /* printf("\tstart data vaddr: %p\n\tend data: %p\n", start_data, end_data); */
-    /* uint64_t start_vm = ((uint64_t*)((char*)memdev+mmap))[0]; */
-    /* uint64_t end_vm = ((uint64_t*)((char*)memdev+mmap))[1]; */
-    /* printf("\tstart vm: %p\n\tend vm: %p\n", start_vm, end_vm); */
-    /* uint64_t startData = GetPhysAddr(start_data); */
-    /* printf("\tstart data: %lu\n", startData); */
-    /* introspectScanMaybeChar(startData, end_data-start_data, "Task Data: "); */
+    // TODO
+    /* uint64_t mm = isKernelTask ? intro_virt_to_phys(mmAddr) : TranslationTableWalk(mmAddr); */
+    /* uint64_t mm = GetPhysAddr(mmAddr); */
+    uint64_t mm = intro_virt_to_phys(mmAddr);
 
     uint64_t pgdVaddr = ((uint64_t*)((char*)memdev+mm+64))[0];
-    uint64_t pgdPaddr = GetPhysAddr(pgdVaddr);
+    // TODO
+    /* uint64_t pgdPaddr = isKernelTask ? intro_virt_to_phys(pgdVaddr) : TranslationTableWalk(pgdVaddr); */
+    /* uint64_t pgdPaddr = GetPhysAddr(pgdVaddr); */
+    uint64_t pgdPaddr = intro_virt_to_phys(pgdVaddr);
 
-    /* uint64_t stPaddr = TranslationTableWalkSuppliedPGD(start_code, pgdPaddr); */
-    /* printf("size %ld\n", end_code-start_code); */
-    /* for(int i=0; i<end_code-start_code; i++) */
-    /* { */
-    /*     printf("%X", ((char*)memdev+stPaddr)[i]); */
-    /* } */
-    /* printf("\n"); */
-    /* uint8_t codeDigest[64]; */
-    /* HashMeasure( ((char*)memdev+stPaddr), end_code-start_code, &codeDigest); */
-    /* printf("mm_struct \"code\" digest is:\n"); */
-    /* PrintDigest(&codeDigest); */
+    uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
+    // TODO
+    /* uint64_t mmap = isKernelTask ? intro_virt_to_phys(mmapAddr) : TranslationTableWalk(mmapAddr); */
+    /* uint64_t mmap = GetPhysAddr(mmapAddr); */
+    uint64_t mmap = intro_virt_to_phys(mmapAddr);
 
-    void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags)
-    {
+    CrawlVMAs(mmap, pgdPaddr, &rodataDigests, &numRodataDigests, isKernelTask);
 
-        /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
-        /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
-        /* printf("vm_next\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[2]); */
-        /* printf("vm_prev\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[3]); */
-        /* printf("vm_rb\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[4]); */
-        /* printf("rb_subtree_gap\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[7]); */
-        /* printf("vm_mm\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[8]); */
-        /* printf("page_prot\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[9]); */
-        /* printf("page_flags\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[10]); */
-
-        uint64_t vm_start = ((uint64_t*)((char*)memdev+vma))[0];
-        *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
-        *size = ((uint64_t*)((char*)memdev+vma))[1] - ((uint64_t*)((char*)memdev+vma))[0];
-        *next = GetPhysAddr(((uint64_t*)((char*)memdev+vma))[2]);
-        *flags = ((uint64_t*)((char*)memdev+vma))[10];
-    }
-    void CrawlVMAs(uint64_t vma)
-    {
-        uint64_t start;
-        uint64_t size;
-        uint64_t next;
-        uint64_t flags;
-        InterpVMA(vma, &start, &size, &next, &flags);
-
-        /* printf("start:\t\t%p\n", start); */
-        /* printf("size:\t\t%016X\n", size); */
-
-        /* if(start == 0x7c7000) */
-        if( start + size < 0x8001000
-            && ((char*)memdev+start)[0] == 0x7f
-            && ((char*)memdev+start)[1] == 'E' 
-            && ((char*)memdev+start)[2] == 'L' 
-            && ((char*)memdev+start)[3] == 'F' )
-        {
-            InterpretElfHeader(start, pgdPaddr, &rodataDigests, &numRodataDigests);
-
-            /* uint8_t thisAreaDigest[64]; */
-            /* HashMeasure( ((char*)memdev+start), size, &thisAreaDigest); */
-            /* printf("ELF header digest is:\n"); */
-            /* PrintDigest(&thisAreaDigest); */
-
-        }
-        
-
-        /* printf("\n"); */
-        if(next != 0)
-        {
-            CrawlVMAs(next);
-        }
-    }
-
-    CrawlVMAs(mmap);
     HashHashes(&rodataDigests, numRodataDigests, rodataDigest);
     printf("We hashed %d rodata sections. Then we hashed their ordered concatentation.\n", numRodataDigests);
-
-    /*
-    uint64_t head = mm;
-    introspectScanAddr(&head, "mmap");
-    introspectScanAddr(&head, "sbroot");
-    introspectScanAddr(&head, "vma_cache_seqnum");
-    introspectScanAddr(&head, "get_unmapped area");
-    introspectScanAddr(&head, "mmap_base");
-    introspectScanAddr(&head, "mmap_legacy_base");
-    introspectScanAddr(&head, "task_size");
-    introspectScanAddr(&head, "higest_vm_end");
-    introspectScanAddr(&head, "pgd_ptr");
-    introspectScanInt(&head, "mm_users");
-    introspectScanInt(&head, "mm_count");
-    introspectScanAddr(&head, "nr_ptes");
-    introspectScanInt(&head, "map_count");
-    introspectScanInt(&head, "map_count compensation");
-    introspectScanAddr(&head, "page_tble_lock");
-    introspectScan(&head, 40, "struct rw_semaphore mmap_sem");
-    introspectScan(&head, 16, "list_head mmlist");
-    introspectScan(&head, 8, "hiwater_rss");
-    introspectScan(&head, 8, "hiwater_vm");
-    introspectScan(&head, 8, "total_vm"); //total pages mapped
-    introspectScan(&head, 8, "locked_vm"); //locked pages
-    introspectScan(&head, 8, "pinned_vm");
-    introspectScan(&head, 8, "data_vm"); // pages which are write-only
-    introspectScan(&head, 8, "exec_vm"); // pages which are exec-only
-    introspectScan(&head, 8, "stack_vm"); // pages which belong to the stack
-    introspectScan(&head, 8, "def_flags");
-    introspectScanAddr(&head, "start_code");
-    introspectScanAddr(&head, "end_code");
-    introspectScanAddr(&head, "start_data");
-    introspectScanAddr(&head, "end_data");
-    introspectScanAddr(&head, "strt_brk");
-    introspectScanAddr(&head, "brk");
-    introspectScanAddr(&head, "start_stack");
-    introspectScanAddr(&head, "arg_start");
-    introspectScanAddr(&head, "arg_end");
-    introspectScanAddr(&head, "env_start");
-    introspectScanAddr(&head, "env_end");
-    */
 
     return true;
 }
@@ -337,18 +274,28 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     /* ScanTaskStruct(task); */
     bool hasMemory = false;
 
-    /* if(strcmp(&results[taskID].name, "useram")==0) */
-    if(strcmp(&results[taskID].name, "init")!=0 &&
-       strcmp(&results[taskID].name, "rcS")!=0 &&
-       strcmp(&results[taskID].name, "klogd")!=0 &&
-       strcmp(&results[taskID].name, "S90cross_vm_ini")!=0 &&
-       strcmp(&results[taskID].name, "mkdir")!=0 &&
-       strcmp(&results[taskID].name, "adduser")!=0 &&
-       strcmp(&results[taskID].name, "syslogd")!=0)
-    {
-        //ScanTaskStruct(task);
-        hasMemory = InterpretMemory(task, &results[taskID].rodataDigest);
-    }
+    /* /1* if(strcmp(&results[taskID].name, "useram")==0) *1/ */
+    /* if(strcmp(&results[taskID].name, "init")!=0 && */
+    /*    strcmp(&results[taskID].name, "rcS")!=0 && */
+    /*    strcmp(&results[taskID].name, "klogd")!=0 && */
+    /*    strcmp(&results[taskID].name, "S90cross_vm_ini")!=0 && */
+    /*    strcmp(&results[taskID].name, "mkdir")!=0 && */
+    /*    strcmp(&results[taskID].name, "adduser")!=0 && */
+    /*    strcmp(&results[taskID].name, "getty")!=0 && */
+    /*    strcmp(&results[taskID].name, "sh")!=0 && */
+    /*    strcmp(&results[taskID].name, "syslogd")!=0) */
+    /* { */
+    /*     //ScanTaskStruct(task); */
+    /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest); */
+    /* } */
+    /* if(strcmp(&results[taskID].name, "init")==0) */
+    /* { */
+    /*     bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0; */
+    /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask); */
+    /* } */
+
+    bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0;
+    hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask);
 
     // prepare to crawl
     uint64_t myChild;
@@ -367,7 +314,17 @@ void MeasureProcesses()
 {
     printf("DEBUG: Measurement: Beginning process measurement.\n");
 
-    struct TaskMeasurement* taskMsmts = calloc(100,sizeof(struct TaskMeasurement));
+    int numTasks = 100;
+    struct TaskMeasurement* taskMsmts = calloc(numTasks,sizeof(struct TaskMeasurement));
+    for(int i=0; i<numTasks; i++)
+    {
+        for(int j=0; j<64; j++)
+        {
+            taskMsmts[i].rodataDigest[j] = 0;
+        }
+    }
+
+
     int numTasksCollected = 0;
 
     uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
@@ -375,8 +332,14 @@ void MeasureProcesses()
 
     for(int i=0; i<100; i++)
     {
-        //if(taskMsmts[i].name[0] != '\0')
-        if(strcmp(taskMsmts[i].name, "useram")==0)
+
+        /* //if(taskMsmts[i].name[0] != '\0') */
+        /* if(strcmp(taskMsmts[i].name, "useram")==0) */
+        /* { */
+        /*     PrintTaskEvidence(&taskMsmts[i]); */
+        /* } */
+
+        if(!IsDigestEmpty(taskMsmts[i].rodataDigest))
         {
             PrintTaskEvidence(&taskMsmts[i]);
         }

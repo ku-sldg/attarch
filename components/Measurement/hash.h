@@ -16,4 +16,7 @@ void HashMeasure(uint8_t* input, int inputLen, uint8_t* output);
 
 void HashHashes(uint8_t* hashList, int numHashes, uint8_t* output);
 
+bool IsDigestEmpty(uint8_t* input);
+bool IsDigestEmpty(uint8_t* input);
+
 #endif
