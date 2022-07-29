@@ -133,10 +133,14 @@ struct elf64header CollectElfHeaderData(uint64_t elfAddr)
 
 bool IsThisTheHeaderName(struct elf64header* elf, struct elf64shdr* shdr, uint64_t shstrtabPtr, char* nameGuess)
 {
-    char* shName = ((char*)memdev+shstrtabPtr+(shdr->sh_name));
-    char shNameSubstring[strlen(nameGuess)];
-    memcpy(&shNameSubstring, shName, strlen(nameGuess));
-    return(strcmp(shNameSubstring, nameGuess)==0);
+    if(shstrtabPtr+(shdr->sh_name) < 0x8001000)
+    {
+        char* shName = ((char*)memdev+shstrtabPtr+(shdr->sh_name));
+        char shNameSubstring[strlen(nameGuess)];
+        memcpy(&shNameSubstring, shName, strlen(nameGuess));
+        return(strcmp(shNameSubstring, nameGuess)==0);
+    }
+    return false;
 }
 
 char* GetHeaderName(struct elf64header* elf, struct elf64shdr* shdr, uint64_t shstrtabPtr)
@@ -149,13 +153,18 @@ char* GetHeaderName(struct elf64header* elf, struct elf64shdr* shdr, uint64_t sh
 char* GetOneHeaderName(struct elf64header* elf, struct elf64shdr* shdr)
 {
     uint64_t shstrtabHdrPtr = elf->RamOffset
-                         + elf->e_shoff
-                         + (elf->e_shentsize * elf->e_shstrndx);
+                        + elf->e_shoff
+                        + (elf->e_shentsize * elf->e_shstrndx);
     struct elf64shdr shstrtabhdr = CollectSectionHeader(shstrtabHdrPtr, elf->RamOffset);
     uint64_t shstrtabPtr = elf->RamOffset + shstrtabhdr.sh_offset;
-    char* shName = ((char*)memdev+shstrtabPtr+(shdr->sh_name));
-    return shName;
-    printf("Got Name: %s\n", shName);
+    if(shstrtabPtr+(shdr->sh_name) < 0x8001000)
+    {
+        char* shName = ((char*)memdev+shstrtabPtr+(shdr->sh_name));
+        return shName;
+        printf("Got Name: %s\n", shName);
+    }
+    return "ERROR: NAME NOT FOUND\n";
+
 }
 
 void PrintSectionHeaderData(struct elf64shdr* header, bool printAll)
@@ -164,7 +173,6 @@ void PrintSectionHeaderData(struct elf64shdr* header, bool printAll)
     {
         return;
     }
-    //TODO get name from shstrtab
     struct elf64header elfHeader = CollectElfHeaderData(header->elf_offset);
     printf("sh_name : %s\n", GetOneHeaderName(&elfHeader, header));
     if(printAll)
@@ -212,7 +220,7 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests
     for(int i=0; i<elf->e_shnum; i++)
     {
         struct elf64shdr thisShdr = CollectSectionHeader(sectionPtr, elf->RamOffset);
-        /* PrintSectionHeaderData(&thisShdr, false); */
+        /* PrintSectionHeaderData(&thisShdr, true); */
         sectionPtr+=elf->e_shentsize;
         if(IsThisTheHeaderName(elf, &thisShdr, shstrtabPtr, ".rodata"))
         {

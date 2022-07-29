@@ -96,7 +96,7 @@ bool ValidateTaskStruct(uint64_t task)
     return true;
 }
 
-void InterpretMemory(uint64_t task, uint8_t* rodataDigest)
+bool InterpretMemory(uint64_t task, uint8_t* rodataDigest)
 {
     /* There probably won't be more than 100 rodata sections? */
     uint8_t rodataDigests[64 * 100];
@@ -104,11 +104,17 @@ void InterpretMemory(uint64_t task, uint8_t* rodataDigest)
 
     uint64_t mmAddrLoc = task + 1024;
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
+    if(mmAddr==0)
+    {
+        // this task has no memory to interpret
+        return false;
+    }
     //printf("retrieved mm_struct addr %p\n", mmAddr);
     uint64_t mm = GetPhysAddr(mmAddr);
 
     uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
     uint64_t mmap = GetPhysAddr(mmapAddr);
+
 
     /* // Print out the whole mm_struct */
     /* for(int i=0; i<272+88; i++) */
@@ -180,31 +186,13 @@ void InterpretMemory(uint64_t task, uint8_t* rodataDigest)
         /* printf("size:\t\t%016X\n", size); */
 
         /* if(start == 0x7c7000) */
-        if( start + size < 0x8000000
+        if( start + size < 0x8001000
             && ((char*)memdev+start)[0] == 0x7f
             && ((char*)memdev+start)[1] == 'E' 
             && ((char*)memdev+start)[2] == 'L' 
             && ((char*)memdev+start)[3] == 'F' )
         {
-
-            /* printf("Found elf header!\n"); */
             InterpretElfHeader(start, pgdPaddr, &rodataDigests, &numRodataDigests);
-
-            /* for(int i=0; i<4096; i++) */
-            /* { */
-            /*     if(i%32==0&&i>0){printf("\n");} */
-            /*     if(i%8==0&&i%32!=0){printf(" ");} */
-            /*     char head = ((char*)memdev+start)[i]; */
-            /*     if(31 < head && head < 128) */
-            /*     { */
-            /*         printf("%c", ((char*)memdev+start)[i]); */
-            /*     } */
-            /*     else */
-            /*     { */
-            /*         printf("%02X", ((char*)memdev+start)[i]); */
-            /*     } */
-            /* } */
-            /* printf("\n"); */
 
             /* uint8_t thisAreaDigest[64]; */
             /* HashMeasure( ((char*)memdev+start), size, &thisAreaDigest); */
@@ -213,19 +201,6 @@ void InterpretMemory(uint64_t task, uint8_t* rodataDigest)
 
         }
         
-        /* if(start + size < 0x8000000) */
-        /* { */
-        /*     uint8_t thisAreaDigest[64]; */
-        /*     HashMeasure( ((char*)memdev+start), size, &thisAreaDigest); */
-        /*     PrintDigest(&thisAreaDigest); */
-        /*     for(int i=0; i<64; i++) */
-        /*     { */
-        /*         if(i%32==0&&i>0){printf("\n");} */
-        /*         if(i%8==0&&i%32!=0){printf(" ");} */
-        /*         printf("%02X", thisAreaDigest[i]); */
-        /*     } */
-        /*     printf("\n"); */
-        /* } */
 
         /* printf("\n"); */
         if(next != 0)
@@ -278,6 +253,8 @@ void InterpretMemory(uint64_t task, uint8_t* rodataDigest)
     introspectScanAddr(&head, "env_start");
     introspectScanAddr(&head, "env_end");
     */
+
+    return true;
 }
 
 void GetPID(uint64_t task, int* myPid)
@@ -351,17 +328,26 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     }
 
     // Collect a Measurement
+    /* ScanTaskStruct(task); */
     GetTaskName(task, &results[taskID].name);
     GetPIDs(task, &results[taskID].myPid, &results[taskID].parentPid);
     InterpretCred(task, &results[taskID].cred);
 
-    /* printf("interp mem for %s\n", &results[taskID].name); */
-    /* InterpretMemory(task, &results[taskID].rodataDigest); */
+    printf("interp mem for %s\n", &results[taskID].name);
+    /* ScanTaskStruct(task); */
+    bool hasMemory = false;
 
-    if(strcmp(&results[taskID].name, "useram")==0)
+    /* if(strcmp(&results[taskID].name, "useram")==0) */
+    if(strcmp(&results[taskID].name, "init")!=0 &&
+       strcmp(&results[taskID].name, "rcS")!=0 &&
+       strcmp(&results[taskID].name, "klogd")!=0 &&
+       strcmp(&results[taskID].name, "S90cross_vm_ini")!=0 &&
+       strcmp(&results[taskID].name, "mkdir")!=0 &&
+       strcmp(&results[taskID].name, "adduser")!=0 &&
+       strcmp(&results[taskID].name, "syslogd")!=0)
     {
         //ScanTaskStruct(task);
-        InterpretMemory(task, &results[taskID].rodataDigest);
+        hasMemory = InterpretMemory(task, &results[taskID].rodataDigest);
     }
 
     // prepare to crawl
