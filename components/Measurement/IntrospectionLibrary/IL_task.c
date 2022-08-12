@@ -251,29 +251,44 @@ bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
     }
     // TODO
     /* uint64_t mm = isKernelTask ? intro_virt_to_phys(mmAddr) : TranslationTableWalk(mmAddr); */
-    /* uint64_t mm = GetPhysAddr(mmAddr); */
-    uint64_t mm = intro_virt_to_phys(mmAddr);
+    /* uint64_t mm = TranslationTableWalk(mmAddr); */
+    /* uint64_t mm = intro_virt_to_phys(mmAddr); */
+    uint64_t mm = TranslateVaddr(mmAddr);
 
     uint64_t pgdVaddr = ((uint64_t*)((char*)memdev+mm+64))[0];
     // TODO
     /* uint64_t pgdPaddr = isKernelTask ? intro_virt_to_phys(pgdVaddr) : TranslationTableWalk(pgdVaddr); */
-    /* uint64_t pgdPaddr = GetPhysAddr(pgdVaddr); */
-    uint64_t pgdPaddr = intro_virt_to_phys(pgdVaddr);
+    /* uint64_t pgdPaddr = TranslationTableWalk(pgdVaddr); */
+    uint64_t pgdPaddr = TranslateVaddr(pgdVaddr);
 
     uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
     // TODO
     /* uint64_t mmap = isKernelTask ? intro_virt_to_phys(mmapAddr) : TranslationTableWalk(mmapAddr); */
-    /* uint64_t mmap = GetPhysAddr(mmapAddr); */
-    uint64_t mmap = intro_virt_to_phys(mmapAddr);
+    /* uint64_t mmap = TranslationTableWalk(mmapAddr); */
+    uint64_t mmap = TranslateVaddr(mmapAddr);
 
     CrawlVMAs(mmap, pgdPaddr, rodataDigests, &numRodataDigests, isKernelTask);
     printf("end crawl vmas\n");
 
-    if(numRodataDigests > 0)
+    if(numRodataDigests > 1)
     {
         HashHashes(rodataDigests, numRodataDigests, rodataDigest);
-        printf("We hashed %d rodata sections. Then we hashed their ordered concatentation.\n", numRodataDigests);
+        printf("We hashed %d rodata sections. Then we hashed their ordered concatentation:\n", numRodataDigests);
     }
+    else if(numRodataDigests > 0)
+    {
+        for(int i=0; i<64; i++)
+        {
+            rodataDigest[i] = rodataDigests[i];
+        }
+        printf("We hashed and returned 1 rodata digest:\n");
+    }
+    for(int i=0; i<64; i++)
+    {
+        printf("%02X", rodataDigest[i]);
+    }
+    printf("\n");
+
 
     printf("before task rodataDigests free\n");
     free(rodataDigests);
@@ -379,59 +394,39 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest); */
     /* } */
 
-    if(strcmp(&results[taskID].name, "useram")==0)
-    {
-        bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0;
-        hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask);
-    }
-
-    /* bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0; */
-    /* hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask); */
-    /* printf("after interp memory\n"); */
-
-    // prepare to crawl
-    uint64_t myChild;
-    uint64_t mySibling;
-    InterpretTaskStruct(task, &myChild, &mySibling);
-
-    printf("child: %p\nsibling: %p\n", myChild, mySibling);
-
-    // crawl a la breadth-first-search
-    if(mySibling != leadSibling)
-    {
-        CrawlProcesses(mySibling, task, results, ++taskID);
-    }
-    CrawlProcesses(myChild, myChild, results, ++taskID);
-}
 
 
 
 void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
 {
     GetTaskName(taskptr, &msmt->name);
+    printf("Currently Crawling: %s\n", &msmt->name);
     GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(taskptr, &msmt->cred);
+
+    if(strcmp(&msmt->name, "useram")==0)
+    {
+        printf("before useram memory measurement\n");
+        bool isKernelTask = msmt->cred.uid==0 && msmt->cred.suid==0;
+        InterpretMemory(msmt->paddr, &msmt->rodataDigest, isKernelTask);
+        printf("after useram memory measurement\n");
+    }
     return;
 }
 
 TaskMeasurement* BuildTaskTreeNode(uint64_t taskPaddr, TaskMeasurement* parent)
 {
-    /* if(!ValidateTaskStruct(taskPaddr)) */
-    /* { */
-    /*     return; */
-    /* } */
     TaskMeasurement* thisMsmt = calloc(1,sizeof(TaskMeasurement));
+    thisMsmt->paddr = taskPaddr;
     thisMsmt->parent = parent;
     // TODO does this really need to be 64 long?
     thisMsmt->children = calloc(64, sizeof(TaskMeasurement*));
-    // Collect simple task data
     CollectTaskMeasurement(thisMsmt, taskPaddr);
-    printf("Currently Crawling: %s\n", &thisMsmt->name);
     // prepare to crawl further
     uint64_t myChild;
     uint64_t mySibling;
     InterpretTaskStruct(taskPaddr, &myChild, &mySibling);
-    // if we have any children, collect them all
+    // if we have any children, enqueue them all
     if(ValidateTaskStruct(myChild))
     {
         int childNumber = 0;
