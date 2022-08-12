@@ -98,7 +98,7 @@ bool ValidateTaskStruct(uint64_t task)
 
 void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr, bool isKernelTask)
 {
-    /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
+    printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]);
     /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
     /* printf("vm_next\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[2]); */
     /* printf("vm_prev\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[3]); */
@@ -139,7 +139,7 @@ void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigests, int* num
         && ((char*)memdev+start)[2] == 'L' 
         && ((char*)memdev+start)[3] == 'F' )
     {
-        printf("found an elf\n");
+        printf("found elf\n");
         InterpretElfHeader(start, pgdPaddr, rodataDigests, numRodataDigests, isKernelTask);
         printf("goodbye elf\n");
     }
@@ -153,7 +153,7 @@ void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigests, int* num
 bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
 {
     /* There probably won't be more than 100 rodata sections? */
-    uint8_t rodataDigests[64 * 100];
+    uint8_t* rodataDigests = calloc(100, 64);
     int numRodataDigests = 0;
 
     uint64_t mmAddrLoc = task + 1024;
@@ -186,10 +186,18 @@ bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
     /* uint64_t mmap = GetPhysAddr(mmapAddr); */
     uint64_t mmap = intro_virt_to_phys(mmapAddr);
 
-    CrawlVMAs(mmap, pgdPaddr, &rodataDigests, &numRodataDigests, isKernelTask);
+    CrawlVMAs(mmap, pgdPaddr, rodataDigests, &numRodataDigests, isKernelTask);
+    printf("end crawl vmas\n");
 
-    HashHashes(&rodataDigests, numRodataDigests, rodataDigest);
-    printf("We hashed %d rodata sections. Then we hashed their ordered concatentation.\n", numRodataDigests);
+    if(numRodataDigests > 0)
+    {
+        HashHashes(rodataDigests, numRodataDigests, rodataDigest);
+        printf("We hashed %d rodata sections. Then we hashed their ordered concatentation.\n", numRodataDigests);
+    }
+
+    printf("before free\n");
+    free(rodataDigests);
+    printf("after free\n");
 
     return true;
 }
@@ -270,7 +278,6 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     GetPIDs(task, &results[taskID].myPid, &results[taskID].parentPid);
     InterpretCred(task, &results[taskID].cred);
 
-    printf("interp mem for %s\n", &results[taskID].name);
     /* ScanTaskStruct(task); */
     bool hasMemory = false;
 
@@ -288,7 +295,8 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     /*     //ScanTaskStruct(task); */
     /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest); */
     /* } */
-    /* if(strcmp(&results[taskID].name, "init")==0) */
+
+    /* if(strcmp(&results[taskID].name, "useram")==0) */
     /* { */
     /*     bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0; */
     /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask); */

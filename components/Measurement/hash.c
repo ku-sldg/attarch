@@ -67,7 +67,7 @@ bool IsDigestEmpty(uint8_t* input)
 {
     for(int i=0; i<64; i++)
     {
-        if(input[i] != 0)
+        if(input[i] != '\0')
         {
             return false;
         }

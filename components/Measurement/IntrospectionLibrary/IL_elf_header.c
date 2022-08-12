@@ -190,8 +190,8 @@ void PrintSectionHeaderData(struct elf64shdr* header, bool printAll)
 
 void PrintElfHeaderData(struct elf64header* header)
 {
-    printf("name: %s\n", &header->e_ident);
-    printf("RAM Offset: %s\n", &header->RamOffset);
+    printf("name: %016X\n", header->e_ident);
+    printf("RAM Offset: %016X\n", header->RamOffset);
     printf("type: %d\n", header->e_type);
     printf("machine: %d\n", header->e_machine);
     printf("version: %d\n", header->e_version);
@@ -209,12 +209,26 @@ void PrintElfHeaderData(struct elf64header* header)
 
 void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests, int* dPtr, bool isKernelTask)
 {
-    uint64_t shstrtabHdrPtr = elf->RamOffset
-                            + elf->e_shoff
-                            + (elf->e_shentsize * elf->e_shstrndx);
-    struct elf64shdr shstrtabhdr = CollectSectionHeader(shstrtabHdrPtr, elf->RamOffset);
-    uint64_t shstrtabPtr = elf->RamOffset + shstrtabhdr.sh_offset;
     uint64_t sectionPtr = elf->RamOffset + elf->e_shoff;
+    uint64_t shstrtabHdrPtr = sectionPtr + (elf->e_shentsize * elf->e_shstrndx);
+
+    /* printf("shstrtab hdr ptr: %016X\n", shstrtabHdrPtr); */
+    /* for(int i=0; i<64; i++) */
+    /* { */
+    /*     printf("%02X", ((char*)memdev+shstrtabHdrPtr)[i]); */
+    /* } */
+
+    struct elf64shdr shstrtabhdr = CollectSectionHeader(shstrtabHdrPtr, elf->RamOffset);
+    /* PrintSectionHeaderData(&shstrtabhdr, true); */
+    uint64_t shstrtabPtr = elf->RamOffset + shstrtabhdr.sh_offset;
+
+    /* printf("shstrtab ptr: %p\n", shstrtabPtr); */
+    /* printf("shstrtab contents:\n"); */
+    /* for(int i=0; i<64; i++) */
+    /* { */
+    /*     printf("%02X", ((char*)memdev+shstrtabPtr)[i]); */
+    /* } */
+    /* printf("\n"); */
 
     for(int i=0; i<elf->e_shnum; i++)
     {
@@ -222,12 +236,15 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests
         sectionPtr+=elf->e_shentsize;
 
         uint64_t name = GetHeaderName(elf, &thisShdr, shstrtabPtr);
-        if(name < 0x8001000 && IsThisTheHeaderName(elf, &thisShdr, shstrtabPtr, ".rodata"))
+        if(name > RAM_SIZE)
         {
-
-            /* PrintSectionHeaderData(&thisShdr, true); */
-            /* printf("%s\n", ((char*)memdev+name)); */
-
+            printf("Error: Could not find section header name.\n");
+            continue;
+        }
+        /* printf("%s\n", ((char*)memdev+name)); */
+        /* PrintSectionHeaderData(&thisShdr, true); */
+        if(IsThisTheHeaderName(elf, &thisShdr, shstrtabPtr, ".rodata"))
+        {
             uint64_t sectionFileOffset = thisShdr.sh_offset;
             uint64_t sectionVaddr = thisShdr.sh_addr;
             uint64_t sectionPaddr = 0;
@@ -243,14 +260,10 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests
             HashMeasure( ((char*)memdev+sectionPaddr), thisShdr.sh_size, digests+(64*(*dPtr)) );
             /* printf("ELF .rodata section digest is:\n"); */
             /* PrintDigest(digests+(64*(*dPtr))); */
-            int scanHead = sectionPaddr;
-            printf("Wow, that rodata size was %d\n", thisShdr.sh_size);
-            introspectScanMaybeChar(&scanHead, thisShdr.sh_size, "rodata: ");
+            /* int scanHead = sectionPaddr; */
+            /* printf("Wow, that rodata size was %d\n", thisShdr.sh_size); */
+            /* introspectScanMaybeChar(&scanHead, thisShdr.sh_size, "rodata: "); */
             *dPtr = *dPtr + 1;
-        }
-        else
-        {
-            /* printf("Error: Could not find section header name.\n"); */
         }
     }
 }
