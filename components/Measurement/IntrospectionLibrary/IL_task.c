@@ -124,15 +124,15 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     char suid[10];
     sprintf(suid, "%d", msmt->cred.suid);
     introLog(9,
-        "Task Evidence:\n\tName: ",
-        msmt->name,
-        "\n\tPID: ",
-        &myPid,
-        "\n\tParent PID: ",
-        &parentPid,
-        "\n\tSUID: ",
-        &suid,
-        "\n\tRead-only Data SHA512 Digest:\n");
+            "Task Evidence:\n\tName: ",
+            msmt->name,
+            "\n\tPID: ",
+            &myPid,
+            "\n\tParent PID: ",
+            &parentPid,
+            "\n\tSUID: ",
+            &suid,
+            "\n\tRead-only Data SHA512 Digest:\n");
     PrintDigest(msmt->rodataDigest);
 }
 
@@ -149,20 +149,22 @@ bool ValidateTaskStruct(uint64_t task)
 {
     if(task > 0x8001000)
     {
-        //printf("out of range\n");
+        /* printf("out of range\n"); */
         return false;
     }
     int nameLoc = task + 1640;
     if(((char*)memdev+nameLoc)[0] == '\0')
     {
-        //printf("null name\n");
+        /* printf("null name\n"); */
         return false;
     }
     for(int i=0; i<16; i++)
     {
         if(((char*)memdev+nameLoc)[i] > 127)
         {
-            //printf("illegal characters in name\n");
+            /* printf("illegal characters in name\n"); */
+            /* int thisShouldBeNameData = nameLoc; */
+            /* introspectScan(&thisShouldBeNameData, 64, "offending task?:\n"); */
             return false;
         }
     }
@@ -171,7 +173,7 @@ bool ValidateTaskStruct(uint64_t task)
 
 void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr, bool isKernelTask)
 {
-    printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]);
+    /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
     /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
     /* printf("vm_next\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[2]); */
     /* printf("vm_prev\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[3]); */
@@ -185,16 +187,19 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
     /* printf("before interpvma translate\n"); */
     //TODO
     /* uint64_t test = isKernelTask ? intro_virt_to_phys(vm_start) : TranslationTableWalk(vm_start); */
-    /* uint64_t test = GetPhysAddr(vm_start); */
-    /* printf("middle interpvma translate\n"); */
+    /* uint64_t test = TranslationTableWalk(vm_start); */
+    /* printf("middle interp vma translate. paddr: %016X\n", pgdPaddr); */
+    printf("vm_start\t\t%p\n", vm_start);
     *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
-    /* printf("after interpvma translate\n"); */
+    printf("after vm_start\n");
+    /* printf("after interp vma translate\n"); */
     *size = ((uint64_t*)((char*)memdev+vma))[1] - ((uint64_t*)((char*)memdev+vma))[0];
     uint64_t nextVaddr = ((uint64_t*)((char*)memdev+vma))[2];
     //TODO
-    /* *next = GetPhysAddr(nextVaddr); */
+    /* *next = TranslationTableWalk(nextVaddr); */
     *next = intro_virt_to_phys(nextVaddr);
     /* *next = isKernelTask ? intro_virt_to_phys(nextVaddr) : TranslationTableWalk(nextVaddr); */
+    /* printf("after get next\n"); */
     *flags = ((uint64_t*)((char*)memdev+vma))[10];
 }
 
@@ -204,13 +209,15 @@ void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigests, int* num
     uint64_t size;
     uint64_t next;
     uint64_t flags;
+    printf("before before interp\n");
     InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr, isKernelTask);
+    printf("after interp\n");
 
     if( start + size < 0x8001000
-        && ((char*)memdev+start)[0] == 0x7f
-        && ((char*)memdev+start)[1] == 'E' 
-        && ((char*)memdev+start)[2] == 'L' 
-        && ((char*)memdev+start)[3] == 'F' )
+            && ((char*)memdev+start)[0] == 0x7f
+            && ((char*)memdev+start)[1] == 'E' 
+            && ((char*)memdev+start)[2] == 'L' 
+            && ((char*)memdev+start)[3] == 'F' )
     {
         printf("found elf\n");
         InterpretElfHeader(start, pgdPaddr, rodataDigests, numRodataDigests, isKernelTask);
@@ -268,7 +275,7 @@ bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
         printf("We hashed %d rodata sections. Then we hashed their ordered concatentation.\n", numRodataDigests);
     }
 
-    printf("before free\n");
+    printf("before task rodataDigests free\n");
     free(rodataDigests);
     printf("after free\n");
 
