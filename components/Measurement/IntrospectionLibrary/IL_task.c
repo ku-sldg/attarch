@@ -8,6 +8,14 @@
 #include "IL_struct_interp.c"
 #include "IL_elf_header.c"
 
+/* C program for array implementation of queue */
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
+
+
 struct cred {
     int usage;
     int uid, gid, suid, sgid, euid, egid, fsuid, fsgid;
@@ -17,6 +25,81 @@ struct cred {
     uint64_t session_keyring, process_keyring, thread_keyring, request_key_auth, security;
     uint64_t user_struct, user_namespace, group_info;
 };
+
+typedef struct TaskMeasurement
+{
+    uint64_t paddr;
+    struct TaskMeasurement* parent;
+    struct TaskMeasurement* real_parent;
+    struct TaskMeasurement** children;
+
+    char name[16];
+    int uid;
+    uint32_t myPid;
+    uint32_t parentPid;
+    uint32_t flags;
+    struct cred cred;
+    char rodataDigest[64];
+} TaskMeasurement;
+
+
+/* A structure to represent a queue */
+struct Queue {
+    int front, rear, size;
+    unsigned capacity;
+    TaskMeasurement** array;
+};
+
+/* function to create a queue of given capacity. It initializes size of queue
+** as 0 */
+struct Queue* createQueue(unsigned capacity)
+{
+    struct Queue* queue = (struct Queue*)malloc(sizeof(struct Queue));
+    queue->capacity = capacity;
+    queue->front = queue->size = 0;
+    queue->rear = capacity - 1;
+    queue->array = (TaskMeasurement**)malloc(queue->capacity * sizeof(TaskMeasurement*));
+    return queue;
+}
+
+/* Queue is full when size becomes equal to the capacity */
+int isFull(struct Queue* queue)
+{
+    return (queue->size == queue->capacity);
+}
+
+/* Queue is empty when size is 0 */
+int isEmpty(struct Queue* queue)
+{
+    return (queue->size == 0);
+}
+
+/* Function to add an item to the queue. It changes rear and size */
+void enqueue(struct Queue* queue, TaskMeasurement* item)
+{
+    if (isFull(queue))
+        return;
+    queue->rear = (queue->rear + 1) % queue->capacity;
+    queue->array[queue->rear] = item;
+    queue->size = queue->size + 1;
+    /* printf("%s enqueued to queue\n", &item->name); */
+}
+
+/* Function to remove an item from queue. It changes front and size */
+TaskMeasurement* dequeue(struct Queue* queue)
+{
+    if (isEmpty(queue))
+    {
+        return NULL;
+    }
+    TaskMeasurement* item = queue->array[queue->front];
+    queue->front = (queue->front + 1) % queue->capacity;
+    queue->size = queue->size - 1;
+    return item;
+}
+
+
+
 
 struct intro_mm_struct {
     uint64_t start_code;
@@ -32,16 +115,6 @@ struct intro_mm_struct {
     uint64_t env_end;
 };
 
-struct TaskMeasurement
-{
-    char name[16];
-    int uid;
-    uint32_t myPid;
-    uint32_t parentPid;
-    uint32_t flags;
-    struct cred cred;
-    char rodataDigest[64];
-};
 void PrintTaskEvidence(struct TaskMeasurement* msmt)
 {
     char myPid[10];
@@ -213,7 +286,7 @@ void GetPIDs(uint64_t task, int* myPid, int* parentPid)
     GetPID(task, myPid);
     uint64_t parentAddrLoc = task + 1216;
     uint64_t parentAddr = ((uint64_t*)((char*)memdev+parentAddrLoc))[0];
-    uint64_t parent = GetPhysAddr(parentAddr);
+    uint64_t parent = TranslateVaddr(parentAddr);
     if(ValidateTaskStruct(parent))
     {
         GetPID(parent, parentPid);
@@ -224,8 +297,8 @@ void InterpretCred(uint64_t task, struct cred* cred)
 {
     uint64_t credAddrLoc = task + 1640 - 8 - 8; //"real_cred"
     uint64_t credVaddr = ((uint64_t*)((char*)memdev+credAddrLoc))[0];
-    uint64_t credPaddr = GetPhysAddr(credVaddr);
-    
+    uint64_t credPaddr = TranslateVaddr(credVaddr);
+
     cred->usage = ((int*)((char*)memdev+credPaddr))[0];
     cred->uid = ((int*)((char*)memdev+credPaddr+4))[0];
     cred->gid = ((int*)((char*)memdev+credPaddr+8))[0];
@@ -252,16 +325,17 @@ void InterpretCred(uint64_t task, struct cred* cred)
     cred->group_info = ((uint64_t*)((char*)memdev+credPaddr+144))[0];
 }
 
-void InterpretTaskStruct(uint64_t inputAddress, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
+void InterpretTaskStruct(uint64_t thisTaskStructPaddr, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
 {
-    int childLoc = inputAddress + 1232;
+    int childLoc = thisTaskStructPaddr + 1232;
     uint64_t firstChild = ((uint64_t*)((char*)memdev+childLoc))[0];
-    *children = GetPhysAddr(firstChild)+392-1640;
+    /* printf("firstChild: %p\n", firstChild); */
+    *children = TranslateVaddr(firstChild)-1248;
 
-    // get a sibling pointer
-    int siblingLoc = inputAddress + 1232 + 16;
+    int siblingLoc = thisTaskStructPaddr + 1248;
     uint64_t leftSibling = ((uint64_t*)((char*)memdev+siblingLoc))[0];
-    *sibling = GetPhysAddr(leftSibling)+392-1640;
+    /* printf("leftSibling: %p\n", leftSibling); */
+    *sibling = TranslateVaddr(leftSibling)-1248;
 }
 
 void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement* results, int taskID)
@@ -277,6 +351,8 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     GetTaskName(task, &results[taskID].name);
     GetPIDs(task, &results[taskID].myPid, &results[taskID].parentPid);
     InterpretCred(task, &results[taskID].cred);
+
+    printf("Crawl: %s\n", &results[taskID].name);
 
     /* ScanTaskStruct(task); */
     bool hasMemory = false;
@@ -296,19 +372,22 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest); */
     /* } */
 
-    /* if(strcmp(&results[taskID].name, "useram")==0) */
-    /* { */
-    /*     bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0; */
-    /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask); */
-    /* } */
+    if(strcmp(&results[taskID].name, "useram")==0)
+    {
+        bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0;
+        hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask);
+    }
 
-    bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0;
-    hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask);
+    /* bool isKernelTask = results[taskID].cred.uid==0 && results[taskID].cred.suid==0; */
+    /* hasMemory = InterpretMemory(task, &results[taskID].rodataDigest, isKernelTask); */
+    /* printf("after interp memory\n"); */
 
     // prepare to crawl
     uint64_t myChild;
     uint64_t mySibling;
     InterpretTaskStruct(task, &myChild, &mySibling);
+
+    printf("child: %p\nsibling: %p\n", myChild, mySibling);
 
     // crawl a la breadth-first-search
     if(mySibling != leadSibling)
@@ -318,41 +397,106 @@ void CrawlProcesses(uint64_t task, uint64_t leadSibling, struct TaskMeasurement*
     CrawlProcesses(myChild, myChild, results, ++taskID);
 }
 
-void MeasureProcesses()
+
+
+void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
+{
+    GetTaskName(taskptr, &msmt->name);
+    GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
+    InterpretCred(taskptr, &msmt->cred);
+    return;
+}
+
+TaskMeasurement* BuildTaskTreeNode(uint64_t taskPaddr, TaskMeasurement* parent)
+{
+    /* if(!ValidateTaskStruct(taskPaddr)) */
+    /* { */
+    /*     return; */
+    /* } */
+    TaskMeasurement* thisMsmt = calloc(1,sizeof(TaskMeasurement));
+    thisMsmt->parent = parent;
+    // TODO does this really need to be 64 long?
+    thisMsmt->children = calloc(64, sizeof(TaskMeasurement*));
+    // Collect simple task data
+    CollectTaskMeasurement(thisMsmt, taskPaddr);
+    printf("Currently Crawling: %s\n", &thisMsmt->name);
+    // prepare to crawl further
+    uint64_t myChild;
+    uint64_t mySibling;
+    InterpretTaskStruct(taskPaddr, &myChild, &mySibling);
+    // if we have any children, collect them all
+    if(ValidateTaskStruct(myChild))
+    {
+        int childNumber = 0;
+        thisMsmt->children[childNumber++] = BuildTaskTreeNode(myChild, thisMsmt);
+        uint64_t dummy;
+        uint64_t siblingIterator;
+        InterpretTaskStruct(myChild, &dummy, &siblingIterator);
+        while( ValidateTaskStruct(siblingIterator) && siblingIterator != myChild )
+        {
+            thisMsmt->children[childNumber++] = BuildTaskTreeNode(siblingIterator, thisMsmt);
+            InterpretTaskStruct(siblingIterator, &dummy, &siblingIterator);
+        }
+    }
+    return thisMsmt;
+}
+
+void MeasureTaskTree(TaskMeasurement* swapper, uint8_t* digest)
+{
+    struct Queue* queue = createQueue(1000);
+    enqueue(queue, swapper);
+    while(!isEmpty(queue))
+    {
+        TaskMeasurement* thisTaskMsmt = dequeue(queue);
+        printf("Dequeueing: %s\n", thisTaskMsmt->name);
+
+        TaskMeasurement** iter = thisTaskMsmt->children;
+        while(*iter != NULL)
+        {
+            enqueue(queue, *iter);
+            iter++;
+        }
+
+    }
+
+
+
+
+}
+
+void FreeTaskTree(TaskMeasurement* root)
+{
+    struct Queue* queue = createQueue(1000);
+    enqueue(queue, root);
+    while(!isEmpty(queue))
+    {
+        TaskMeasurement* thisTaskMsmt = dequeue(queue);
+        TaskMeasurement** iter = thisTaskMsmt->children;
+        while(*iter != NULL)
+        {
+            enqueue(queue, *iter);
+            iter++;
+        }
+        printf("Freeing: %s\n", thisTaskMsmt->name);
+        free(thisTaskMsmt);
+    }
+}
+
+void MeasureProcesses(uint8_t* digests, uint8_t* names)
 {
     printf("DEBUG: Measurement: Beginning process measurement.\n");
-
-    int numTasks = 100;
-    struct TaskMeasurement* taskMsmts = calloc(numTasks,sizeof(struct TaskMeasurement));
-    for(int i=0; i<numTasks; i++)
-    {
-        for(int j=0; j<64; j++)
-        {
-            taskMsmts[i].rodataDigest[j] = 0;
-        }
-    }
-
-
-    int numTasksCollected = 0;
-
+    /* struct TaskMeasurement* taskMsmts = calloc(NUM_TASKS, sizeof(struct TaskMeasurement)); */
+    /* int numTasksCollected = 0; */
     uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
-    CrawlProcesses(init_task_ptr, init_task_ptr, taskMsmts, numTasksCollected);
+    /* CrawlProcesses(init_task_ptr, init_task_ptr, taskMsmts, numTasksCollected); */
 
-    for(int i=0; i<100; i++)
-    {
+    TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(init_task_ptr, NULL);
+    swapperMeasurement->parent = swapperMeasurement;
 
-        /* //if(taskMsmts[i].name[0] != '\0') */
-        /* if(strcmp(taskMsmts[i].name, "useram")==0) */
-        /* { */
-        /*     PrintTaskEvidence(&taskMsmts[i]); */
-        /* } */
+    uint8_t* all_tasks_digest = calloc(64, sizeof(uint8_t));
+    MeasureTaskTree(swapperMeasurement, all_tasks_digest);
 
-        if(!IsDigestEmpty(taskMsmts[i].rodataDigest))
-        {
-            PrintTaskEvidence(&taskMsmts[i]);
-        }
-    }
+    FreeTaskTree(swapperMeasurement);
 
-    //ScanTaskStruct(init_task_ptr);
 }
 

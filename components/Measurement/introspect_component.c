@@ -81,9 +81,14 @@ int run(void)
         memset(ms_dp, '0', 4096);
         strcpy(ms_dp, resultMsg);
 
+        /* Measure Running Processes */
+        uint8_t* taskRodataDigests = calloc(NUM_TASKS, 64);
+        uint8_t* taskNames = calloc(NUM_TASKS, 16+1);;
+        MeasureProcesses(taskRodataDigests, taskNames);
 
-        MeasureProcesses();
 
+        printf("And for my next trick, I will appraise that measurement\n");
+        // TODO
 
         done_emit();
     }

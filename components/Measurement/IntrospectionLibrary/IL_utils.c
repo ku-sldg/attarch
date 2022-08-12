@@ -5,105 +5,13 @@
  * 21 July 2022
  */
 
-void introLog(int args, ...)
-{
-    if(true)
-    {
-        printf("DEBUG: Introspection: ");
-        va_list ptr;
-        va_start(ptr, args);
-        for(int i=0; i<args; i++)
-        {
-            printf("%s", va_arg(ptr,char*));
-        }
-    }
-}
-
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
 {
     //return((virtaddr & 0xFFFFFFFF) + 0x40000000);
     return(virtaddr & 0xFFFFFFFF);
 }
 
-uint64_t TranslationTableWalk(uint64_t inputAddr)
-{
-    bool TTWalkDebug = false;
-
-    uint64_t PGDindex = (inputAddr & 0x0000FF8000000000) >> 39;
-    uint64_t PUDindex = (inputAddr & 0x0000007FC0000000) >> 30;
-    uint64_t PMDindex = (inputAddr & 0x000000003FE00000) >> 21;
-    uint64_t PTEindex = (inputAddr & 0x00000000001FF000) >> 12;
-    uint64_t PAGindex = (inputAddr & 0x0000000000000FFF) >>  0;
-
-    if(TTWalkDebug)
-    {
-        printf("input %016X,\nPGDindex %016X,\nPUDindex %016X,\nPMDindex %016X,\nPTEindex %016X\n", inputAddr, PGDindex, PUDindex, PMDindex, PTEindex); 
-        printf("PGDindex %d,\nPUDindex %d,\nPMDindex %d,\nPTEindex %X\n", PGDindex, PUDindex, PMDindex, PTEindex); 
-    }
-    char* PGDTablePtr = ((char*)memdev)+0x4113D000 - RAM_BASE;
-    uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
-    uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE;
-
-    if(TTWalkDebug)
-    {
-        printf("Here is the PGD\n");
-        for(int i=0; i<0x4; i++)
-        {
-            printf("%016X\n", PGDTable[i]);
-        }
-        printf("Get PUD base address from PGD\n");
-        printf("pudAddr is %016X\n", pudAddr);
-    }
-
-    // TODO investigate these bits we drop from every table entry
-    char* pudTablePtr = ((char*)memdev)+pudAddr;
-    uint64_t* PUDTable = (uint64_t*)pudTablePtr;
-    uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE;
-
-    if(TTWalkDebug)
-    {
-        printf("Here is the PUD\n");
-        for(int i=0; i<0x4; i++)
-        {
-            printf("%X: %016X\n", i, PUDTable[i]);
-        }
-        printf("pmdAddr is %016X\n", pmdAddr);
-    }
-
-    char* pmdTablePtr = ((char*)memdev)+pmdAddr;
-    uint64_t* pmdTable = (uint64_t*)pmdTablePtr;
-    uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE;
-
-    if(TTWalkDebug)
-    {
-        printf("Here is the pmd\n");
-        for(int i=0; i<0x4; i++)
-        {
-            printf("%X: %016X\n", i, pmdTable[i]);
-        }
-        printf("pteAddr is %016X\n", pteAddr);
-    }
-
-    char* pteTablePtr = ((char*)memdev)+pteAddr;
-    uint64_t* pteTable = (uint64_t*)pteTablePtr;
-    uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE;
-    uint64_t finalPaddr = offsetAddr | PAGindex;
-
-    if(TTWalkDebug)
-    {
-        printf("Here is the pte at 1C2\n");
-        for(int i=0x1C2; i<0x1C6; i++)
-        {
-            printf("%X: %016X\n", i, pteTable[i]);
-        }
-        printf("offsetAddr is %016X\n", offsetAddr);
-        printf("Output Address is %016X\n", finalPaddr + RAM_BASE);
-        printf("\nTable walk complete\n");
-    }
-
-    return finalPaddr;
-}
-
+// pgd should be the physical address of the page global directory structure
 uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
 {
     bool TTWalkDebug = false;
@@ -184,23 +92,43 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
     return finalPaddr;
 }
 
-uint64_t GetPhysAddr(uint64_t virt)
+uint64_t TranslationTableWalk(uint64_t inputAddr)
 {
-    uint64_t out1 = intro_virt_to_phys(virt);
-    uint64_t out2 = TranslationTableWalk(virt);
-    if(out1 > 0x8001000 && out2 < 0x8001000)
+    /* char* PGDTablePtr = ((char*)memdev)+0x4113D000 - RAM_BASE; */
+    char* PGDTablePtr = 0x4113D000 - RAM_BASE;
+    /* uint64_t PGDTable = ((uint64_t*)PGDTablePtr)[0]; */
+    return TranslationTableWalkSuppliedPGD(inputAddr,  PGDTablePtr);
+}
+
+uint64_t TranslateVaddr(uint64_t vaddr)
+{
+    if( 0xffff800000000000 <= vaddr && vaddr <= 0xffff800008001000 )
     {
-        return out2;
+        return intro_virt_to_phys(vaddr);
     }
-    if(out2 > 0x8001000 && out1 < 0x8001000)
+    return TranslationTableWalk(vaddr);
+}
+
+
+
+
+
+
+
+
+
+void introLog(int args, ...)
+{
+    if(true)
     {
-        return out1;
+        printf("DEBUG: Introspection: ");
+        va_list ptr;
+        va_start(ptr, args);
+        for(int i=0; i<args; i++)
+        {
+            printf("%s", va_arg(ptr,char*));
+        }
     }
-    // TODO how to tell the difference between a kernel vaddr and a user vaddr?
-    // Not sure if we ever get here, but maybe there's a way to tell from the
-    // address itself?
-    printf("\n\nERROR: I'm not sure how to decode that vaddr...\n\n");
-    return 0;
 }
 
 void introspectScan(int* head, int size, char* name)
