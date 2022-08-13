@@ -222,7 +222,6 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests
     /* PrintSectionHeaderData(&shstrtabhdr, true); */
     uint64_t shstrtabPtr = elf->RamOffset + shstrtabhdr.sh_offset;
 
-    /* printf("shstrtab ptr: %p\n", shstrtabPtr); */
     /* printf("shstrtab contents:\n"); */
     /* for(int i=0; i<64; i++) */
     /* { */
@@ -245,6 +244,7 @@ void CrawlSectionHeaders(struct elf64header* elf, uint64_t pgd, uint8_t* digests
         /* PrintSectionHeaderData(&thisShdr, true); */
         if(IsThisTheHeaderName(elf, &thisShdr, shstrtabPtr, ".rodata"))
         {
+            printf("Found rodata!\n");
             uint64_t sectionFileOffset = thisShdr.sh_offset;
             uint64_t sectionVaddr = thisShdr.sh_addr;
             uint64_t sectionPaddr = 0;
