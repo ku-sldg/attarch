@@ -17,6 +17,7 @@
 #define INIT_TASK_ADDR 0xF92280
 
 #include "../hash.h"
+#include "../KnownDigests.h"
 #include "IL_utils.c"
 #include "IL_kernel_modules.c"
 #include "IL_task.c"

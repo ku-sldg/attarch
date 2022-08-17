@@ -90,7 +90,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     }
 
     // collect the read-only data
-    uint8_t* rodata = malloc(thisModuleLayout.ro_size);
+    uint8_t* rodata = calloc(1, thisModuleLayout.ro_size);
     for(int i=0; i<thisModuleLayout.ro_size; i++)
     {
         rodata[i] = ((char*)memdev)[basePtr+i];
@@ -104,7 +104,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     //printerateChars(basePtr, thisModuleLayout.ro_size);
 }
 
-void MeasureKernelModules(uint8_t** module_digests, char** module_names)
+void MeasureKernelModules(uint8_t* module_digests, char* module_names)
 {
     bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
@@ -140,7 +140,7 @@ void MeasureKernelModules(uint8_t** module_digests, char** module_names)
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(modulePtrs[i], module_digests[i], module_names[i]);
+            InterpretKernelModule(modulePtrs[i], module_digests+64*i, module_names+56*i);
         }
     }
 }
@@ -157,3 +157,16 @@ bool IsThisAValidModuleMeasurement(char* moduleName)
     }
     return false;
 }
+
+/* void AppraiseKernelModule(uint8_t* input_digest, bool* result) */
+/* { */
+/*     uint8_t** digests = calloc(numKnownDigests, sizeof(uint8_t*)); */
+/*     for(int i=0; i< numKnownDigests; i++) */
+/*     { */
+/*         digests[i] = calloc(64, sizeof(uint8_t)); */
+/*     } */
+/*     GetKnownModuleDigests(digests); */
+/*     *result = IsThisAKnownDigest(digests, input_digest); */
+/* } */
+
+

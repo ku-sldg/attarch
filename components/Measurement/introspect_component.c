@@ -7,7 +7,8 @@
 #include <camkes.h>
 #include "hash.h"
 #include "IntrospectionLibrary/IL_library.c"
-#include "appraisal.c"
+
+#define NUM_MODULE_DIGESTS 128
 
 int run(void)
 {
@@ -16,79 +17,42 @@ int run(void)
     {
         printf("DEBUG: Measurement: Waiting.\n");
         ready_wait();
+        
+        bool ultimateAppraisalResult = true;
 
-        uint8_t** module_digests = calloc(128, sizeof(uint8_t*));
-        char** module_names = calloc(128, sizeof(char*));
-        for(int i=0; i<128; i++)
-        {
-            module_digests[i] = calloc(1, 64 * sizeof(uint8_t));
-            module_names[i] = calloc(1, 56 * sizeof(char));
-        }
+        uint8_t* module_digests = calloc(NUM_MODULE_DIGESTS, 64);
+        char* module_names = calloc(NUM_MODULE_DIGESTS, 56);
         MeasureKernelModules(module_digests, module_names);
 
-        printf("DEBUG: Measurement: Presenting evidence\n");
-        for(int i=0; i<128; i++)
-        {
-            if(IsThisAValidModuleMeasurement(module_names[i]))
-            {
-                printf("module name: %s\nmodule_digest:\n", module_names[i]);
-                PrintDigest(module_digests[i]);
-            }
-        }
-
         printf("DEBUG: Measurement: Appraising digests\n");
-        bool* module_appraisal_results = calloc(128, sizeof(bool));
-        for(int i=0; i<128; i++)
+        for(int i=0; i<NUM_MODULE_DIGESTS; i++)
         {
-            if(IsThisAValidModuleMeasurement(module_names[i]))
+            if(IsThisAValidModuleMeasurement(module_names+i*56))
             {
-                AppraiseKernelModule(module_digests[i], &module_appraisal_results[i], module_names[i]);
-            }
-        }
-
-        char** pass_module_names = calloc(128, sizeof(char*));
-        for(int i=0; i<128; i++)
-        {
-            pass_module_names[i] = calloc(56, sizeof(char));
-        }
-        for(int i=0; i<128; i++)
-        {
-            if(IsThisAValidModuleMeasurement(module_names[i]))
-            {
-                if(module_appraisal_results[i])
+                if(IsThisAKnownDigest(module_digests+i*64))
                 {
-                    pass_module_names[i] = module_names[i];
+                    printf("Module %s recognized:\n", module_names+i*56);
                 }
+                else
+                {
+                    printf("Be warned! Module %s NOT recognized:\n", module_names+i*56);
+                    ultimateAppraisalResult = false;
+                }
+                RenderDigestDeclaration(module_names+i*56, module_digests+i*64);
             }
         }
 
-        bool ultimateAppraisalResult = true;
-        for(int i=0; i<128; i++)
-        {
-            if(IsThisAValidModuleMeasurement(pass_module_names[i]))
-            {
-                printf("DEBUG: Measurement: %s module: Appraisal Passed.\n", pass_module_names[i]);
-            }
-            else if(IsThisAValidModuleMeasurement(module_names[i]))
-            {
-                ultimateAppraisalResult = false;
-                printf("DEBUG: Measurement: %s module: Appraisal Failed.\n", module_names[i]);
-            }
-        }
+        /* Measure Running Processes */
+        TaskMeasurement* rootTaskMeasurement = MeasureTaskTree();
+        bool taskTreeResult = AppraiseTaskTree(rootTaskMeasurement);
+        ultimateAppraisalResult = ultimateAppraisalResult && taskTreeResult;
+        FreeTaskTree(rootTaskMeasurement);
+
         printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", ultimateAppraisalResult ? "Passed" : "Failed.");
 
         char* resultMsg = ultimateAppraisalResult ? "1" : "0";
         memset(ms_dp, '0', 4096);
         strcpy(ms_dp, resultMsg);
-
-        /* Measure Running Processes */
-        uint8_t* taskRodataDigests = calloc(NUM_TASKS, 64);
-        uint8_t* taskNames = calloc(NUM_TASKS, 16+1);;
-        MeasureProcesses(taskRodataDigests, taskNames);
-
-
-        printf("And for my next trick, I will appraise that measurement\n");
-        // TODO
 
         done_emit();
     }

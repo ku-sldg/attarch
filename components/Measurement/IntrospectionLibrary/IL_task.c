@@ -7,6 +7,7 @@
 
 #include "IL_struct_interp.c"
 #include "IL_elf_header.c"
+#include "../hash.h"
 
 /* C program for array implementation of queue */
 #include <limits.h>
@@ -30,7 +31,7 @@ typedef struct TaskMeasurement
     struct TaskMeasurement* real_parent;
     struct TaskMeasurement** children;
 
-    char name[16];
+    char* name;
     int uid;
     uint32_t myPid;
     uint32_t parentPid;
@@ -79,7 +80,6 @@ void enqueue(struct Queue* queue, TaskMeasurement* item)
     queue->rear = (queue->rear + 1) % queue->capacity;
     queue->array[queue->rear] = item;
     queue->size = queue->size + 1;
-    /* printf("%s enqueued to queue\n", &item->name); */
 }
 
 /* Function to remove an item from queue. It changes front and size */
@@ -131,6 +131,7 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
             &suid,
             "\n\tRead-only Data SHA512 Digest:\n");
     PrintDigest(msmt->rodataDigest);
+    printf("\n");
 }
 
 void GetTaskName(uint64_t task, char* name)
@@ -140,6 +141,11 @@ void GetTaskName(uint64_t task, char* name)
     {
         name[i] = ((char*)memdev+nameLoc)[i];
     }
+}
+
+char* GetTaskNamePointer(uint64_t task)
+{
+    return ((char*)memdev) + task + 1640;
 }
 
 bool ValidateTaskStruct(uint64_t task)
@@ -168,7 +174,7 @@ bool ValidateTaskStruct(uint64_t task)
     return true;
 }
 
-void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr, bool isKernelTask)
+void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr)
 {
     /* printf("vm_start\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[0]); */
     /* printf("vm_end\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[1]); */
@@ -179,41 +185,29 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
     /* printf("vm_mm\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[8]); */
     /* printf("page_prot\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[9]); */
     /* printf("page_flags\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[10]); */
-
     uint64_t vm_start = ((uint64_t*)((char*)memdev+vma))[0];
-    /* printf("before interpvma translate\n"); */
-    //TODO
-    /* uint64_t test = isKernelTask ? intro_virt_to_phys(vm_start) : TranslationTableWalk(vm_start); */
-    /* uint64_t test = TranslationTableWalk(vm_start); */
-    /* printf("middle interp vma translate. paddr: %016X\n", pgdPaddr); */
-    /* printf("vm_start\t\t%016X\n", vm_start); */
-    *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
-    /* printf("after vm_start\n"); */
-    /* printf("after interp vma translate\n"); */
+    /* We need this conditional, but we're not entirely sure why */ 
+    if((unsigned long)0xF0000000 < (unsigned long)vm_start)
+    {
+        *start = intro_virt_to_phys(vm_start);
+    }
+    else
+    {
+        *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
+    }
     *size = ((uint64_t*)((char*)memdev+vma))[1] - ((uint64_t*)((char*)memdev+vma))[0];
     uint64_t nextVaddr = ((uint64_t*)((char*)memdev+vma))[2];
     uint64_t prevVaddr = ((uint64_t*)((char*)memdev+vma))[3];
     *flags = ((uint64_t*)((char*)memdev+vma))[10];
-
-    //TODO
-    /* printf("nextVaddr: %016X\n", nextVaddr); */
-    /* printf("prevVaddr: %016X\n", prevVaddr); */
-    /* printf("threshhold: %016X\n", 0xFFFF80000000); */
-    /* printf("nextVaddr: %ld\n", (long)nextVaddr); */
-    /* printf("nextVaddr: %ld\n", (long)prevVaddr); */
-    /* printf("threshhold: %ld\n", (long)0xFFFF80000000); */
-
     if(nextVaddr == 0)
     {
         *next = 0;
         return;
     }
-
     // we intend for this to ensure impossible address translations do not take
     // place...
     if((long)nextVaddr < (long)0xFFFF80000000)
     {
-        /* printf("\t%p\n", TranslateVaddr(nextVaddr)); */
         *next = TranslateVaddr(nextVaddr);
     }
     else
@@ -221,74 +215,52 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
         printf("walk supplied pgd\n");
         *next = TranslationTableWalkSuppliedPGD(nextVaddr, pgdPaddr);
     }
-    /* *next = isKernelTask ? intro_virt_to_phys(nextVaddr) : TranslationTableWalk(nextVaddr); */
-    /* printf("after get next\n"); */
 }
 
-void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigests, int* numRodataDigests, bool isKernelTask)
+void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigest)
 {
     uint64_t start;
     uint64_t size;
     uint64_t next;
     uint64_t flags;
-    /* printf("before before interp\n"); */
-    InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr, isKernelTask);
-    /* printf("after interp\n"); */
-
+    InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr);
     if( start + size < 0x8001000
             && ((char*)memdev+start)[0] == 0x7f
             && ((char*)memdev+start)[1] == 'E' 
             && ((char*)memdev+start)[2] == 'L' 
             && ((char*)memdev+start)[3] == 'F' )
     {
-        printf("found elf\n");
-        InterpretElfHeader(start, pgdPaddr, rodataDigests, numRodataDigests, isKernelTask);
-        printf("goodbye elf\n");
+        if(TryMeasureElfRodata(start, pgdPaddr, rodataDigest))
+        {
+            // we got a good digest
+            /* printf("Measured ELF rodata for task %s\n", name); */
+            // we expect a task to have at most one ELF header in memory, so we
+            // can return right away.
+            return;
+        }
     }
-
     if(next != 0)
     {
-        CrawlVMAs(next, pgdPaddr, rodataDigests, numRodataDigests, isKernelTask);
+        CrawlVMAs(name, next, pgdPaddr, rodataDigest);
     }
 }
-
-bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
+void InterpretMemory(uint64_t task, char* name, uint8_t* rodataDigest)
 {
-    /* There probably won't be more than 100 rodata sections? */
-    uint8_t* rodataDigests = calloc(100, 64);
-    int numRodataDigests = 0;
-
     uint64_t mmAddrLoc = task + 1024;
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
     if(mmAddr==0)
     {
-        // try active_mm instead
         mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc+8))[0];
         if(mmAddr==0)
         {
-            // this task has no memory to interpret
-            return false;
+            return;
         }
-        printf("defaulting to active_mm\n");
     }
-    // TODO
-    /* uint64_t mm = isKernelTask ? intro_virt_to_phys(mmAddr) : TranslationTableWalk(mmAddr); */
-    /* uint64_t mm = TranslationTableWalk(mmAddr); */
-    /* uint64_t mm = intro_virt_to_phys(mmAddr); */
     uint64_t mm = TranslateVaddr(mmAddr);
-
     uint64_t pgdVaddr = ((uint64_t*)((char*)memdev+mm+64))[0];
-    // TODO
-    /* uint64_t pgdPaddr = isKernelTask ? intro_virt_to_phys(pgdVaddr) : TranslationTableWalk(pgdVaddr); */
-    /* uint64_t pgdPaddr = TranslationTableWalk(pgdVaddr); */
     uint64_t pgdPaddr = TranslateVaddr(pgdVaddr);
-
     uint64_t mmapAddr = ((uint64_t*)((char*)memdev+mm))[0];
-    // TODO
-    /* uint64_t mmap = isKernelTask ? intro_virt_to_phys(mmapAddr) : TranslationTableWalk(mmapAddr); */
-    /* uint64_t mmap = TranslationTableWalk(mmapAddr); */
     uint64_t mmap = TranslateVaddr(mmapAddr);
-
     // these linked lists are apparently null terminated on the ends,
     // so here we put ourselves at the "leftmost" position,
     // before we crawl strictly to the right
@@ -298,35 +270,9 @@ bool InterpretMemory(uint64_t task, uint8_t* rodataDigest, bool isKernelTask)
         mmap = TranslateVaddr(prevVaddr);
         prevVaddr = ((uint64_t*)((char*)memdev+mmap))[3];
     }
-
-    CrawlVMAs(mmap, pgdPaddr, rodataDigests, &numRodataDigests, isKernelTask);
-    printf("end crawl vmas\n");
-
-    if(numRodataDigests > 1)
-    {
-        HashHashes(rodataDigests, numRodataDigests, rodataDigest);
-        printf("We hashed %d rodata sections. Then we hashed their ordered concatentation:\n", numRodataDigests);
-    }
-    else if(numRodataDigests > 0)
-    {
-        for(int i=0; i<64; i++)
-        {
-            rodataDigest[i] = rodataDigests[i];
-        }
-        printf("We hashed and returned 1 rodata digest:\n");
-    }
-    for(int i=0; i<64; i++)
-    {
-        printf("%02X", rodataDigest[i]);
-    }
-    printf("\n");
-
-
-    printf("before task rodataDigests free\n");
-    free(rodataDigests);
-    printf("after free\n");
-
-    return true;
+    /* One ELF per file */
+    uint8_t* elfDigest = calloc(1, 64);
+    CrawlVMAs(name, mmap, pgdPaddr, rodataDigest);
 }
 
 void GetPID(uint64_t task, int* myPid)
@@ -392,40 +338,18 @@ void InterpretTaskStruct(uint64_t thisTaskStructPaddr, uint64_t* children, uint6
     *sibling = TranslateVaddr(leftSibling)-1248;
 }
 
-
-
-
-    /* /1* if(strcmp(&results[taskID].name, "useram")==0) *1/ */
-    /* if(strcmp(&results[taskID].name, "init")!=0 && */
-    /*    strcmp(&results[taskID].name, "rcS")!=0 && */
-    /*    strcmp(&results[taskID].name, "klogd")!=0 && */
-    /*    strcmp(&results[taskID].name, "S90cross_vm_ini")!=0 && */
-    /*    strcmp(&results[taskID].name, "mkdir")!=0 && */
-    /*    strcmp(&results[taskID].name, "adduser")!=0 && */
-    /*    strcmp(&results[taskID].name, "getty")!=0 && */
-    /*    strcmp(&results[taskID].name, "sh")!=0 && */
-    /*    strcmp(&results[taskID].name, "syslogd")!=0) */
-    /* { */
-    /*     //ScanTaskStruct(task); */
-    /*     hasMemory = InterpretMemory(task, &results[taskID].rodataDigest); */
-    /* } */
-
-
-
-
 void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
 {
-    GetTaskName(taskptr, &msmt->name);
-    printf("Currently Crawling: %s\n", &msmt->name);
+    /* GetTaskName(taskptr, &msmt->name); */
+    /* printf("Currently Crawling: %s\n", GetTaskNamePointer(taskptr)); */
+    msmt->name = GetTaskNamePointer(taskptr);
     GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(taskptr, &msmt->cred);
 
-    if(strcmp(&msmt->name, "useram")==0)
+    /* if(strcmp(&msmt->name, "init")==0) */
     {
-        printf("before memory measurement\n");
-        bool isKernelTask = msmt->cred.uid==0 && msmt->cred.suid==0;
-        InterpretMemory(msmt->paddr, &msmt->rodataDigest, isKernelTask);
-        printf("after memory measurement\n");
+        bool isKernelThread = msmt->parentPid == 2;
+        InterpretMemory(msmt->paddr, &msmt->name, &msmt->rodataDigest);
     }
     return;
 }
@@ -459,14 +383,27 @@ TaskMeasurement* BuildTaskTreeNode(uint64_t taskPaddr, TaskMeasurement* parent)
     return thisMsmt;
 }
 
-void MeasureTaskTree(TaskMeasurement* swapper, uint8_t* digest)
+bool AppraiseTaskTree(TaskMeasurement* swapper)
 {
+    bool appraisalResult = true;
     struct Queue* queue = createQueue(1000);
     enqueue(queue, swapper);
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
-        printf("Dequeueing: %s\n", thisTaskMsmt->name);
+        if(!IsDigestEmpty(thisTaskMsmt->rodataDigest))
+        {
+            if(IsThisAKnownDigest(&thisTaskMsmt->rodataDigest))
+            {
+                printf("Task %s recognized:\n", thisTaskMsmt->name);
+            }
+            else
+            {
+                appraisalResult = false;
+                printf("Be warned! Task %s NOT recognized:\n", thisTaskMsmt->name);
+            }
+            RenderDigestDeclaration(thisTaskMsmt->name, thisTaskMsmt->rodataDigest);
+        }
         TaskMeasurement** iter = thisTaskMsmt->children;
         while(*iter != NULL)
         {
@@ -474,6 +411,7 @@ void MeasureTaskTree(TaskMeasurement* swapper, uint8_t* digest)
             iter++;
         }
     }
+    return appraisalResult;
 }
 
 void FreeTaskTree(TaskMeasurement* root)
@@ -489,26 +427,16 @@ void FreeTaskTree(TaskMeasurement* root)
             enqueue(queue, *iter);
             iter++;
         }
-        printf("Freeing: %s\n", thisTaskMsmt->name);
         free(thisTaskMsmt);
     }
 }
 
-void MeasureProcesses(uint8_t* digests, uint8_t* names)
+TaskMeasurement* MeasureTaskTree()
 {
-    printf("DEBUG: Measurement: Beginning process measurement.\n");
-    /* struct TaskMeasurement* taskMsmts = calloc(NUM_TASKS, sizeof(struct TaskMeasurement)); */
-    /* int numTasksCollected = 0; */
+    /* printf("DEBUG: Measurement: Beginning task tree measurement.\n"); */
     uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
-    /* CrawlProcesses(init_task_ptr, init_task_ptr, taskMsmts, numTasksCollected); */
-
     TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(init_task_ptr, NULL);
     swapperMeasurement->parent = swapperMeasurement;
-
-    uint8_t* all_tasks_digest = calloc(64, sizeof(uint8_t));
-    MeasureTaskTree(swapperMeasurement, all_tasks_digest);
-
-    FreeTaskTree(swapperMeasurement);
-
+    return swapperMeasurement;
 }
 

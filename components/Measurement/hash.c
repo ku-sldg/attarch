@@ -12,7 +12,15 @@ void PrintDigest(uint8_t* digest)
         //if(i>0&&i%16==0){printf("\n");}
         printf("%02X", digest[i]);
     }
-    printf("\n");
+}
+
+
+void RenderDigestDeclaration(char* name, uint8_t* digest)
+{
+    printf("\tconst char %s[] = \"", name);
+    PrintDigest(digest);        
+    printf("\";\n");
+    printf("\tHexToByteString(&%s, &digests[64*(numDigests++)]);\n", name);
 }
 
 void ShaTest()
@@ -21,6 +29,7 @@ void ShaTest()
     Hacl_Hash_SHA2_hash_512("abc", 3, output);
     printf("SHA512 of \"abc\" is:\n");
     PrintDigest(output);
+    printf("\n");
 }
 
 void HashMeasure(uint8_t* input, int inputLen, uint8_t* output)
@@ -44,10 +53,8 @@ void HashHashes(uint8_t* hashList, int numHashes, uint8_t* output)
         uint8_t bByte = 0;
         for(int i=0; i<64; i++)
         {
-            printf("a\n");
             aByte = ((uint8_t*)a)[i];
             bByte = ((uint8_t*)b)[i];
-            printf("b\n");
             if(aByte < bByte)
             {
                 return -1;
@@ -59,6 +66,7 @@ void HashHashes(uint8_t* hashList, int numHashes, uint8_t* output)
         }
         return 0;
     }
+    // qsort always seems to Instruction Fault for some raisin
     qsort(hashList, numHashes, 64, cmphash);
     HashMeasure(hashList, 64*numHashes, output);
 }

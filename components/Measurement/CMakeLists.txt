@@ -25,6 +25,7 @@ DeclareCAmkESComponent(
     SOURCES
         introspect_component.c
         hash.c
+        KnownDigests.c
     INCLUDES
         include_gcc_cross
         ${hacl_path} ${kremlin_path} ${kremlib_path}
