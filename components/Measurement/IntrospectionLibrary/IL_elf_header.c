@@ -224,10 +224,6 @@ void CrawlProgramHeaders(struct elf64header* elf, uint8_t* outputDigest)
         }
         segmentPtr+=elf->e_phentsize;
     }
-    /* for(int i=0; i<numDigests; i++) */
-    /* { */
-    /*     PrintDigest(&segmentDigests[i*64]); */
-    /* } */
     HashMeasure(segmentDigests, 64*numDigests, outputDigest);
     free(segmentDigests);
 }
