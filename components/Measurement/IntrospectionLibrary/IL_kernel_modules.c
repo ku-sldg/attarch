@@ -5,6 +5,8 @@
  * 21 July 2022
  */
 
+#define INTRO_NUM_MODULES 128
+
 struct module_layout {
     uint64_t base;
     unsigned int size;
@@ -42,13 +44,13 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
     index += 8; // (*init*(void)
 
     //by inspection
-    //printerate(physAddr + 47 * 8, 3);
     struct module_layout thisModule;
     thisModule.base = ((uint64_t*)((char*)memdev+physAddr+47*8))[0];
     thisModule.size = ((unsigned int*)((char*)memdev+physAddr+47*8))[2];
     thisModule.text_size = ((unsigned int*)((char*)memdev+physAddr+47*8))[3];
     thisModule.ro_size = ((unsigned int*)((char*)memdev+physAddr+47*8))[4];
     thisModule.ro_after_init_size = ((unsigned int*)((char*)memdev+physAddr+47*8))[5];
+
     return thisModule;
 }
 
@@ -67,17 +69,9 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
 
     char msg[13] = "Found Module ";
     introLog(3, msg, name, "\n");
-    /*
-    printf("DEBUG: Measurement: Found Module: ");
-    for(int j=0; j<56; j++)
-    {
-        printf("%c", name[j]);
-    }
-    printf("\n");
-    */
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead((int)inputAddress);
-    uint64_t basePtr = TranslationTableWalk(thisModuleLayout.base);
+    uint64_t basePtr = TranslateVaddr(thisModuleLayout.base);
 
     if(IKMDebug)
     {
@@ -89,19 +83,8 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
         printf("base paddr: %016X\n", basePtr);
     }
 
-    // collect the read-only data
-    uint8_t* rodata = calloc(1, thisModuleLayout.ro_size);
-    for(int i=0; i<thisModuleLayout.ro_size; i++)
-    {
-        rodata[i] = ((char*)memdev)[basePtr+i];
-    }
-
     // digest the read-only data with Sha512 from HACL
-    Hacl_Hash_SHA2_hash_512(rodata, thisModuleLayout.ro_size, rodataDigest);
-    free(rodata);
-
-    // can print out the rodata here to see strings from the source
-    //printerateChars(basePtr, thisModuleLayout.ro_size);
+    Hacl_Hash_SHA2_hash_512(((char*)memdev+basePtr), thisModuleLayout.ro_size, rodataDigest);
 }
 
 void MeasureKernelModules(uint8_t* module_digests, char* module_names)
@@ -114,10 +97,10 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
     }
     /* modulePtrs is a list of offsets into memdev that refer to kernel
     ** modules. They are physical memory addresses with the RAM_BASE
-    ** already subtracted. Assume there are no more than 128 modules.
+    ** already subtracted.
     */
-    uint64_t modulePtrs[128];
-    for(int i=0; i<128; i++)
+    uint64_t modulePtrs[INTRO_NUM_MODULES];
+    for(int i=0; i<INTRO_NUM_MODULES; i++)
     {
         modulePtrs[i] = 0;
     }
@@ -136,7 +119,7 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
     {
         printf("Collecting digests over module rodata...\n");
     }
-    for(int i=0; i<128; i++)
+    for(int i=0; i<INTRO_NUM_MODULES; i++)
     {
         if(modulePtrs[i] != 0)
         {
@@ -157,16 +140,4 @@ bool IsThisAValidModuleMeasurement(char* moduleName)
     }
     return false;
 }
-
-/* void AppraiseKernelModule(uint8_t* input_digest, bool* result) */
-/* { */
-/*     uint8_t** digests = calloc(numKnownDigests, sizeof(uint8_t*)); */
-/*     for(int i=0; i< numKnownDigests; i++) */
-/*     { */
-/*         digests[i] = calloc(64, sizeof(uint8_t)); */
-/*     } */
-/*     GetKnownModuleDigests(digests); */
-/*     *result = IsThisAKnownDigest(digests, input_digest); */
-/* } */
-
 
