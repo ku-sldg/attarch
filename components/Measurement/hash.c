@@ -30,6 +30,7 @@ void ShaTest()
     printf("SHA512 of \"abc\" is:\n");
     PrintDigest(output);
     printf("\n");
+    free(output);
 }
 
 void HashMeasure(uint8_t* input, int inputLen, uint8_t* output)
