@@ -23,12 +23,6 @@ uint64_t RoundDownToCurrentPage(uint64_t x)
         return (x >> 12) << 12;
 }
 
-void MeasureKernelRodataPage(uint8_t* digest, uint64_t pageVaddr)
-{
-    uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
-    HashMeasure( ((char*)memdev+pagePaddr), 4096, digest );
-}
-
 void CollectRodataHashingAsWeGo(uint8_t* digest)
 {
     int numRodataPages = (__end_rodata - __start_rodata)/0x1000;
@@ -46,7 +40,7 @@ void CollectRodataHashingAsWeGo(uint8_t* digest)
             /* printf("this was a ro_after_init page...\n"); */
             continue;
         }
-        MeasureKernelRodataPage(digestArray+i*64, thisPageVaddr); 
+        MeasureKernelPage(memdev, digestArray+i*64, thisPageVaddr); 
     }
     HashMeasure(digestArray, numRodataPages * 64, digest);
     free(digestArray);
