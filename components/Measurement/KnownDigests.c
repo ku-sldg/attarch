@@ -17,6 +17,8 @@ const char Task_common[] = "32A832B0E77F0116389BFC07A6FCE3D253FB488408892D93A431
 const char Task_useram[] = "D8330BFBF39937EB621AD225D4F3BF29A600863E98BDE249C7CF7311277DB56DEB4C2BB4784C77018C7D89EF65B2739A86DAAA77C4446F836BFE8BD7A6FF87C8";
 const char Task_useramclienttest[] = "B4CD84F32613D338A9D7BC36ABD174ABA807057EF286632952F6102D5644E75B3A16E787E5BEA4641907374B411A489A3C573E2A8433E724364E5932A1FE5913";
 
+const char KernelRodata[] = "4DC685FDC9556E62A0175353E8B042E896150B18DE096D20B3C372C85A8CE30168C0F8B423DF5F0A094124A13501C5897BD10A430882BCFDF051E1FB71715CD2";
+
 void HexToByteString(const char* input_digest, uint8_t* output_digest)
 {
     int value;
@@ -34,6 +36,7 @@ int GetKnownDigests(uint8_t* digests)
     HexToByteString(&Task_common, &digests[64*(numDigests++)]);
     HexToByteString(&Task_useram, &digests[64*(numDigests++)]);
     HexToByteString(&Task_useramclienttest, &digests[64*(numDigests++)]);
+    HexToByteString(&KernelRodata, &digests[64*(numDigests++)]);
     return numDigests;
 }
 
