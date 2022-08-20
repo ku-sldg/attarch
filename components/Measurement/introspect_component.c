@@ -48,6 +48,25 @@ bool IsTasksOkay()
     return result;
 }
 
+bool IsKernelRodataOkay()
+{
+    bool result = true;
+    uint8_t* kernelRodataDigest = calloc(1, 64);
+    MeasureKernelRodata(kernelRodataDigest);
+    if(IsThisAKnownDigest(kernelRodataDigest))
+    {
+        printf("Kernel Rodata recognized\n");
+    }
+    else
+    {
+        printf("Be warned! Kernel Rodata NOT recognized:\n");
+        result = false;
+    }
+    RenderDigestDeclaration("KernelRodata", kernelRodataDigest);
+    free(kernelRodataDigest);
+    return result;
+}
+
 int run(void)
 {
     ShaTest();
@@ -64,6 +83,7 @@ int run(void)
         bool appraisal = true;
         appraisal = appraisal && IsModulesOkay();
         appraisal = appraisal && IsTasksOkay();
+        appraisal = appraisal && IsKernelRodataOkay();
         printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", appraisal ? "Passed" : "Failed.");
         char* resultMsg = appraisal ? "1" : "0";
         memset(ms_dp, '0', 4096);

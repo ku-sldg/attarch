@@ -21,3 +21,4 @@
 #include "IL_utils.c"
 #include "IL_kernel_modules.c"
 #include "IL_task.c"
+#include "IL_kernel_rodata.c"
