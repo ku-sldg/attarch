@@ -6,6 +6,7 @@
 #define MEASURE_HASH_H
 
 #include <string.h>
+#include <stdlib.h>
 #include <Hacl_Hash.h>
 
 void PrintDigest(uint8_t* digest);
@@ -20,4 +21,9 @@ void HashHashes(uint8_t* hashList, int numHashes, uint8_t* output);
 
 bool IsDigestEmpty(uint8_t* input);
 
+void MeasureKernelPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr);
+
+void MeasureUserPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr);
+
 #endif
+

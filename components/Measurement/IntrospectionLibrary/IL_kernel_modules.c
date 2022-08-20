@@ -79,12 +79,23 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
         printf("size: %08X\n", thisModuleLayout.size);
         printf("text size: %08X\n", thisModuleLayout.text_size);
         printf("ro size: %08X\n", thisModuleLayout.ro_size);
+        /* If a module doesn't have a ro_after_init section, then */
+        /* core_layout.ro_after_init_size just takes the value of */
+        /* core_layout.ro_size */
+        /* https://lwn.net/Articles/695285/ */
         printf("ro after init size: %08X\n", thisModuleLayout.ro_after_init_size);
         printf("base paddr: %016X\n", basePtr);
     }
 
-    // digest the read-only data with Sha512 from HACL
-    Hacl_Hash_SHA2_hash_512(((char*)memdev+basePtr), thisModuleLayout.ro_size, rodataDigest);
+    // TODO extract this 0x1000 to a #define somewhere else
+    int numRoPages = thisModuleLayout.ro_size / 0x1000;
+    uint8_t* digestArray = calloc(numRoPages, 64);
+    for(int i=0; i<thisModuleLayout.ro_size / 0x1000; i++)
+    {
+        MeasureUserPage((uint8_t*)memdev, digestArray+i*64, thisModuleLayout.base + i*0x1000);
+    }
+    HashMeasure(digestArray, numRoPages, rodataDigest);
+    free(digestArray);
 }
 
 void MeasureKernelModules(uint8_t* module_digests, char* module_names)

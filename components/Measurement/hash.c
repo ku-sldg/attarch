@@ -3,7 +3,6 @@
 /* 28 July 2022 */
 
 #include "hash.h"
-#include <stdlib.h>
 
 void PrintDigest(uint8_t* digest)
 {
@@ -13,7 +12,6 @@ void PrintDigest(uint8_t* digest)
         printf("%02X", digest[i]);
     }
 }
-
 
 void RenderDigestDeclaration(char* name, uint8_t* digest)
 {
@@ -83,3 +81,21 @@ bool IsDigestEmpty(uint8_t* input)
     }
     return true;
 }
+
+void MeasureKernelPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr)
+{
+    uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
+    HashMeasure( ((char*)memdev+pagePaddr), 0x1000, digest );
+}
+
+void MeasureUserPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr)
+{
+    uint64_t pagePaddr = TranslateVaddr(pageVaddr);
+    /* for(int i=0; i<4096; i++) */
+    /* { */
+    /*     printf("%c", ((char*)memdev+pagePaddr)[i]); */
+    /* } */
+    /* printf("\n\n"); */
+    HashMeasure( ((char*)memdev+pagePaddr), 0x1000, digest );
+}
+
