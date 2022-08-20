@@ -5,6 +5,9 @@
  * 21 July 2022
  */
 
+#define INTRO_TASK_DEBUG 0
+#define INTRO_TASK_NUM_CHILDREN 64 // as if a task would have 64 children :shrug:
+
 #include "IL_struct_interp.c"
 #include "IL_elf_header.c"
 #include "../hash.h"
@@ -13,6 +16,15 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+void DebugLog(char* msg)
+{
+    if(INTRO_TASK_DEBUG)
+    {
+        printf(msg);
+    }
+}
+
 
 struct cred {
     int usage;
@@ -29,7 +41,7 @@ typedef struct TaskMeasurement
     uint64_t paddr;
     struct TaskMeasurement* parent;
     struct TaskMeasurement* real_parent;
-    struct TaskMeasurement** children;
+    struct TaskMeasurement* children[INTRO_TASK_NUM_CHILDREN];
 
     char* name;
     int uid;
@@ -187,14 +199,25 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
     /* printf("page_flags\t\t%p\n", ((uint64_t*)((char*)memdev+vma))[10]); */
     uint64_t vm_start = ((uint64_t*)((char*)memdev+vma))[0];
     /* We need this conditional, but we're not entirely sure why */ 
+    /* Actually I think this is the effective size of the process address space, */
+    /* which doesn't really make sense because the address space should theoretically */
+    /* be enormous on a 64-bit system, */
+    /* but on the other hand, we only seem to enter this first condition on */
+    /* weird errors. Like once we enqueued a task twice to be measured, */
+    /* and on the second measurement, all the addresses were bogus and we hit */
+    /* this condition several times fruitlessly before moving on */
     if((unsigned long)0xF0000000 < (unsigned long)vm_start)
     {
+        printf("calling intro_virt_to_phys on %p\n", vm_start);
         *start = intro_virt_to_phys(vm_start);
+        printf("after: %p\n", *start);
     }
     else
     {
         *start = TranslationTableWalkSuppliedPGD(vm_start, pgdPaddr);
     }
+
+    /* Here we retrieve data from the vma struct we just found */
     *size = ((uint64_t*)((char*)memdev+vma))[1] - ((uint64_t*)((char*)memdev+vma))[0];
     uint64_t nextVaddr = ((uint64_t*)((char*)memdev+vma))[2];
     uint64_t prevVaddr = ((uint64_t*)((char*)memdev+vma))[3];
@@ -223,21 +246,26 @@ void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDiges
     uint64_t size;
     uint64_t next;
     uint64_t flags;
+    DebugLog("before interpVMA\n");
     InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr);
+    DebugLog("after\n");
     if( start + size < 0x8001000
             && ((char*)memdev+start)[0] == 0x7f
             && ((char*)memdev+start)[1] == 'E' 
             && ((char*)memdev+start)[2] == 'L' 
             && ((char*)memdev+start)[3] == 'F' )
     {
+        DebugLog("before measure elf rodata\n");
         if(TryMeasureElfRodata(start, pgdPaddr, rodataDigest))
         {
+        DebugLog("after\n");
             // we got a good digest
             /* printf("Measured ELF rodata for task %s\n", name); */
             // we expect a task to have at most one ELF header in memory, so we
             // can return right away.
             return;
         }
+        DebugLog("after\n");
     }
     if(next != 0)
     {
@@ -271,8 +299,9 @@ void InterpretMemory(uint64_t task, char* name, uint8_t* rodataDigest)
         prevVaddr = ((uint64_t*)((char*)memdev+mmap))[3];
     }
     /* One ELF per file */
-    uint8_t* elfDigest = calloc(1, 64);
+    DebugLog("before crawlVMAs\n");
     CrawlVMAs(name, mmap, pgdPaddr, rodataDigest);
+    DebugLog("after\n");
 }
 
 void GetPID(uint64_t task, int* myPid)
@@ -340,16 +369,17 @@ void InterpretTaskStruct(uint64_t thisTaskStructPaddr, uint64_t* children, uint6
 
 void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
 {
-    /* GetTaskName(taskptr, &msmt->name); */
-    /* printf("Currently Crawling: %s\n", GetTaskNamePointer(taskptr)); */
     msmt->name = GetTaskNamePointer(taskptr);
+    /* printf("Currently Crawling: %s\n", msmt->name); */
     GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(taskptr, &msmt->cred);
 
     /* if(strcmp(&msmt->name, "init")==0) */
     {
         bool isKernelThread = msmt->parentPid == 2;
+        DebugLog("before interpret memory\n");
         InterpretMemory(msmt->paddr, &msmt->name, &msmt->rodataDigest);
+        DebugLog("after\n");
     }
     return;
 }
@@ -359,13 +389,15 @@ TaskMeasurement* BuildTaskTreeNode(uint64_t taskPaddr, TaskMeasurement* parent)
     TaskMeasurement* thisMsmt = calloc(1,sizeof(TaskMeasurement));
     thisMsmt->paddr = taskPaddr;
     thisMsmt->parent = parent;
-    // TODO does this really need to be 64 long?
-    thisMsmt->children = calloc(64, sizeof(TaskMeasurement*));
+    DebugLog("before collect measurement\n");
     CollectTaskMeasurement(thisMsmt, taskPaddr);
+    DebugLog("after\n");
     // prepare to crawl further
     uint64_t myChild;
     uint64_t mySibling;
+    DebugLog("interpret task struct\n");
     InterpretTaskStruct(taskPaddr, &myChild, &mySibling);
+    DebugLog("after\n");
     // if we have any children, enqueue them all
     if(ValidateTaskStruct(myChild))
     {
@@ -404,13 +436,19 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
             }
             RenderDigestDeclaration(thisTaskMsmt->name, thisTaskMsmt->rodataDigest);
         }
-        TaskMeasurement** iter = thisTaskMsmt->children;
-        while(*iter != NULL)
+        for(int i=0; i<INTRO_TASK_NUM_CHILDREN; i++)
         {
-            enqueue(queue, *iter);
-            iter++;
+            TaskMeasurement* iter = thisTaskMsmt->children[i];
+            if(iter != NULL)
+            {
+                enqueue(queue, iter);
+                continue;
+            }
+            break;
         }
     }
+    free(queue->array);
+    free(queue);
     return appraisalResult;
 }
 
@@ -421,21 +459,29 @@ void FreeTaskTree(TaskMeasurement* root)
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
-        TaskMeasurement** iter = thisTaskMsmt->children;
-        while(*iter != NULL)
+        for(int i=0; i<INTRO_TASK_NUM_CHILDREN; i++)
         {
-            enqueue(queue, *iter);
-            iter++;
+            TaskMeasurement* iter = thisTaskMsmt->children[i];
+            if(iter != NULL)
+            {
+                enqueue(queue, iter);
+                continue;
+            }
+            break;
         }
         free(thisTaskMsmt);
     }
+    free(queue->array);
+    free(queue);
 }
 
 TaskMeasurement* MeasureTaskTree()
 {
     /* printf("DEBUG: Measurement: Beginning task tree measurement.\n"); */
     uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
+    DebugLog("before build tree\n");
     TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(init_task_ptr, NULL);
+    DebugLog("after\n");
     swapperMeasurement->parent = swapperMeasurement;
     return swapperMeasurement;
 }
