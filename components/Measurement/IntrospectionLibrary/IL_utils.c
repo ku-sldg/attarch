@@ -102,6 +102,8 @@ uint64_t TranslationTableWalk(uint64_t inputAddr)
 
 uint64_t TranslateVaddr(uint64_t vaddr)
 {
+    //TODO I don't think this conditional is right
+    // but the funtion never dies terribly
     if( 0xffff800000000000 <= vaddr && vaddr <= 0xffff800008001000 )
     {
         return intro_virt_to_phys(vaddr);
