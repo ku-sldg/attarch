@@ -26,9 +26,6 @@ void DebugLog(char* msg)
 }
 
 /* So we think this cred struct might have some useful bits
-** But interpreting and retrieving this data is pretty expensive
-** In fact, after removing anything to do with the cred struct,
-** the task measurement has virtually no time cost.
 ** The executor and owner IDs could be collected to ensure
 ** every task was started and is currently owned in a predictable way.
 */
@@ -56,7 +53,7 @@ typedef struct TaskMeasurement
     uint32_t myPid;
     uint32_t parentPid;
     uint32_t flags;
-//    struct cred cred;
+    struct cred cred;
     char rodataDigest[64];
 } TaskMeasurement;
 
@@ -122,7 +119,7 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     char parentPid[10];
     sprintf(parentPid, "%ld", msmt->parentPid);
     char suid[10];
-    //sprintf(suid, "%d", msmt->cred.suid);
+    sprintf(suid, "%d", msmt->cred.suid);
     introLog(9,
             "Task Evidence:\n\tName: ",
             msmt->name,
@@ -390,7 +387,7 @@ void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
     msmt->name = GetTaskNamePointer(taskptr);
     /* printf("Currently Crawling: %s\n", msmt->name); */
     GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
-    //InterpretCred(taskptr, &msmt->cred);
+    InterpretCred(taskptr, &msmt->cred);
 
     /* if(strcmp(&msmt->name, "init")==0) */
     {
