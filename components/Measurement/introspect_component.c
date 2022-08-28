@@ -71,11 +71,10 @@ int run(void)
 {
     ShaTest();
 
-    // Execution time without introspection: 0.67s
-    // Time to Measure Modules: 0.03s
-    // Time to Measure Tasks: 0.9s
-    // Time to Measure Kernel Rodata: 0.55s
-    // This whole introspection procedure takes 1.43 seconds.
+    // Execution time without introspection: 0.66s
+    // Time to Measure Modules: 0.01s
+    // Time to Measure Tasks: 0.86s
+    // Time to Measure Kernel Rodata: 0.53s
     while (1)
     {
         printf("DEBUG: Measurement: Waiting.\n");
