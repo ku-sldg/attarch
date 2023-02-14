@@ -85,8 +85,9 @@ int run(void)
         appraisal = appraisal && IsKernelRodataOkay();
         printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", appraisal ? "Passed" : "Failed.");
         char* resultMsg = appraisal ? "1" : "0";
-        memset(ms_dp, '0', 4096);
-        strcpy(ms_dp, resultMsg);
+        // TODO hook the am back up
+        /* memset(ms_dp, '0', 4096); */
+        /* strcpy(ms_dp, resultMsg); */
         done_emit();
     }
     return 0;

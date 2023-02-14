@@ -16,25 +16,25 @@ import <FileServer/FileServer.camkes>;
 import <SerialServer/SerialServer.camkes>;
 import <TimeServer/TimeServer.camkes>;
 
-component Platam {
-    control;
-    consumes Ready ready;
-    emits Done done;
-    dataport Buf(4096) am_dp;
+/* component Platam { */
+/*     control; */
+/*     consumes Ready ready; */
+/*     emits Done done; */
+/*     dataport Buf(4096) am_dp; */
 
-    emits Ready ms_ready;
-    consumes Done ms_done;
-    dataport Buf(4096) ms_dp;
-}
+/*     emits Ready ms_ready; */
+/*     consumes Done ms_done; */
+/*     dataport Buf(4096) ms_dp; */
+/* } */
 
 component introspect_memdev {
     control;
     //guest memory connection
     dataport Buf memdev;
 
-    consumes Ready ready;
-    emits Done done;
-    dataport Buf(4096) ms_dp;
+    /* consumes Ready ready; */
+    /* emits Done done; */
+    /* dataport Buf(4096) ms_dp; */
 }
 
 component VM {
@@ -46,11 +46,11 @@ component VM {
     // TODO change to am_dp
     //data to pass through to memdev to look at
     //dataport Buf introspect_data;
-    dataport Buf(4096) am_dp;
+    /* dataport Buf(4096) am_dp; */
 
     //communication signals
-    emits Ready ready;
-    consumes Done done;
+    /* emits Ready ready; */
+    /* consumes Done done; */
 }
 
 assembly {
@@ -59,17 +59,17 @@ assembly {
         VM_COMPOSITION_DEF(0)
         connection seL4VMDTBPassthrough vm_dtb(from vm0.dtb_self, to vm0.dtb);
 
-        component Platam platam;
-        connection seL4Notification event_conn_0(from vm0.ready, to platam.ready);
-        connection seL4GlobalAsynch event_conn_1(from platam.done, to vm0.done);
-        connection seL4SharedDataWithCaps am_dp_conn(from platam.am_dp, to vm0.am_dp);
+        /* component Platam platam; */
+        /* connection seL4Notification event_conn_0(from vm0.ready, to platam.ready); */
+        /* connection seL4GlobalAsynch event_conn_1(from platam.done, to vm0.done); */
+        /* connection seL4SharedDataWithCaps am_dp_conn(from platam.am_dp, to vm0.am_dp); */
 
         component introspect_memdev md;
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
 
-        connection seL4Notification event_conn_2(from platam.ms_ready, to md.ready);
-        connection seL4Notification event_conn_3(from md.done, to platam.ms_done);
-        connection seL4SharedDataWithCaps ms_dp_conn(from platam.ms_dp, to md.ms_dp);
+        /* connection seL4Notification event_conn_2(from platam.ms_ready, to md.ready); */
+        /* connection seL4Notification event_conn_3(from md.done, to platam.ms_done); */
+        /* connection seL4SharedDataWithCaps ms_dp_conn(from platam.ms_dp, to md.ms_dp); */
     }
     configuration {
         VM_GENERAL_CONFIGURATION_DEF()
@@ -80,8 +80,8 @@ assembly {
         vm0.cnode_size_bits = 23;
         vm0.simple_untyped24_pool = 12;
 
-        vm0.am_dp_id = 0;
-        vm0.am_dp_size = 4096;
+        /* vm0.am_dp_id = 0; */
+        /* vm0.am_dp_size = 4096; */
 
         md.memdev_hardware_cached = false;
         vm0.memdev_hardware_cached = false;
