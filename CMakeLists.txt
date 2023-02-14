@@ -94,39 +94,39 @@ ${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.307/kernel/dr
 # ==================================================================================================
 
 # Cross-compile useram binaries for the VM
-ExternalProject_Add(
-    useram
-    URL
-    file:///${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml
-    BINARY_DIR
-    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml
-    INSTALL_COMMAND
-    ""
-    BUILD_ALWAYS
-    ON
-    EXCLUDE_FROM_ALL
-    CMAKE_ARGS
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DAPP=userAM
-      -DBASIS=/cake-x64-64/basis_ffi.c
-      -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/apps/userAM/config.cmake
-)
-AddExternalProjFilesToOverlay(
-    useram 
-    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
-    overlay
-    "/useram"
-    FILES
-    useram
-)
-AddExternalProjFilesToOverlay(
-    useram 
-    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
-    overlay
-    "/usr/bin"
-    FILES
-    useramClientTest
-)
+# ExternalProject_Add(
+#     useram
+#     URL
+#     file:///${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml
+#     BINARY_DIR
+#     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml
+#     INSTALL_COMMAND
+#     ""
+#     BUILD_ALWAYS
+#     ON
+#     EXCLUDE_FROM_ALL
+#     CMAKE_ARGS
+#       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+#       -DAPP=userAM
+#       -DBASIS=/cake-x64-64/basis_ffi.c
+#       -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/apps/userAM/config.cmake
+# )
+# AddExternalProjFilesToOverlay(
+#     useram 
+#     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
+#     overlay
+#     "/useram"
+#     FILES
+#     useram
+# )
+# AddExternalProjFilesToOverlay(
+#     useram 
+#     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/apps/userAM/
+#     overlay
+#     "/usr/bin"
+#     FILES
+#     useramClientTest
+# )
 
 AddFileToOverlayDir(
     "S90cross_vm_init"
