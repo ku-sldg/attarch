@@ -21,7 +21,6 @@ import <TimeServer/TimeServer.camkes>;
 /*     consumes Ready ready; */
 /*     emits Done done; */
 /*     dataport Buf(4096) am_dp; */
-
 /*     emits Ready ms_ready; */
 /*     consumes Done ms_done; */
 /*     dataport Buf(4096) ms_dp; */
@@ -31,20 +30,22 @@ component server_am {
     /* control; */
     dataport Buf(4096) client_dp;
     dataport Buf(4096) introspect_dp;
-    dataport Buf(4096) am_dp;
 }
+
 component client_am {
     /* control; */
     dataport Buf(4096) server_dp;
+
+    dataport Buf(4096) am_dp;
+    /* emits Ready ms_ready; */
+    /* consumes Done ms_done; */
 }
 
 component introspect_memdev {
-    control;
-    //guest memory connection
+    /* control; */
+    /* guest memory connection */
     dataport Buf memdev;
-
     dataport Buf(4096) server_dp;
-
     consumes Ready ready;
     emits Done done;
     /* dataport Buf(4096) ms_dp; */
@@ -68,22 +69,24 @@ assembly {
         VM_COMPOSITION_DEF(0)
         connection seL4VMDTBPassthrough vm_dtb(from vm0.dtb_self, to vm0.dtb);
 
+        // Add the server
         component server_am server;
-        component client_am client;
+        
+        /* // Add the introspection component */
         component introspect_memdev md;
-
-        connection seL4SharedDataWithCaps am_dp_conn(from server.am_dp, to vm0.am_dp);
-
-        connection seL4SharedDataWithCaps client_to_server(from client.server_dp, to server.client_dp);
-        connection seL4SharedDataWithCaps server_to_introspect(from server.introspect_dp, to md.server_dp);
-
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
+        connection seL4SharedDataWithCaps server_to_introspect(from server.introspect_dp, to md.server_dp);
         connection seL4Notification event_conn_0(from vm0.ready, to md.ready);
         connection seL4GlobalAsynch event_conn_1(from md.done, to vm0.done);
 
+        /* // Add the client */
+        component client_am client;
+        connection seL4SharedDataWithCaps client_to_server(from client.server_dp, to server.client_dp);
 
-        /* connection seL4Notification event_conn_2(from platam.ms_ready, to md.ready); */
-        /* connection seL4Notification event_conn_3(from md.done, to platam.ms_done); */
+        connection seL4SharedDataWithCaps am_dp_conn(from client.am_dp, to vm0.am_dp);
+        /* connection seL4Notification event_conn_2(from client.ms_ready, to vm0.ready); */
+        /* connection seL4Notification event_conn_3(from vm0.done, to client.ms_done); */
+
     }
     configuration {
         VM_GENERAL_CONFIGURATION_DEF()
