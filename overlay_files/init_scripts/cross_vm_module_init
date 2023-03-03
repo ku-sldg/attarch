@@ -21,8 +21,11 @@ chmod u=srx /useram/useram
 chmod g=s   /useram/useram
 chmod o=    /useram/useram
 
+export CML_STACK_SIZE=10
+export CML_HEAP_SIZE=10
+
 # Run useram daemon
-/useram/useram 5000 5 &
+/useram/useram
 
 # Configure attarch user/group
 addgroup attarch
