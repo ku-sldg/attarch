@@ -3,6 +3,7 @@
 # surely these can be consolidated.
 # for some reason, am-cakeml does not set the target flag even though
 # the target_arch flag has been set
+set(IS_CAMKES_AM true)
 set(CAKE_FLAGS "--target=arm8")
 set(TARGET_ARCH "armv8")
 
