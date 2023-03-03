@@ -19,10 +19,10 @@
 #endif
 
 // these are defined in the dataport's glue code
-extern dataport_caps_handle_t am_dp_handle;
+extern dataport_caps_handle_t server_dp_handle;
 
 static struct camkes_crossvm_connection connections[] = {
-    {&am_dp_handle, ready_emit, -1, "am_dp_conn"}
+    {&server_dp_handle, vm_init_emit, -1, "server_to_client"}
 };
 
 static int consume_callback(vm_t *vm, void *cookie)
@@ -31,12 +31,12 @@ static int consume_callback(vm_t *vm, void *cookie)
     return 0;
 }
 
-extern seL4_Word done_notification_badge(void);
+/* extern seL4_Word done_notification_badge(void); */
 void init_cross_vm_connections(vm_t *vm, void *cookie)
 {
-    connections[0].consume_badge = done_notification_badge();
-    int err = register_async_event_handler(connections[0].consume_badge, consume_callback, NULL);
-    ZF_LOGF_IF(err, "Failed to register_async_event_handler for init_cross_vm_connections.");
+    /* connections[0].consume_badge = done_notification_badge(); */
+    /* int err = register_async_event_handler(connections[0].consume_badge, consume_callback, NULL); */
+    /* ZF_LOGF_IF(err, "Failed to register_async_event_handler for init_cross_vm_connections."); */
 
     cross_vm_connections_init(vm, CONNECTION_BASE_ADDRESS, connections, ARRAY_SIZE(connections));
 }

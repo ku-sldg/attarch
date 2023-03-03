@@ -1,4 +1,8 @@
 /*
+ * Michael Neises
+ * 3 March 2023
+ * Describe the attestation architecture
+ *
  * Copyright 2020, Data61, CSIRO (ABN 41 687 119 230)
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -16,77 +20,69 @@ import <FileServer/FileServer.camkes>;
 import <SerialServer/SerialServer.camkes>;
 import <TimeServer/TimeServer.camkes>;
 
-/* component Platam { */
-/*     control; */
-/*     consumes Ready ready; */
-/*     emits Done done; */
-/*     dataport Buf(4096) am_dp; */
-/*     emits Ready ms_ready; */
-/*     consumes Done ms_done; */
-/*     dataport Buf(4096) ms_dp; */
-/* } */
-
 component server_am {
     /* control; */
-    dataport Buf(4096) client_dp;
+
+    // shared data with the introspect component
     dataport Buf(4096) introspect_dp;
-}
+    emits Ready measurement_request;
+    consumes Done measurement_done;
 
-component client_am {
-    /* control; */
-    dataport Buf(4096) server_dp;
-
-    dataport Buf(4096) am_dp;
-    /* emits Ready ms_ready; */
-    /* consumes Done ms_done; */
+    // shared data with the client in the vm 
+    dataport Buf(4096) client_dp;
+    consumes Ready client_ready;
 }
 
 component introspect_memdev {
     /* control; */
-    /* guest memory connection */
+
+    // shared data with the vm
     dataport Buf memdev;
+
+    // shared data with the server
     dataport Buf(4096) server_dp;
-    consumes Ready ready;
-    emits Done done;
-    /* dataport Buf(4096) ms_dp; */
+    consumes Ready measurement_request;
+    emits Done measurement_done;
 }
 
 component VM {
     VM_INIT_DEF()
     
-    //guest memory region
+    // memory region for introspection
     dataport Buf memdev;
 
-    dataport Buf(4096) am_dp;
-    //communication signals
-    emits Ready ready;
-    consumes Done done;
+    // signals the server_am for measurement
+    emits Ready measurement_request;
+
+    // signals the introspect the vm is done initializing
+    emits Ready vm_init;
+
+    // shared memory with server_am
+     dataport Buf(4096) server_dp;
 }
 
 assembly {
     composition {
+        component server_am server;
+        component introspect_memdev md;
+
         VM_GENERAL_COMPOSITION_DEF()
         VM_COMPOSITION_DEF(0)
         connection seL4VMDTBPassthrough vm_dtb(from vm0.dtb_self, to vm0.dtb);
 
-        // Add the server
-        component server_am server;
-        
-        /* // Add the introspection component */
-        component introspect_memdev md;
+        // dataports
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
         connection seL4SharedDataWithCaps server_to_introspect(from server.introspect_dp, to md.server_dp);
-        connection seL4Notification event_conn_0(from vm0.ready, to md.ready);
-        connection seL4GlobalAsynch event_conn_1(from md.done, to vm0.done);
+        connection seL4SharedDataWithCaps server_to_client(from server.client_dp, to vm0.server_dp);
 
-        /* // Add the client */
-        component client_am client;
-        connection seL4SharedDataWithCaps client_to_server(from client.server_dp, to server.client_dp);
+        // notifications
+        connection seL4Notification client_requests_measurement(from vm0.measurement_request, to server.client_ready);
+        connection seL4Notification server_requests_measurement(from server.measurement_request, to md.measurement_request);
+        connection seL4Notification reports_measurement_done(from md.measurement_done, to server.measurement_done);
+        
 
-        connection seL4SharedDataWithCaps am_dp_conn(from client.am_dp, to vm0.am_dp);
-        /* connection seL4Notification event_conn_2(from client.ms_ready, to vm0.ready); */
-        /* connection seL4Notification event_conn_3(from vm0.done, to client.ms_done); */
-
+        // don't know about this ?
+        //connection seL4GlobalAsynch event_conn_1(from md.done, to vm0.done);
     }
     configuration {
         VM_GENERAL_CONFIGURATION_DEF()
@@ -97,8 +93,8 @@ assembly {
         vm0.cnode_size_bits = 23;
         vm0.simple_untyped24_pool = 12;
 
-        vm0.am_dp_id = 0;
-        vm0.am_dp_size = 4096;
+        vm0.server_dp_id = 0;
+        vm0.server_dp_size = 4096;
 
         md.memdev_hardware_cached = false;
         vm0.memdev_hardware_cached = false;
