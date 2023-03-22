@@ -20,8 +20,14 @@ import <FileServer/FileServer.camkes>;
 import <SerialServer/SerialServer.camkes>;
 import <TimeServer/TimeServer.camkes>;
 
+component mem_guy {
+    dataport Buf(2097152) heapystacky;
+}
+
 component server_am {
-    /* control; */
+    control;
+
+    dataport Buf(2097152) heapystacky;
 
     // shared data with the introspect component
     dataport Buf(4096) introspect_dp;
@@ -65,6 +71,7 @@ assembly {
     composition {
         component server_am server;
         component introspect_memdev md;
+        component mem_guy dummy;
 
         VM_GENERAL_COMPOSITION_DEF()
         VM_COMPOSITION_DEF(0)
@@ -74,6 +81,8 @@ assembly {
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
         connection seL4SharedDataWithCaps server_to_introspect(from server.introspect_dp, to md.server_dp);
         connection seL4SharedDataWithCaps server_to_client(from server.client_dp, to vm0.server_dp);
+
+        connection seL4SharedData dingodongo(from server.heapystacky, to dummy.heapystacky);
 
         // notifications
         connection seL4Notification client_requests_measurement(from vm0.measurement_request, to server.client_ready);
@@ -98,5 +107,7 @@ assembly {
 
         md.memdev_hardware_cached = false;
         vm0.memdev_hardware_cached = false;
+
+        dingodongo.size=2097152;
     }
 }
