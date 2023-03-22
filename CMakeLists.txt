@@ -178,7 +178,7 @@ DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ra
 
 set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
 
-#add_subdirectory(components/server_am)
+add_subdirectory(components/server_am)
 #add_subdirectory(components/Measurement)
 
 # Declare root server
