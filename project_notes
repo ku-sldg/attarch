@@ -1,0 +1,61 @@
+===== timing notes =====
+repo sync on the laptop gf wifi took 2:41 hours
+buildLinux on the laptop took 55 minutes
+startDockerHere (first time) took 1 hour
+startDocker (new cakeml only) then init-build, ninja took about 1 hour
+
+on clean build, w/o cakeml, (init-build && ninja) takes 6:20 minutes
+on clean build, with cakeml, (init-build && ninja) takes 12:40 minutes
+    8:51 with new basis_ffi.c
+    7:04
+    7:40
+    8:02
+
+===== research notes =====
+
+We will try to get the new cakeml compiler to work with our camkes setup.
+
+DataportErr is outdated.
+    Changed it to `DataportErr string`.
+    Added BiMap structure back.
+    Update n2w2 calls to new structure home: FFI (previously was in BString)
+
+git push
+
+Headed toward minimal camkes server execution.
+    Don't have access to complex am_ calls.
+        Remove those calls.
+    adding the server_am incurs a 2x build penalty (6 min -> 12 min)
+        Wow that's ass.
+    Re-enable server_am "control"
+    Okay, we've returned to "undefined reference to run."
+
+Add special basis_ffi.c for camkes component
+    delete inaccessible library calls
+    fix server/cmakelists naming error
+
+Error on malloc
+    brute force test malloc size
+        good up to 100k
+        that's enough for a minimum run
+    min run: "program exited with nonzero exit code"
+        change server.cml to include `val () = main ()` at top level
+        no change in error
+    try increase heap and stack size to 1MB each
+        fail. try .5MB each
+        fail. try .25MB each
+    malloc success up to 1024 * 225
+        try with 128KB stack and heap sizes
+
+Cml dies with nonzero exit code
+    try situate main fun like before (`log Debug` instead of `print`)
+    add "log" func back in via include
+        and additional textioextra func
+    try apply dataport with sufficient memory and use that
+        omg it work
+
+Okay, so the cakeml server is executing, but it's not doing any of its server-y stuff.
+
+However, we're hard-pivoting to comprehensive exam stuff now.
+
+
