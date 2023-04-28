@@ -78,7 +78,7 @@ int run(void)
     while (1)
     {
         printf("DEBUG: Measurement: Waiting.\n");
-        ready_wait();
+        measurement_request_wait();
         bool appraisal = true;
         appraisal = appraisal && IsModulesOkay();
         appraisal = appraisal && IsTasksOkay();
@@ -88,7 +88,7 @@ int run(void)
         // TODO hook the am back up
         /* memset(ms_dp, '0', 4096); */
         /* strcpy(ms_dp, resultMsg); */
-        done_emit();
+        measurement_done_emit();
     }
     return 0;
 }
