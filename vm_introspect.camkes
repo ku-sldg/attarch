@@ -40,7 +40,7 @@ component server_am {
 }
 
 component introspect_memdev {
-    /* control; */
+    control;
 
     // shared data with the vm
     dataport Buf memdev;
