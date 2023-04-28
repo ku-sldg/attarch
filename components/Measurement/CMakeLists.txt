@@ -1,24 +1,21 @@
 # Building the Introspection-Measurement component
-# July 1 2022
+# 28 April 2023
 # Michael Neises
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include_gcc_cross)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include_usr)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include_usr/x86_64-linux-gnu)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon")
+include_directories(/usr/lib/gcc-cross/aarch64-linux-gnu/10/include)
+
+include(../../am-cakeml/system/crypto/evercrypt/hacl.cmake)
 
 DeclareCAmkESComponent(
     introspect_memdev
     SOURCES
-        ${hacl_sources}
         introspect_component.c
-        #hash.c
+        hash.c
         KnownDigests.c
     INCLUDES
-        include_gcc_cross
-        ${hacl_path} ${kremlin_path} ${kremlib_path}
-    # LIBS
-    #     hacl
+        /usr/lib/gcc-cross/aarch64-linux-gnu/10/include
 )
 
-
+add_hacl_camkes(introspect_memdev)
 
