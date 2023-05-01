@@ -1,5 +1,5 @@
 #
-# Copyright 2019, Data61, CSIRO (ABN 41 687 119 230)
+# Copyright 2018, Data61, CSIRO (ABN 41 687 119 230)
 #
 # SPDX-License-Identifier: BSD-2-Clause
 #
@@ -17,6 +17,3 @@ if(${PLATFORM} STREQUAL "qemu-arm-virt")
     set(QEMU_MEMORY "2048")
     set(KernelArmCPU cortex-a53 CACHE STRING "" FORCE)
 endif()
-
-set(KernelNumDomains 2 CACHE STRING "" FORCE)
-set(KernelDomainSchedule "${CMAKE_CURRENT_LIST_DIR}/src/domain_schedule.c" CACHE INTERNAL "")
