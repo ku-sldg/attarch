@@ -7,4 +7,5 @@
 
 set -e
 
+#/usr/bin/useramClientTest 127.0.0.1
 /usr/bin/introspect
