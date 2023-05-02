@@ -128,8 +128,7 @@ CAmkESAddImportPath(${KernelARMPlatform})
 # Define our VM Component with out cross vm dataports glue code
 DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ram.c)
 
-#DeclareCAmkESComponent(introspect_memdev SOURCES component/introspect_component.c)
-add_subdirectory(components/Measurement)
+DeclareCAmkESComponent(introspect_memdev SOURCES component/introspect_component.c)
 
 # Declare root server
 DeclareCAmkESRootserver(
