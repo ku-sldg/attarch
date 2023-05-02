@@ -71,25 +71,6 @@ int run(void)
 {
     ShaTest();
 
-    printf("\n\n\nDoing scanning tests...\n\n\n");
-    for(int i=0; i<RAM_SIZE; i++)
-    {
-        uint8_t thisChar = ((char*)memdev)[i];
-        if(thisChar == 0)
-        {
-            continue;
-        }
-        if( 0 < thisChar && thisChar < 128 )
-        {
-            printf("%c",((char*)memdev)[i]);
-        }
-        else
-        {
-            printf("%02X",((char*)memdev)[i]);
-        }
-    }
-    printf("\n\n\nEnding scanning tests...\n\n\n");
-
     // Execution time without introspection: 0.66s
     // Time to Measure Modules: 0.01s
     // Time to Measure Tasks: 0.86s
@@ -97,7 +78,8 @@ int run(void)
     while (1)
     {
         printf("DEBUG: Measurement: Waiting.\n");
-        measurement_request_wait();
+        ready_wait();
+
         bool appraisal = true;
         appraisal = appraisal && IsModulesOkay();
         appraisal = appraisal && IsTasksOkay();
@@ -107,7 +89,7 @@ int run(void)
         // TODO hook the am back up
         /* memset(ms_dp, '0', 4096); */
         /* strcpy(ms_dp, resultMsg); */
-        measurement_done_emit();
+        done_emit();
     }
     return 0;
 }
