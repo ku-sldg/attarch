@@ -17,46 +17,81 @@ include(${CAMKES_VM_LINUX_MODULE_HELPERS_PATH})
 include(ExternalProject)
 include(external-project-helpers)
 
-if("${KernelARMPlatform}" STREQUAL "exynos5422")
-    set(cpp_flags "-DKERNELARMPLATFORM_EXYNOS5422")
-    set(linux_repo "https://github.com/hardkernel/linux.git")
-    set(linux_tag "4.14.87-153")
-    set(linux_arch "arm")
-    set(linux_cross_compile "arm-linux-gnueabi-")
 
-    find_package(camkes-vm-linux REQUIRED)
-
-    include(${CAMKES_VM_LINUX_HELPERS_PATH})
-
-    set(cpp_flags "-DKERNELARMPLATFORM_EXYNOS5422")
-
-    # Generate overlayed rootfs
-    set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/exynos5422/rootfs.cpio.gz")
-
-elseif("${KernelARMPlatform}" STREQUAL "qemu-arm-virt")
-    set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
-    set(linux_repo "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git")
-    set(linux_tag "v4.9.189")
-    set(linux_arch "arm64")
-    set(linux_cross_compile "aarch64-linux-gnu-")
-
-    find_package(camkes-vm-linux REQUIRED)
-
-    include(${CAMKES_VM_LINUX_HELPERS_PATH})
-
-    include(simulation)
-
-    set(SIMULATION ON CACHE BOOL "Generate simulation script to run qemu with the proper arguments")
-
-    if(SIMULATION)
-        GenerateSimulateScript()
-    endif()
-
+# ==================================================================================================
+# SECTION do this stuff because always qemu-arm-virt
+# ==================================================================================================
+set(cpp_flags "-DKERNELARMPLATFORM_QEMU-ARM-VIRT")
+include(simulation)
+set(SIMULATION ON CACHE BOOL "Generate simulation script to run qemu with the proper arguments")
+if(SIMULATION)
+    GenerateSimulateScript()
 endif()
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
 
-AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/linux")
+AddToFileServer("linux" "${CMAKE_CURRENT_SOURCE_DIR}/linux/arch/arm64/boot/Image")
 
-set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs_crossvm.cpio.gz")
+#set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs_crossvm.cpio.gz")
+set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/rootfs.cpio.gz")
+
+# ==================================================================================================
+# SECTION compile linux kernel modules
+# ==================================================================================================
+
+# Setup and Configure Linux Sources
+set(linux_config "${CMAKE_CURRENT_SOURCE_DIR}/linux/.config")
+set(linux_symvers "${CMAKE_CURRENT_SOURCE_DIR}/linux/Module.symvers")
+
+# linux_dir should point to wherever you built the kernel
+set(linux_dir "${CMAKE_CURRENT_SOURCE_DIR}/linux")
+
+# Add the external signal module project
+ExternalProject_Add(connection-module
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/connection-module
+    BUILD_ALWAYS ON
+    STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/connection-module-stamp
+    EXCLUDE_FROM_ALL
+    INSTALL_COMMAND ""
+    CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DCMAKE_TOOLCHAIN_FILE=${LINUX_64BIT_TOOLCHAIN}
+        -DLINUX_KERNEL_DIR=${linux_dir}
+        -DMODULE_HELPERS_FILE=${CAMKES_VM_LINUX_DIR}/linux-module-helpers.cmake
+)
+# Add our module binary to the overlay
+AddExternalProjFilesToOverlay(connection-module
+${CMAKE_CURRENT_BINARY_DIR}/connection-module overlay "lib/modules/4.9.307/kernel/drivers/vmm"
+    FILES connection.ko)
+
+# Add the external poison module project
+ExternalProject_Add(poison-module
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/poison-module
+    BUILD_ALWAYS ON
+    STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/poison-module-stamp
+    EXCLUDE_FROM_ALL
+    INSTALL_COMMAND ""
+    CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DCMAKE_TOOLCHAIN_FILE=${LINUX_64BIT_TOOLCHAIN}
+        -DLINUX_KERNEL_DIR=${linux_dir}
+        -DMODULE_HELPERS_FILE=${CAMKES_VM_LINUX_DIR}/linux-module-helpers.cmake
+)
+# Add our module binary to the overlay
+AddExternalProjFilesToOverlay(poison-module
+${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.307/kernel/drivers/vmm"
+    FILES poison.ko)
+
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
+
+
+
+
 
 ExternalProject_Add(
     introspect-app
