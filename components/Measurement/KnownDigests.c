@@ -14,12 +14,12 @@ const char Task_common[] = "32A832B0E77F0116389BFC07A6FCE3D253FB488408892D93A431
 const char introspect[] = "6FED3D67BB74B77729C78BA79910D99732974B9145A9C93EBE457040FFC19485FE7CF4D9326DCFF098D9B68580813E2F1023DAEA2B5B3A33DF3DA620D94BE65D";
 const char KernelRodata[] = "D11343746B1EFB12D11DD6688CB91E033B6475506B72E4A1F6E18A12CDFEB6497E554E188DE70BE042F1C82106E68FAB461D9288B7DF3A21A35C34BF2D34FF41";
 
-void HexToByteString(const char* input_digest, uint8_t* output_digest)
+void HexToByteString(const char* input_digest, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     int value;
     for(int i=0; i < DIGEST_NUM_BYTES && sscanf(input_digest + i * 2, "%2x", &value); i++)
     {
-        output_digest[i] = value;
+        ((uint8_t*)output_digest)[i] = value;
     }
 }
 
@@ -37,7 +37,7 @@ int GetKnownDigests(uint8_t* digests)
     return numDigests;
 }
 
-bool IsThisAKnownDigest(uint8_t* input_digest)
+bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES])
 {
     uint8_t* known = calloc(INTRO_NUM_DIGESTS, DIGEST_NUM_BYTES);
     int numKnownDigests = GetKnownDigests(known);
@@ -47,7 +47,7 @@ bool IsThisAKnownDigest(uint8_t* input_digest)
         isKnown = true;
         for(int j=0; j<DIGEST_NUM_BYTES; j++)
         {
-            if(known[i*DIGEST_NUM_BYTES + j] != input_digest[j])
+            if(known[i*DIGEST_NUM_BYTES + j] != ((uint8_t*)input_digest)[j])
             {
                 isKnown = false;
                 break;
@@ -63,7 +63,7 @@ bool IsThisAKnownDigest(uint8_t* input_digest)
     return false;
 }
 
-void RenderDigestDeclaration(char* name, uint8_t* digest)
+void RenderDigestDeclaration(char* name, uint8_t (*digest)[DIGEST_NUM_BYTES])
 {
     printf("\tconst char %s[] = \"", name);
     PrintDigest(digest);        

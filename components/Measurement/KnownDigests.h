@@ -14,16 +14,16 @@
 #include <stdint.h>
 
 // render our convenient digest hex strings into usable form
-void HexToByteString(const char* input_digest, uint8_t* output_digest);
+void HexToByteString(const char* input_digest, uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
 // copy our known digests into the argument passed in.
 // return the number of known digests
 int GetKnownDigests(uint8_t* digests);
 
 // check a digest against our known digests
-bool IsThisAKnownDigest(uint8_t* input_digest);
+bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES]);
 
 // print out c code for if you want to declare a new golden digest
-void RenderDigestDeclaration(char* name, uint8_t* digest);
+void RenderDigestDeclaration(char* name, uint8_t (*digest)[DIGEST_NUM_BYTES]);
 
 #endif
