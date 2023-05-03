@@ -85,13 +85,13 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST
         printf("base paddr: %016X\n", basePtr);
     }
 
-    int numRoPages = thisModuleLayout.ro_size / PAGE_SIZE;
-    uint8_t (*digestArray)[numRoPages * DIGEST_NUM_BYTES] = calloc(numRoPages, DIGEST_NUM_BYTES);
+    int this_module_num_ro_pages = thisModuleLayout.ro_size / PAGE_SIZE;
+    uint8_t (*digestArray)[this_module_num_ro_pages * DIGEST_NUM_BYTES] = calloc(this_module_num_ro_pages, DIGEST_NUM_BYTES);
     for(int i=0; i<thisModuleLayout.ro_size / PAGE_SIZE; i++)
     {
-        MeasureUserPage((uint8_t*)memdev, &((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*PAGE_SIZE);
+        MeasureUserPage((uint8_t*)memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*PAGE_SIZE);
     }
-    HashMeasure(digestArray, numRoPages, rodataDigest);
+    HashMeasure((uint8_t*)digestArray, this_module_num_ro_pages, rodataDigest);
     free(digestArray);
 }
 
@@ -131,7 +131,7 @@ void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(modulePtrs[i], &((*module_digests)[DIGEST_NUM_BYTES*i]), &((*module_names)[MODULE_NAME_LEN*i]));
+            InterpretKernelModule(modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [MODULE_NAME_LEN])&((*module_names)[MODULE_NAME_LEN*i]));
         }
     }
 }

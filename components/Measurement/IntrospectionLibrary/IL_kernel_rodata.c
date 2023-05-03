@@ -31,9 +31,9 @@ void CollectRodataHashingAsWeGo(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
             /* printf("this was a ro_after_init page...\n"); */
             continue;
         }
-        MeasureKernelPage(memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
+        MeasureKernelPage((char*)memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
-    HashMeasure(digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
+    HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
     free(digestArray);
 }
 

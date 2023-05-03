@@ -221,7 +221,7 @@ void CrawlProgramHeaders(struct elf64header* elf, uint8_t (*outputDigest)[DIGEST
         struct elf64phdr thisPhdr = CollectProgramHeader(segmentPtr, elf->RamOffset);
         if(!(thisPhdr.p_flags & 2)) // "if this progrm header refers to a non-writable segment..."
         {
-            HashMeasure( ((char*)memdev+thisPhdr.p_vaddr), thisPhdr.p_memsz, &segmentDigests[numDigests*DIGEST_NUM_BYTES] );
+            HashMeasure( ((char*)memdev+thisPhdr.p_vaddr), thisPhdr.p_memsz, (uint8_t (*) [DIGEST_NUM_BYTES])&segmentDigests[numDigests*DIGEST_NUM_BYTES] );
             numDigests++;
         }
         segmentPtr+=elf->e_phentsize;

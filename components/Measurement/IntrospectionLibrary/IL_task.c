@@ -129,17 +129,8 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
             "\n\tSUID: ",
             &suid,
             "\n\tRead-only Data SHA512 Digest:\n");
-    PrintDigest(msmt->rodataDigest);
+    PrintDigest((uint8_t (*) [DIGEST_NUM_BYTES])(msmt->rodataDigest));
     printf("\n");
-}
-
-void GetTaskName(uint64_t task, char* name)
-{
-    int nameLoc = task + 1640;
-    for(int i=0; i<TASK_COMM_LEN; i++)
-    {
-        name[i] = ((char*)memdev+nameLoc)[i];
-    }
 }
 
 void GetTaskNamePointer(uint64_t task, char (*output_name)[TASK_COMM_LEN])
@@ -239,7 +230,7 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
 ** It takes an address "pgdPaddr" to the relevant Page Global Directory.
 ** It outputs a hash digest into eponymous pointer argument.
 */
-void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
+void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t start;
     uint64_t size;
@@ -267,14 +258,14 @@ void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDige
     }
     if(next != 0)
     {
-        CrawlVMAs(name, next, pgdPaddr, rodataDigest);
+        CrawlVMAs(next, pgdPaddr, rodataDigest);
     }
 }
 
 /* InterpretMemory takes a pointer to a valid task_struct in VM memory "task"
 ** and returns a hash digest of its rodata (if it exists)
 */
-void InterpretMemory(uint64_t task, char* name, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
+void InterpretMemory(uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t mmAddrLoc = task + 1024;
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
@@ -302,7 +293,7 @@ void InterpretMemory(uint64_t task, char* name, uint8_t (*rodataDigest)[DIGEST_N
     }
     /* One ELF per file */
     DebugLog("before crawlVMAs\n");
-    CrawlVMAs(name, mmap, pgdPaddr, rodataDigest);
+    CrawlVMAs(mmap, pgdPaddr, rodataDigest);
     DebugLog("after\n");
 }
 
@@ -392,11 +383,12 @@ void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
     GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(taskptr, &msmt->cred);
 
+    // TODO explain this unconditional block
     /* if(strcmp(&msmt->name, "init")==0) */
     {
         bool isKernelThread = msmt->parentPid == 2;
         DebugLog("before interpret memory\n");
-        InterpretMemory(msmt->paddr, &msmt->name, &msmt->rodataDigest);
+        InterpretMemory(msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
         DebugLog("after\n");
     }
     return;
@@ -449,9 +441,9 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
-        if(!IsDigestEmpty((uint8_t (*)[64])(thisTaskMsmt->rodataDigest)))
+        if(!IsDigestEmpty((uint8_t (*)[DIGEST_NUM_BYTES])(thisTaskMsmt->rodataDigest)))
         {
-            if(IsThisAKnownDigest((uint8_t (*)[64])thisTaskMsmt->rodataDigest))
+            if(IsThisAKnownDigest((uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest))
             {
                 printf("Task %s recognized:\n", thisTaskMsmt->name);
             }
@@ -460,7 +452,7 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
                 appraisalResult = false;
                 printf("Be warned! Task %s NOT recognized:\n", thisTaskMsmt->name);
             }
-            RenderDigestDeclaration(thisTaskMsmt->name, (uint8_t (*)[64])thisTaskMsmt->rodataDigest);
+            RenderDigestDeclaration((char (*) [MODULE_NAME_LEN])(thisTaskMsmt->name), (uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest);
         }
         for(int i=0; i<NUM_CHILD_TASKS; i++)
         {
