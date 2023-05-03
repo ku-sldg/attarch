@@ -23,4 +23,7 @@ int GetKnownDigests(uint8_t* digests);
 // check a digest against our known digests
 bool IsThisAKnownDigest(uint8_t* input_digest);
 
+// print out c code for if you want to declare a new golden digest
+void RenderDigestDeclaration(char* name, uint8_t* digest);
+
 #endif

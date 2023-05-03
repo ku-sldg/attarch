@@ -14,14 +14,6 @@ void PrintDigest(uint8_t* digest)
     }
 }
 
-void RenderDigestDeclaration(char* name, uint8_t* digest)
-{
-    printf("\tconst char %s[] = \"", name);
-    PrintDigest(digest);        
-    printf("\";\n");
-    printf("\tHexToByteString(&%s, &digests[DIGEST_NUM_BYTES*(numDigests++)]);\n", name);
-}
-
 void ShaTest()
 {
     uint8_t* output = malloc(DIGEST_NUM_BYTES);

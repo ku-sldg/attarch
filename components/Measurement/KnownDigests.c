@@ -63,4 +63,13 @@ bool IsThisAKnownDigest(uint8_t* input_digest)
     return false;
 }
 
+void RenderDigestDeclaration(char* name, uint8_t* digest)
+{
+    printf("\tconst char %s[] = \"", name);
+    PrintDigest(digest);        
+    printf("\";\n");
+    printf("\tHexToByteString(&%s, &digests[DIGEST_NUM_BYTES*(numDigests++)]);\n", name);
+}
+
+
 

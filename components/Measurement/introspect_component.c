@@ -12,7 +12,7 @@
 bool IsModulesOkay()
 {
     bool result = true;
-    uint8_t* module_digests = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
+    uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES] = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
     char* module_names = calloc(NUM_MODULE_DIGESTS, MODULE_NAME_LEN);
     MeasureKernelModules(module_digests, module_names);
 
@@ -21,7 +21,7 @@ bool IsModulesOkay()
     {
         if(IsThisAValidModuleMeasurement(module_names+i*MODULE_NAME_LEN))
         {
-            if(IsThisAKnownDigest(module_digests+i*DIGEST_NUM_BYTES))
+            if(IsThisAKnownDigest(((uint8_t*)module_digests)+i*DIGEST_NUM_BYTES))
             {
                 printf("Module %s recognized:\n", module_names+i*MODULE_NAME_LEN);
             }
@@ -30,7 +30,7 @@ bool IsModulesOkay()
                 printf("Be warned! Module %s NOT recognized:\n", module_names+i*MODULE_NAME_LEN);
                 result = false;
             }
-            RenderDigestDeclaration(module_names+i*MODULE_NAME_LEN, module_digests+i*DIGEST_NUM_BYTES);
+            RenderDigestDeclaration(module_names+i*MODULE_NAME_LEN, ((uint8_t*)module_digests)+i*DIGEST_NUM_BYTES);
         }
     }
     free(module_digests);

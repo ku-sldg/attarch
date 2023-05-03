@@ -12,8 +12,6 @@
 
 void PrintDigest(uint8_t* digest);
 
-void RenderDigestDeclaration(char* name, uint8_t* digest);
-
 void ShaTest();
 
 void HashMeasure(uint8_t* input, int inputLen, uint8_t* output);
