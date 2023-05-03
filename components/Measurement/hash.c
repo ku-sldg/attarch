@@ -5,12 +5,12 @@
 
 #include "hash.h"
 
-void PrintDigest(uint8_t* digest)
+void PrintDigest(uint8_t (*digest)[DIGEST_NUM_BYTES])
 {
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
     {
         //if(i>0&&i%16==0){printf("\n");}
-        printf("%02X", digest[i]);
+        printf("%02X", ((uint8_t*)digest)[i]);
     }
 }
 
@@ -19,23 +19,23 @@ void ShaTest()
     uint8_t* output = malloc(DIGEST_NUM_BYTES);
     Hacl_Hash_SHA2_hash_512("abc", 3, output);
     printf("SHA512 of \"abc\" is:\n");
-    PrintDigest(output);
+    //PrintDigest(output);
     printf("\n");
     free(output);
 }
 
-void HashMeasure(uint8_t* input, int inputLen, uint8_t* output)
+void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
-    Hacl_Hash_SHA2_hash_512(input, inputLen, output);
+    Hacl_Hash_SHA2_hash_512(input, inputLen, ((uint8_t*)output_digest));
 }
 
-void HashHashes(uint8_t* hashList, int numHashes, uint8_t* output)
+void HashHashes(uint8_t* hashList, int numHashes, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     if(numHashes < 2)
     {
         for(int i=0; i<DIGEST_NUM_BYTES; i++)
         {
-            output[i] = hashList[i];
+            ((uint8_t*)output_digest)[i] = hashList[i];
         }
         return;
     }
@@ -60,14 +60,14 @@ void HashHashes(uint8_t* hashList, int numHashes, uint8_t* output)
     }
     // qsort always seems to Instruction Fault for some raisin
     qsort(hashList, numHashes, DIGEST_NUM_BYTES, cmphash);
-    HashMeasure(hashList, DIGEST_NUM_BYTES*numHashes, output);
+    HashMeasure(hashList, DIGEST_NUM_BYTES*numHashes, output_digest);
 }
 
-bool IsDigestEmpty(uint8_t* input)
+bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
 {
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
     {
-        if(input[i] != '\0')
+        if(((uint8_t*)digest)[i] != '\0')
         {
             return false;
         }
@@ -75,13 +75,13 @@ bool IsDigestEmpty(uint8_t* input)
     return true;
 }
 
-void MeasureKernelPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr)
+void MeasureKernelPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
     uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
-    HashMeasure( ((char*)memdev+pagePaddr), PAGE_SIZE, digest );
+    HashMeasure( ((char*)memdev+pagePaddr), PAGE_SIZE, output_digest );
 }
 
-void MeasureUserPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr)
+void MeasureUserPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
     uint64_t pagePaddr = TranslateVaddr(pageVaddr);
     /* for(int i=0; i<4096; i++) */
@@ -89,6 +89,6 @@ void MeasureUserPage(uint8_t* memdev, uint8_t* digest, uint64_t pageVaddr)
     /*     printf("%c", ((char*)memdev+pagePaddr)[i]); */
     /* } */
     /* printf("\n\n"); */
-    HashMeasure( ((char*)memdev+pagePaddr), PAGE_SIZE, digest );
+    HashMeasure( ((char*)memdev+pagePaddr), PAGE_SIZE, output_digest );
 }
 
