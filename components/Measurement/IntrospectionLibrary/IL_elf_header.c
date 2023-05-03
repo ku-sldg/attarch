@@ -211,7 +211,7 @@ void PrintElfHeaderData(struct elf64header* header)
     printf("shstrndx: %d\n", header->e_shstrndx);
 }
 
-void CrawlProgramHeaders(struct elf64header* elf, uint8_t* outputDigest)
+void CrawlProgramHeaders(struct elf64header* elf, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t segmentPtr = elf->RamOffset + elf->e_phoff;
     uint8_t* segmentDigests = calloc(elf->e_phnum, DIGEST_NUM_BYTES);
@@ -230,7 +230,7 @@ void CrawlProgramHeaders(struct elf64header* elf, uint8_t* outputDigest)
     free(segmentDigests);
 }
 
-bool TryMeasureElfRodata(uint64_t elfAddr, uint64_t pgd, uint8_t* outputDigest)
+bool TryMeasureElfRodata(uint64_t elfAddr, uint64_t pgd, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
 {
     struct elf64header elf = CollectElfHeaderData(elfAddr);
     /* PrintElfHeaderData(&elf); */
