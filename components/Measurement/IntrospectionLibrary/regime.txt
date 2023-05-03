@@ -1,0 +1,43 @@
+ChatGPT4
+on translation regimes
+for VMSAv8-64 architectures
+
+result: we require the ability to read the VM's "CPU registers."
+
+__________________________________________________________________________
+
+To determine the translation regime(s) being used on the system you are
+introspecting, you will need to examine the system's control registers.
+These control registers determine the current execution state,
+translation regime, and other configurations of the system. The
+registers you should look at are:
+
+CurrentEL (Current Exception Level): This register indicates the current
+exception level (EL) of the system. It can have values EL0, EL1, EL2, or
+EL3.
+
+SCR_EL3 (Secure Configuration Register): This register contains bits
+that control the security state, execution state, and endianness of the
+Non-secure EL1 and EL0 exception levels.
+
+HCR_EL2 (Hypervisor Configuration Register): This register contains bits
+that control the behavior of the EL1 exception level when the processor
+is in EL2. The E2H and TGE bits are particularly relevant for
+determining the translation regime.
+
+SCTLR_ELx (System Control Register for each EL): This register contains
+bits that enable or disable the MMU, caches, and other system features
+at each exception level.
+
+By examining the values of these registers, you can determine the
+translation regime being used on the system. For example, if CurrentEL
+indicates EL1 and HCR_EL2.{E2H, TGE} = {0, 0}, then the system is using
+the Secure EL1&0 or Non-secure EL1&0 translation regime, depending on
+the security state determined by SCR_EL3.NS.
+
+Keep in mind that in order to introspect these registers, you would need
+to have some level of access to the system's hardware or have a method
+to access the guest virtual machine's registers when performing virtual
+machine introspection (VMI). This might involve using debugging tools or
+implementing VMI-specific techniques to access these registers from the
+host system.
