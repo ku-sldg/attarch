@@ -5,11 +5,9 @@
  */
 
 #include <camkes.h>
+#include "configurations/include.h"
 #include "hash.h"
 #include "IntrospectionLibrary/IL_library.c"
-
-#define NUM_MODULE_DIGESTS 128
-
 
 bool IsModulesOkay()
 {

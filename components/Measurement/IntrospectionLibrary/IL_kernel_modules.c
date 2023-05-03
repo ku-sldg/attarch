@@ -5,8 +5,6 @@
  * 21 July 2022
  */
 
-#define INTRO_NUM_MODULES 128
-
 struct module_layout {
     uint64_t base;
     unsigned int size;
@@ -62,7 +60,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
         printf("Module Address: %016X\n", inputAddress);
     }
 
-    for(int j=16; j<56+16; j++)
+    for(int j=16; j<MODULE_NAME_LEN+16; j++)
     {
         name[j-16] = ((char*)memdev)[inputAddress+j];
     }
@@ -110,8 +108,8 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
     ** modules. They are physical memory addresses with the RAM_BASE
     ** already subtracted.
     */
-    uint64_t modulePtrs[INTRO_NUM_MODULES];
-    for(int i=0; i<INTRO_NUM_MODULES; i++)
+    uint64_t modulePtrs[NUM_MODULE_DIGESTS];
+    for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
         modulePtrs[i] = 0;
     }
@@ -130,7 +128,7 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
     {
         printf("Collecting digests over module rodata...\n");
     }
-    for(int i=0; i<INTRO_NUM_MODULES; i++)
+    for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
         if(modulePtrs[i] != 0)
         {
@@ -140,7 +138,7 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
 }
 bool IsThisAValidModuleMeasurement(char* moduleName)
 {
-    for(int i=0; i<56; i++)
+    for(int i=0; i<MODULE_NAME_LEN; i++)
     {
         if(moduleName[i] != '\0')
         {

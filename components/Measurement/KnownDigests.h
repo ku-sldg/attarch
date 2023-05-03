@@ -7,6 +7,8 @@
 #ifndef INTRO_KNOWN_DIGESTS_H
 #define INTRO_KNOWN_DIGESTS_H
 
+#include "configurations/include.h"
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>

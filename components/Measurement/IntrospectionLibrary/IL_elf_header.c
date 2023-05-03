@@ -1,6 +1,6 @@
 /*
- * An introspection library for Linux 4.9.307
- * Exhaustive Interpretation of a task struct
+ * Introspection tools for elf headers in memory
+ * for Linux 4.9.307
  * Michael Neises
  * 21 July 2022
  */
@@ -8,6 +8,8 @@
 /* Elf specs from */ 
 /* https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html */
 /* https://web.mit.edu/freebsd/head/sys/sys/elf64.h */
+/* which says this: */
+/* ELF definitions common to all 64-bit architectures. */
 
 struct elf64header {
     uint64_t      RamOffset;
@@ -212,19 +214,19 @@ void PrintElfHeaderData(struct elf64header* header)
 void CrawlProgramHeaders(struct elf64header* elf, uint8_t* outputDigest)
 {
     uint64_t segmentPtr = elf->RamOffset + elf->e_phoff;
-    uint8_t* segmentDigests = calloc(elf->e_phnum, 64);
+    uint8_t* segmentDigests = calloc(elf->e_phnum, DIGEST_NUM_BYTES);
     int numDigests = 0;
     for(int i=0; i<elf->e_phnum; i++)
     {
         struct elf64phdr thisPhdr = CollectProgramHeader(segmentPtr, elf->RamOffset);
         if(!(thisPhdr.p_flags & 2)) // "if this progrm header refers to a non-writable segment..."
         {
-            HashMeasure( ((char*)memdev+thisPhdr.p_vaddr), thisPhdr.p_memsz, &segmentDigests[numDigests*64] );
+            HashMeasure( ((char*)memdev+thisPhdr.p_vaddr), thisPhdr.p_memsz, &segmentDigests[numDigests*DIGEST_NUM_BYTES] );
             numDigests++;
         }
         segmentPtr+=elf->e_phentsize;
     }
-    HashMeasure(segmentDigests, 64*numDigests, outputDigest);
+    HashMeasure(segmentDigests, DIGEST_NUM_BYTES*numDigests, outputDigest);
     free(segmentDigests);
 }
 

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <Hacl_Hash.h>
+#include "configurations/include.h"
 
 void PrintDigest(uint8_t* digest);
 

@@ -6,7 +6,6 @@
  */
 
 #define INTRO_TASK_DEBUG 0
-#define INTRO_TASK_NUM_CHILDREN 64 // as if a task would have 64 children :shrug:
 
 #include "IL_struct_interp.c"
 #include "IL_elf_header.c"
@@ -47,7 +46,7 @@ typedef struct TaskMeasurement
     uint64_t paddr; // physical address of the task struct in VM memory
     struct TaskMeasurement* parent;
     struct TaskMeasurement* real_parent;
-    struct TaskMeasurement* children[INTRO_TASK_NUM_CHILDREN];
+    struct TaskMeasurement* children[NUM_CHILD_TASKS];
     char* name;
     int uid;
     uint32_t myPid;
@@ -459,7 +458,7 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
             }
             RenderDigestDeclaration(thisTaskMsmt->name, thisTaskMsmt->rodataDigest);
         }
-        for(int i=0; i<INTRO_TASK_NUM_CHILDREN; i++)
+        for(int i=0; i<NUM_CHILD_TASKS; i++)
         {
             TaskMeasurement* iter = thisTaskMsmt->children[i];
             if(iter != NULL)
@@ -484,7 +483,7 @@ void FreeTaskTree(TaskMeasurement* root)
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
-        for(int i=0; i<INTRO_TASK_NUM_CHILDREN; i++)
+        for(int i=0; i<NUM_CHILD_TASKS; i++)
         {
             TaskMeasurement* iter = thisTaskMsmt->children[i];
             if(iter != NULL)

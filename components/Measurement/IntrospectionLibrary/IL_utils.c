@@ -1,8 +1,14 @@
 /*
  * An introspection library for Linux 4.9.307
- * General Utilities
+ * Handles virtual address translation for the following system description:
+ * AArch64 Linux system using a 4-level translation table.
+ * See the Arm Architecture Reference Manual for A-profile architecture:
+ * Chapter D5: The AArch64 Virtual Memory System Architecture
+ * Translation Granule Size: 4k
+ * Translation Regime: see regime.txt
+ * See in particular Section D.5.2.6 Subsection: Overview of VMSAv8-64 address translation using the 4KB translation granule
  * Michael Neises
- * 21 July 2022
+ * 2 May 2023
  */
 
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
