@@ -53,7 +53,7 @@ typedef struct TaskMeasurement
     uint32_t parentPid;
     uint32_t flags;
     struct cred cred;
-    char rodataDigest[DIGEST_NUM_BYTES];
+    uint8_t rodataDigest[DIGEST_NUM_BYTES];
 } TaskMeasurement;
 
 
@@ -235,7 +235,7 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
 ** It takes an address "pgdPaddr" to the relevant Page Global Directory.
 ** It outputs a hash digest into eponymous pointer argument.
 */
-void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDigest)
+void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t start;
     uint64_t size;
@@ -270,7 +270,7 @@ void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDiges
 /* InterpretMemory takes a pointer to a valid task_struct in VM memory "task"
 ** and returns a hash digest of its rodata (if it exists)
 */
-void InterpretMemory(uint64_t task, char* name, uint8_t* rodataDigest)
+void InterpretMemory(uint64_t task, char* name, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t mmAddrLoc = task + 1024;
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
