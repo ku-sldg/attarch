@@ -15,6 +15,7 @@
 #include <stdio.h>
 
 // render our convenient digest hex strings into usable form
+// why is this 129?
 void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
 // copy our known digests into the argument passed in.
@@ -25,6 +26,6 @@ int GetKnownDigests(uint8_t (*digests)[INTRO_NUM_DIGESTS * DIGEST_NUM_BYTES]);
 bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES]);
 
 // print out c code for if you want to declare a new golden digest
-void RenderDigestDeclaration(char* name, uint8_t (*digest)[DIGEST_NUM_BYTES]);
+void RenderDigestDeclaration(char (*name)[MODULE_NAME_LEN], uint8_t (*digest)[DIGEST_NUM_BYTES]);
 
 #endif

@@ -16,7 +16,7 @@ void ShaTest();
 
 void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
-void HashHashes(uint8_t* hashList, int numHashes, uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
+void HashHashes(uint8_t (*hashList[NUM_RODATA_PAGES])[DIGEST_NUM_BYTES], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
 bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES]);
 

@@ -19,18 +19,23 @@ bool IsModulesOkay()
     printf("DEBUG: Measurement: Appraising digests\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
-        if(IsThisAValidModuleMeasurement(((char*)module_names)+i*MODULE_NAME_LEN))
+        if(IsThisAValidModuleMeasurement((uint8_t (*) [MODULE_NAME_LEN])&((*module_names)[i*MODULE_NAME_LEN])))
         {
-            if(IsThisAKnownDigest(((uint8_t*)module_digests)+i*DIGEST_NUM_BYTES))
+            if(IsThisAKnownDigest((uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[i*DIGEST_NUM_BYTES])) )
             {
-                printf("Module %s recognized:\n", ((char*)module_names)+i*MODULE_NAME_LEN);
+                printf("Module %s recognized:\n", (uint8_t (*) [MODULE_NAME_LEN])&((*module_names)[i*MODULE_NAME_LEN]));
             }
             else
             {
-                printf("Be warned! Module %s NOT recognized:\n", ((char*)module_names)+i*MODULE_NAME_LEN);
+                printf("Be warned! Module %s NOT recognized:\n", (uint8_t (*) [MODULE_NAME_LEN])&((*module_names)[i*MODULE_NAME_LEN]));
                 result = false;
             }
-            RenderDigestDeclaration(((char*)module_names)+i*MODULE_NAME_LEN, ((uint8_t*)module_digests)+i*DIGEST_NUM_BYTES);
+            //mike
+            //RenderDigestDeclaration( &((*module_names)[i*MODULE_NAME_LEN]) , &((*module_digests)[i*DIGEST_NUM_BYTES]) );
+
+            //gpt4
+            RenderDigestDeclaration( (char (*) [MODULE_NAME_LEN])&((*module_names)[i*MODULE_NAME_LEN]) , (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[i*DIGEST_NUM_BYTES]) );
+
         }
     }
     free(module_digests);
@@ -60,7 +65,9 @@ bool IsKernelRodataOkay()
         printf("Be warned! Kernel Rodata NOT recognized:\n");
         result = false;
     }
-    RenderDigestDeclaration("KernelRodata", kernelRodataDigest);
+    char actualArray[MODULE_NAME_LEN] = "KernelRodata";
+    char (*rodataName)[MODULE_NAME_LEN] = &actualArray;
+    RenderDigestDeclaration(rodataName, kernelRodataDigest);
     free(kernelRodataDigest);
     return result;
 }

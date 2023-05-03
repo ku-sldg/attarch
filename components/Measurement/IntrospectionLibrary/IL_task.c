@@ -47,7 +47,7 @@ typedef struct TaskMeasurement
     struct TaskMeasurement* parent;
     struct TaskMeasurement* real_parent;
     struct TaskMeasurement* children[NUM_CHILD_TASKS];
-    char* name;
+    char name[TASK_COMM_LEN];
     int uid;
     uint32_t myPid;
     uint32_t parentPid;
@@ -136,15 +136,19 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
 void GetTaskName(uint64_t task, char* name)
 {
     int nameLoc = task + 1640;
-    for(int i=0; i<16; i++)
+    for(int i=0; i<TASK_COMM_LEN; i++)
     {
         name[i] = ((char*)memdev+nameLoc)[i];
     }
 }
 
-char* GetTaskNamePointer(uint64_t task)
+void GetTaskNamePointer(uint64_t task, char (*output_name)[TASK_COMM_LEN])
 {
-    return ((char*)memdev) + task + 1640;
+    char* index = ((char*)memdev) + task + 1640;
+    for(int i=0; i<TASK_COMM_LEN; i++)
+    {
+       (*output_name)[i] = (uint8_t)(index[i]);
+    }
 }
 
 /* We use this function to check whether a given address "task"
@@ -163,7 +167,7 @@ bool ValidateTaskStruct(uint64_t task)
         /* printf("null name\n"); */
         return false;
     }
-    for(int i=0; i<16; i++)
+    for(int i=0; i<TASK_COMM_LEN; i++)
     {
         if(((char*)memdev+nameLoc)[i] > 127)
         {
@@ -383,7 +387,7 @@ void InterpretTaskStruct(uint64_t thisTaskStructPaddr, uint64_t* children, uint6
 */
 void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
 {
-    msmt->name = GetTaskNamePointer(taskptr);
+    GetTaskNamePointer(taskptr, &msmt->name);
     /* printf("Currently Crawling: %s\n", msmt->name); */
     GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(taskptr, &msmt->cred);
@@ -445,9 +449,9 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
-        if(!IsDigestEmpty(thisTaskMsmt->rodataDigest))
+        if(!IsDigestEmpty((uint8_t (*)[64])(thisTaskMsmt->rodataDigest)))
         {
-            if(IsThisAKnownDigest(&thisTaskMsmt->rodataDigest))
+            if(IsThisAKnownDigest((uint8_t (*)[64])thisTaskMsmt->rodataDigest))
             {
                 printf("Task %s recognized:\n", thisTaskMsmt->name);
             }
@@ -456,7 +460,7 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
                 appraisalResult = false;
                 printf("Be warned! Task %s NOT recognized:\n", thisTaskMsmt->name);
             }
-            RenderDigestDeclaration(thisTaskMsmt->name, thisTaskMsmt->rodataDigest);
+            RenderDigestDeclaration(thisTaskMsmt->name, (uint8_t (*)[64])thisTaskMsmt->rodataDigest);
         }
         for(int i=0; i<NUM_CHILD_TASKS; i++)
         {

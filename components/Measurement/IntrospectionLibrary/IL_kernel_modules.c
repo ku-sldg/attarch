@@ -52,7 +52,7 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
     return thisModule;
 }
 
-void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char* name)
+void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[MODULE_NAME_LEN])
 {
     bool IKMDebug = false;
     if(IKMDebug)
@@ -62,11 +62,11 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST
 
     for(int j=16; j<MODULE_NAME_LEN+16; j++)
     {
-        name[j-16] = ((char*)memdev)[inputAddress+j];
+        (*name)[j-16] = ((char*)memdev)[inputAddress+j];
     }
 
     char msg[13] = "Found Module ";
-    introLog(3, msg, name, "\n");
+    introLog(3, msg, (*name), "\n");
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead((int)inputAddress);
     uint64_t basePtr = TranslateVaddr(thisModuleLayout.base);
@@ -85,18 +85,17 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST
         printf("base paddr: %016X\n", basePtr);
     }
 
-    // TODO extract this 0x1000 to a #define somewhere else
     int numRoPages = thisModuleLayout.ro_size / PAGE_SIZE;
-    uint8_t* digestArray = calloc(numRoPages, DIGEST_NUM_BYTES);
+    uint8_t (*digestArray)[numRoPages * DIGEST_NUM_BYTES] = calloc(numRoPages, DIGEST_NUM_BYTES);
     for(int i=0; i<thisModuleLayout.ro_size / PAGE_SIZE; i++)
     {
-        MeasureUserPage((uint8_t*)memdev, digestArray+i*DIGEST_NUM_BYTES, thisModuleLayout.base + i*PAGE_SIZE);
+        MeasureUserPage((uint8_t*)memdev, &((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*PAGE_SIZE);
     }
     HashMeasure(digestArray, numRoPages, rodataDigest);
     free(digestArray);
 }
 
-void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[MODULE_NAME_LEN])
+void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN])
 {
     bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
@@ -132,7 +131,7 @@ void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(modulePtrs[i], ((uint8_t*)module_digests)+DIGEST_NUM_BYTES*i, ((char*)module_names)+MODULE_NAME_LEN*i);
+            InterpretKernelModule(modulePtrs[i], &((*module_digests)[DIGEST_NUM_BYTES*i]), &((*module_names)[MODULE_NAME_LEN*i]));
         }
     }
 }
@@ -140,7 +139,7 @@ bool IsThisAValidModuleMeasurement(char (*moduleName)[MODULE_NAME_LEN])
 {
     for(int i=0; i<MODULE_NAME_LEN; i++)
     {
-        if(((char*)moduleName)[i] != '\0')
+        if((*moduleName)[i] != '\0')
         {
             // an invalid (unused) module name should be completely
             // zeroed out
