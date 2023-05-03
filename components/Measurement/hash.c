@@ -29,41 +29,6 @@ void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_N
     Hacl_Hash_SHA2_hash_512(input, inputLen, ((uint8_t*)output_digest));
 }
 
-void HashHashes(uint8_t (*hashListPointers[NUM_RODATA_PAGES])[DIGEST_NUM_BYTES], uint8_t (*output_digest)[DIGEST_NUM_BYTES])
-{
-    uint8_t* hashList = calloc(NUM_RODATA_PAGES, DIGEST_NUM_BYTES);
-    for(int i=0; i<NUM_RODATA_PAGES; i++)
-    {
-        for(int j=0; j<DIGEST_NUM_BYTES; j++)
-        {
-            hashList[i*DIGEST_NUM_BYTES + j] = hashListPointers[i][j];
-        }
-    }
-    
-    int cmphash (const void* a, const void* b)
-    {
-        uint8_t aByte = 0;
-        uint8_t bByte = 0;
-        for(int i=0; i<DIGEST_NUM_BYTES; i++)
-        {
-            aByte = ((uint8_t*)a)[i];
-            bByte = ((uint8_t*)b)[i];
-            if(aByte < bByte)
-            {
-                return -1;
-            }
-            if(aByte > bByte)
-            {
-                return 1;
-            }
-        }
-        return 0;
-    }
-    // qsort always seems to Instruction Fault for some raisin
-    qsort(hashList, NUM_RODATA_PAGES, DIGEST_NUM_BYTES, cmphash);
-    HashMeasure(hashList, DIGEST_NUM_BYTES*NUM_RODATA_PAGES, output_digest);
-}
-
 bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
 {
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
