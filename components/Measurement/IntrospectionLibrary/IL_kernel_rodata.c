@@ -15,7 +15,7 @@ uint64_t RoundDownToCurrentPage(uint64_t x)
         return (x >> 12) << 12;
 }
 
-void CollectRodataHashingAsWeGo(uint8_t* digest)
+void CollectRodataHashingAsWeGo(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     int numRodataPages = (END_RODATA - START_RODATA)/PAGE_SIZE;
     uint8_t* digestArray = calloc(numRodataPages, DIGEST_NUM_BYTES);
@@ -34,11 +34,11 @@ void CollectRodataHashingAsWeGo(uint8_t* digest)
         }
         MeasureKernelPage(memdev, digestArray+i*DIGEST_NUM_BYTES, thisPageVaddr); 
     }
-    HashMeasure(digestArray, numRodataPages * DIGEST_NUM_BYTES, digest);
+    HashMeasure(digestArray, numRodataPages * DIGEST_NUM_BYTES, output_digest);
     free(digestArray);
 }
 
-void MeasureKernelRodata(uint8_t* digest)
+void MeasureKernelRodata(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
-    CollectRodataHashingAsWeGo(digest);
+    CollectRodataHashingAsWeGo(output_digest);
 }

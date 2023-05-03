@@ -52,7 +52,7 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
     return thisModule;
 }
 
-void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* name)
+void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char* name)
 {
     bool IKMDebug = false;
     if(IKMDebug)
@@ -96,7 +96,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     free(digestArray);
 }
 
-void MeasureKernelModules(uint8_t* module_digests, char* module_names)
+void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[MODULE_NAME_LEN])
 {
     bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
@@ -132,15 +132,15 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(modulePtrs[i], module_digests+DIGEST_NUM_BYTES*i, module_names+MODULE_NAME_LEN*i);
+            InterpretKernelModule(modulePtrs[i], ((uint8_t*)module_digests)+DIGEST_NUM_BYTES*i, ((char*)module_names)+MODULE_NAME_LEN*i);
         }
     }
 }
-bool IsThisAValidModuleMeasurement(char* moduleName)
+bool IsThisAValidModuleMeasurement(char (*moduleName)[MODULE_NAME_LEN])
 {
     for(int i=0; i<MODULE_NAME_LEN; i++)
     {
-        if(moduleName[i] != '\0')
+        if(((char*)moduleName)[i] != '\0')
         {
             // an invalid (unused) module name should be completely
             // zeroed out
