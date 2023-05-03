@@ -136,7 +136,7 @@ struct elf64header CollectElfHeaderData(uint64_t elfAddr)
 
 bool IsThisTheHeaderName(struct elf64header* elf, struct elf64shdr* shdr, uint64_t shstrtabPtr, char* nameGuess)
 {
-    if(shstrtabPtr+(shdr->sh_name) < 0x8001000)
+    if(shstrtabPtr+(shdr->sh_name) < RAM_SIZE)
     {
         char* shName = ((char*)memdev+shstrtabPtr+(shdr->sh_name));
         char shNameSubstring[strlen(nameGuess)];
@@ -158,7 +158,7 @@ char* GetOneHeaderName(struct elf64header* elf, struct elf64shdr* shdr)
                         + (elf->e_shentsize * elf->e_shstrndx);
     struct elf64shdr shstrtabhdr = CollectSectionHeader(shstrtabHdrPtr, elf->RamOffset);
     uint64_t shstrtabPtr = elf->RamOffset + shstrtabhdr.sh_offset;
-    if(shstrtabPtr+(shdr->sh_name) < 0x8001000)
+    if(shstrtabPtr+(shdr->sh_name) < RAM_SIZE)
     {
         char* shName = ((char*)memdev+shstrtabPtr+(shdr->sh_name));
         return shName;

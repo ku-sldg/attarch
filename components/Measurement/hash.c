@@ -24,7 +24,7 @@ void RenderDigestDeclaration(char* name, uint8_t* digest)
 
 void ShaTest()
 {
-    uint8_t* output = malloc(64);
+    uint8_t* output = malloc(DIGEST_NUM_BYTES);
     Hacl_Hash_SHA2_hash_512("abc", 3, output);
     printf("SHA512 of \"abc\" is:\n");
     PrintDigest(output);

@@ -12,25 +12,25 @@
 bool IsModulesOkay()
 {
     bool result = true;
-    uint8_t* module_digests = calloc(NUM_MODULE_DIGESTS, 64);
-    char* module_names = calloc(NUM_MODULE_DIGESTS, 56);
+    uint8_t* module_digests = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
+    char* module_names = calloc(NUM_MODULE_DIGESTS, MODULE_NAME_LEN);
     MeasureKernelModules(module_digests, module_names);
 
     printf("DEBUG: Measurement: Appraising digests\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
-        if(IsThisAValidModuleMeasurement(module_names+i*56))
+        if(IsThisAValidModuleMeasurement(module_names+i*MODULE_NAME_LEN))
         {
-            if(IsThisAKnownDigest(module_digests+i*64))
+            if(IsThisAKnownDigest(module_digests+i*DIGEST_NUM_BYTES))
             {
-                printf("Module %s recognized:\n", module_names+i*56);
+                printf("Module %s recognized:\n", module_names+i*MODULE_NAME_LEN);
             }
             else
             {
-                printf("Be warned! Module %s NOT recognized:\n", module_names+i*56);
+                printf("Be warned! Module %s NOT recognized:\n", module_names+i*MODULE_NAME_LEN);
                 result = false;
             }
-            RenderDigestDeclaration(module_names+i*56, module_digests+i*64);
+            RenderDigestDeclaration(module_names+i*MODULE_NAME_LEN, module_digests+i*DIGEST_NUM_BYTES);
         }
     }
     free(module_digests);
@@ -49,7 +49,7 @@ bool IsTasksOkay()
 bool IsKernelRodataOkay()
 {
     bool result = true;
-    uint8_t* kernelRodataDigest = calloc(1, 64);
+    uint8_t* kernelRodataDigest = calloc(1, DIGEST_NUM_BYTES);
     MeasureKernelRodata(kernelRodataDigest);
     if(IsThisAKnownDigest(kernelRodataDigest))
     {

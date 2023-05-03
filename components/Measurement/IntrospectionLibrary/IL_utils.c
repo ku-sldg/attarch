@@ -110,7 +110,8 @@ uint64_t TranslateVaddr(uint64_t vaddr)
 {
     //TODO I don't think this conditional is right
     // but the funtion never dies terribly
-    if( 0xffff800000000000 <= vaddr && vaddr <= 0xffff800008001000 )
+    uint64_t vaddr_base = 0xffff800000000000;
+    if( vaddr_base <= vaddr && vaddr <= vaddr_base+RAM_SIZE )
     {
         return intro_virt_to_phys(vaddr);
     }

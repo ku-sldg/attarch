@@ -17,7 +17,7 @@ const char KernelRodata[] = "D11343746B1EFB12D11DD6688CB91E033B6475506B72E4A1F6E
 void HexToByteString(const char* input_digest, uint8_t* output_digest)
 {
     int value;
-    for(int i=0; i < 64 && sscanf(input_digest + i * 2, "%2x", &value); i++)
+    for(int i=0; i < DIGEST_NUM_BYTES && sscanf(input_digest + i * 2, "%2x", &value); i++)
     {
         output_digest[i] = value;
     }
@@ -47,7 +47,7 @@ bool IsThisAKnownDigest(uint8_t* input_digest)
         isKnown = true;
         for(int j=0; j<DIGEST_NUM_BYTES; j++)
         {
-            if(known[i*64 + j] != input_digest[j])
+            if(known[i*DIGEST_NUM_BYTES + j] != input_digest[j])
             {
                 isKnown = false;
                 break;

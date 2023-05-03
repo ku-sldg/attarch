@@ -86,11 +86,11 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t* rodataDigest, char* n
     }
 
     // TODO extract this 0x1000 to a #define somewhere else
-    int numRoPages = thisModuleLayout.ro_size / 0x1000;
-    uint8_t* digestArray = calloc(numRoPages, 64);
-    for(int i=0; i<thisModuleLayout.ro_size / 0x1000; i++)
+    int numRoPages = thisModuleLayout.ro_size / PAGE_SIZE;
+    uint8_t* digestArray = calloc(numRoPages, DIGEST_NUM_BYTES);
+    for(int i=0; i<thisModuleLayout.ro_size / PAGE_SIZE; i++)
     {
-        MeasureUserPage((uint8_t*)memdev, digestArray+i*64, thisModuleLayout.base + i*0x1000);
+        MeasureUserPage((uint8_t*)memdev, digestArray+i*DIGEST_NUM_BYTES, thisModuleLayout.base + i*PAGE_SIZE);
     }
     HashMeasure(digestArray, numRoPages, rodataDigest);
     free(digestArray);
@@ -132,7 +132,7 @@ void MeasureKernelModules(uint8_t* module_digests, char* module_names)
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(modulePtrs[i], module_digests+64*i, module_names+56*i);
+            InterpretKernelModule(modulePtrs[i], module_digests+DIGEST_NUM_BYTES*i, module_names+MODULE_NAME_LEN*i);
         }
     }
 }

@@ -53,7 +53,7 @@ typedef struct TaskMeasurement
     uint32_t parentPid;
     uint32_t flags;
     struct cred cred;
-    char rodataDigest[64];
+    char rodataDigest[DIGEST_NUM_BYTES];
 } TaskMeasurement;
 
 
@@ -152,7 +152,7 @@ char* GetTaskNamePointer(uint64_t task)
 */
 bool ValidateTaskStruct(uint64_t task)
 {
-    if(task > 0x8001000)
+    if(task > RAM_SIZE)
     {
         /* printf("out of range\n"); */
         return false;
@@ -244,7 +244,7 @@ void CrawlVMAs(char* name, uint64_t vma, uint64_t pgdPaddr, uint8_t* rodataDiges
     DebugLog("before interpVMA\n");
     InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr);
     DebugLog("after\n");
-    if( start + size < 0x8001000
+    if( start + size < RAM_SIZE
             && ((char*)memdev+start)[0] == 0x7f
             && ((char*)memdev+start)[1] == 'E' 
             && ((char*)memdev+start)[2] == 'L' 
