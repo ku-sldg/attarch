@@ -26,14 +26,14 @@ void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[D
 int GetKnownDigests(uint8_t (*digests)[INTRO_NUM_DIGESTS * DIGEST_NUM_BYTES])
 {
     int numDigests = 0;
-    HexToByteString(&Task_useram, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
-    HexToByteString(&Task_useramclienttest, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&Task_useram, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&Task_useramclienttest, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
 
-    HexToByteString(&connection, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
-    HexToByteString(&poison, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
-    HexToByteString(&Task_common, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
-    HexToByteString(&introspect, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
-    HexToByteString(&KernelRodata, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&connection, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&poison, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&Task_common, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&introspect, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&KernelRodata, (uint8_t (*) [DIGEST_NUM_BYTES])&(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
     return numDigests;
 }
 
