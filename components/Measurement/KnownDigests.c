@@ -14,10 +14,10 @@ const char Task_common[] = "32A832B0E77F0116389BFC07A6FCE3D253FB488408892D93A431
 const char introspect[] = "6FED3D67BB74B77729C78BA79910D99732974B9145A9C93EBE457040FFC19485FE7CF4D9326DCFF098D9B68580813E2F1023DAEA2B5B3A33DF3DA620D94BE65D";
 const char KernelRodata[] = "D11343746B1EFB12D11DD6688CB91E033B6475506B72E4A1F6E18A12CDFEB6497E554E188DE70BE042F1C82106E68FAB461D9288B7DF3A21A35C34BF2D34FF41";
 
-void HexToByteString(const char* input_digest, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     int value;
-    for(int i=0; i < DIGEST_NUM_BYTES && sscanf(input_digest + i * 2, "%2x", &value); i++)
+    for(int i=0; i < DIGEST_NUM_BYTES && sscanf(((char*)input_digest) + i * 2, "%2x", &value); i++)
     {
         ((uint8_t*)output_digest)[i] = value;
     }
