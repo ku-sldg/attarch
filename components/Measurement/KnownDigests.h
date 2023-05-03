@@ -18,7 +18,7 @@ void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[D
 
 // copy our known digests into the argument passed in.
 // return the number of known digests
-int GetKnownDigests(uint8_t* digests);
+int GetKnownDigests(uint8_t (*digests)[INTRO_NUM_DIGESTS * DIGEST_NUM_BYTES]);
 
 // check a digest against our known digests
 bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES]);

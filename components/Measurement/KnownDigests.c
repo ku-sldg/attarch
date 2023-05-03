@@ -23,23 +23,23 @@ void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[D
     }
 }
 
-int GetKnownDigests(uint8_t* digests)
+int GetKnownDigests(uint8_t (*digests)[INTRO_NUM_DIGESTS * DIGEST_NUM_BYTES])
 {
     int numDigests = 0;
-    HexToByteString(&Task_useram, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
-    HexToByteString(&Task_useramclienttest, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
+    HexToByteString(&Task_useram, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&Task_useramclienttest, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
 
-    HexToByteString(&connection, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
-    HexToByteString(&poison, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
-    HexToByteString(&Task_common, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
-    HexToByteString(&introspect, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
-    HexToByteString(&KernelRodata, &digests[DIGEST_NUM_BYTES*(numDigests++)]);
+    HexToByteString(&connection, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&poison, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&Task_common, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&introspect, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
+    HexToByteString(&KernelRodata, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));
     return numDigests;
 }
 
 bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES])
 {
-    uint8_t* known = calloc(INTRO_NUM_DIGESTS, DIGEST_NUM_BYTES);
+    uint8_t (*known)[INTRO_NUM_DIGESTS * DIGEST_NUM_BYTES] = calloc(INTRO_NUM_DIGESTS, DIGEST_NUM_BYTES);
     int numKnownDigests = GetKnownDigests(known);
     bool isKnown = false;
     for(int i=0; i < numKnownDigests; i++)
@@ -47,7 +47,7 @@ bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES])
         isKnown = true;
         for(int j=0; j<DIGEST_NUM_BYTES; j++)
         {
-            if(known[i*DIGEST_NUM_BYTES + j] != ((uint8_t*)input_digest)[j])
+            if(((uint8_t*)known)[i*DIGEST_NUM_BYTES + j] != ((uint8_t*)input_digest)[j])
             {
                 isKnown = false;
                 break;
