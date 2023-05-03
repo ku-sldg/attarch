@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // render our convenient digest hex strings into usable form
 void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
