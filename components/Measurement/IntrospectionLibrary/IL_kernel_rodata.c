@@ -24,7 +24,7 @@ void CollectRodataHashingAsWeGo(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
     /* except perhaps in the case where you are able to somehow predict the data...? */
     for(int i=0; i<NUM_RODATA_PAGES; i++)
     {
-        uint64_t thisPageVaddr = START_RODATA + i * PAGE_SIZE;
+        uint64_t thisPageVaddr = START_RODATA + i * INTRO_PAGE_SIZE;
         if(thisPageVaddr == RoundDownToCurrentPage(START_READ_ONLY_AFTER_INIT)
                 || thisPageVaddr == RoundUpToNextPage(END_READ_ONLY_AFTER_INIT))
         {

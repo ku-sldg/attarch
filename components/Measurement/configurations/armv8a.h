@@ -12,18 +12,23 @@
 #define RAM_SIZE 0x8001000
 
 // linux level definitions
+
+// It appears we can scrape PAGE_SIZE via a PAGE_SHIFT option in linux/.config
+#define INTRO_PAGE_SIZE 0x1000
+
+// found in [linux kernel]/include/linux/sched.h and common apparently to ALL linux kernels
+#define TASK_COMM_LEN 16
+
 // TODO extract these automatically from system.map
-#define PAGE_SIZE 0x1000 // PAGE_SIZE is available from musllibc/build-temp/stage/include/bits/limits.h
 #define LIST_HEAD_ADDR 0xFB61E0
 #define INIT_TASK_ADDR 0xF92280
 #define START_RODATA 0xffff0000087c0000
 #define END_RODATA 0xffff000008bbf000
 #define START_READ_ONLY_AFTER_INIT 0xffff00000899d7dc
 #define END_READ_ONLY_AFTER_INIT 0xffff00000899e160
-#define TASK_COMM_LEN 16 // found in [linux kernel]/include/linux/sched.h and common apparently to ALL linux kernels
 
 // derived Linux level definitions
-#define NUM_RODATA_PAGES (END_RODATA-START_RODATA)/PAGE_SIZE
+#define NUM_RODATA_PAGES (END_RODATA-START_RODATA)/INTRO_PAGE_SIZE
 
 // introspection level definitions
 #define INTRO_NUM_DIGESTS 100

@@ -85,11 +85,11 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST
         printf("base paddr: %016X\n", basePtr);
     }
 
-    int this_module_num_ro_pages = thisModuleLayout.ro_size / PAGE_SIZE;
+    int this_module_num_ro_pages = thisModuleLayout.ro_size / INTRO_PAGE_SIZE;
     uint8_t (*digestArray)[this_module_num_ro_pages * DIGEST_NUM_BYTES] = calloc(this_module_num_ro_pages, DIGEST_NUM_BYTES);
-    for(int i=0; i<thisModuleLayout.ro_size / PAGE_SIZE; i++)
+    for(int i=0; i<thisModuleLayout.ro_size / INTRO_PAGE_SIZE; i++)
     {
-        MeasureUserPage((uint8_t*)memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*PAGE_SIZE);
+        MeasureUserPage((uint8_t*)memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*INTRO_PAGE_SIZE);
     }
     HashMeasure((uint8_t*)digestArray, this_module_num_ro_pages, rodataDigest);
     free(digestArray);

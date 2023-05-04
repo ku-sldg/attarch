@@ -44,7 +44,7 @@ bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
 void MeasureKernelPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
     uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
-    HashMeasure( ((char*)memdev+pagePaddr), PAGE_SIZE, output_digest );
+    HashMeasure( ((char*)memdev+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 
 void MeasureUserPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
@@ -55,6 +55,6 @@ void MeasureUserPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES]
     /*     printf("%c", ((char*)memdev+pagePaddr)[i]); */
     /* } */
     /* printf("\n\n"); */
-    HashMeasure( ((char*)memdev+pagePaddr), PAGE_SIZE, output_digest );
+    HashMeasure( ((char*)memdev+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 
