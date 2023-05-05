@@ -12,7 +12,7 @@ cp .config .config.old &&
 
 # when our config file doesn't account for some of this kernel version's
 # options, choose the default everywhere.
-make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- oldconfig &&
+(yes "" | make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- oldconfig) &&
 
 # prepare the source tree for compilation
 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- prepare &&
