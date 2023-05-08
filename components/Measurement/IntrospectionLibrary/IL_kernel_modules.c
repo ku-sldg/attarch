@@ -13,7 +13,7 @@ struct module_layout {
     unsigned int ro_after_init_size;
 };
 
-struct module_layout GetModuleLayoutFromListHead(int physAddr)
+struct module_layout GetModuleLayoutFromListHead(uint8_t* memdev, int physAddr)
 {
     int index = physAddr;
     index += 16; // skip list_head
@@ -52,7 +52,7 @@ struct module_layout GetModuleLayoutFromListHead(int physAddr)
     return thisModule;
 }
 
-void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[MODULE_NAME_LEN])
+void InterpretKernelModule(uint8_t* memdev, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[MODULE_NAME_LEN])
 {
     bool IKMDebug = false;
     if(IKMDebug)
@@ -68,7 +68,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST
     char msg[13] = "Found Module ";
     introLog(3, msg, (*name), "\n");
 
-    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead((int)inputAddress);
+    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memdev, (int)inputAddress);
     uint64_t basePtr = TranslateVaddr(thisModuleLayout.base);
 
     if(IKMDebug)
@@ -95,7 +95,7 @@ void InterpretKernelModule(uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST
     free(digestArray);
 }
 
-void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN])
+void MeasureKernelModules(uint8_t* memdev, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN])
 {
     bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
@@ -131,7 +131,7 @@ void MeasureKernelModules(uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [MODULE_NAME_LEN])&((*module_names)[MODULE_NAME_LEN*i]));
+            InterpretKernelModule(memdev, modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [MODULE_NAME_LEN])&((*module_names)[MODULE_NAME_LEN*i]));
         }
     }
 }

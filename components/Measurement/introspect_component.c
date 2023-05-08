@@ -9,12 +9,12 @@
 #include "hash.h"
 #include "IntrospectionLibrary/IL_library.c"
 
-bool IsModulesOkay()
+bool IsModulesOkay(uint8_t* memdev)
 {
     bool result = true;
     uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES] = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
     char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN] = calloc(NUM_MODULE_DIGESTS, MODULE_NAME_LEN);
-    MeasureKernelModules(module_digests, module_names);
+    MeasureKernelModules(memdev, module_digests, module_names);
 
     printf("DEBUG: Measurement: Appraising digests\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
@@ -43,19 +43,19 @@ bool IsModulesOkay()
     return result;
 }
 
-bool IsTasksOkay()
+bool IsTasksOkay(uint8_t* memdev)
 {
-    TaskMeasurement* rootTaskMeasurement = MeasureTaskTree();
+    TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memdev);
     bool result = AppraiseTaskTree(rootTaskMeasurement);
     FreeTaskTree(rootTaskMeasurement);
     return result;
 }
 
-bool IsKernelRodataOkay()
+bool IsKernelRodataOkay(uint8_t* memdev)
 {
     bool result = true;
     uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    MeasureKernelRodata(kernelRodataDigest);
+    MeasureKernelRodata(memdev, kernelRodataDigest);
     if(IsThisAKnownDigest(kernelRodataDigest))
     {
         printf("Kernel Rodata recognized\n");
@@ -86,9 +86,9 @@ int run(void)
         ready_wait();
 
         bool appraisal = true;
-        appraisal = appraisal && IsModulesOkay();
-        appraisal = appraisal && IsTasksOkay();
-        appraisal = appraisal && IsKernelRodataOkay();
+        appraisal = appraisal && IsModulesOkay(memdev);
+        appraisal = appraisal && IsTasksOkay(memdev);
+        appraisal = appraisal && IsKernelRodataOkay(memdev);
         printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", appraisal ? "Passed" : "Failed.");
         char* resultMsg = appraisal ? "1" : "0";
         // TODO hook the am back up

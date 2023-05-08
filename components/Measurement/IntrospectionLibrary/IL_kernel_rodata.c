@@ -15,7 +15,7 @@ uint64_t RoundDownToCurrentPage(uint64_t x)
     return (x >> 12) << 12;
 }
 
-void CollectRodataHashingAsWeGo(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void CollectRodataHashingAsWeGo(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     uint8_t (*digestArray)[NUM_RODATA_PAGES * DIGEST_NUM_BYTES] = calloc(NUM_RODATA_PAGES, DIGEST_NUM_BYTES);
     /* We found some "ro_after_init" data */
@@ -37,8 +37,8 @@ void CollectRodataHashingAsWeGo(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
     free(digestArray);
 }
 
-void MeasureKernelRodata(uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void MeasureKernelRodata(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
-    CollectRodataHashingAsWeGo(output_digest);
+    CollectRodataHashingAsWeGo(memdev, output_digest);
 }
 

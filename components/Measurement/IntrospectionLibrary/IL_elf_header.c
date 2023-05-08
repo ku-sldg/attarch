@@ -62,7 +62,7 @@ int RetThenInc(int* valToIncrement, int incValue)
     return valToReturn;
 }
 
-struct elf64phdr CollectProgramHeader(uint64_t phAddr, uint64_t elfAddr)
+struct elf64phdr CollectProgramHeader(uint8_t* memdev, uint64_t phAddr, uint64_t elfAddr)
 {
     struct elf64phdr head;
     head.elf_offset = elfAddr;
@@ -90,7 +90,7 @@ void PrintProgramHeaderData(struct elf64phdr* header)
     printf("p_align : %016X\n", header->p_align);
 }
 
-struct elf64shdr CollectSectionHeader(uint64_t shAddr, uint64_t elfAddr)
+struct elf64shdr CollectSectionHeader(uint8_t* memdev, uint64_t shAddr, uint64_t elfAddr)
 {
     /* printf("shaddr:\n\t%016X\n\t%p\n", shAddr, shAddr); */
     struct elf64shdr head;
@@ -109,7 +109,7 @@ struct elf64shdr CollectSectionHeader(uint64_t shAddr, uint64_t elfAddr)
     return head;
 }
 
-struct elf64header CollectElfHeaderData(uint64_t elfAddr)
+struct elf64header CollectElfHeaderData(uint8_t* memdev, uint64_t elfAddr)
 {
     int elfPtr = 0;
     struct elf64header head;
@@ -134,7 +134,7 @@ struct elf64header CollectElfHeaderData(uint64_t elfAddr)
     return head;
 }
 
-bool IsThisTheHeaderName(struct elf64header* elf, struct elf64shdr* shdr, uint64_t shstrtabPtr, char* nameGuess)
+bool IsThisTheHeaderName(uint8_t* memdev, struct elf64header* elf, struct elf64shdr* shdr, uint64_t shstrtabPtr, char* nameGuess)
 {
     if(shstrtabPtr+(shdr->sh_name) < RAM_SIZE)
     {
@@ -151,12 +151,12 @@ uint64_t GetHeaderName(struct elf64shdr* shdr, uint64_t shstrtabPtr)
     return shstrtabPtr+(shdr->sh_name);
 }
 
-char* GetOneHeaderName(struct elf64header* elf, struct elf64shdr* shdr)
+char* GetOneHeaderName(uint8_t* memdev, struct elf64header* elf, struct elf64shdr* shdr)
 {
     uint64_t shstrtabHdrPtr = elf->RamOffset
                         + elf->e_shoff
                         + (elf->e_shentsize * elf->e_shstrndx);
-    struct elf64shdr shstrtabhdr = CollectSectionHeader(shstrtabHdrPtr, elf->RamOffset);
+    struct elf64shdr shstrtabhdr = CollectSectionHeader(memdev, shstrtabHdrPtr, elf->RamOffset);
     uint64_t shstrtabPtr = elf->RamOffset + shstrtabhdr.sh_offset;
     if(shstrtabPtr+(shdr->sh_name) < RAM_SIZE)
     {
@@ -169,13 +169,13 @@ char* GetOneHeaderName(struct elf64header* elf, struct elf64shdr* shdr)
 
 }
 
-void PrintSectionHeaderData(struct elf64shdr* header, bool printAll)
+void PrintSectionHeaderData(uint8_t* memdev, struct elf64shdr* header, bool printAll)
 {
     if(header->sh_addr == 0 && header->sh_offset == 0)
     {
         return;
     }
-    struct elf64header elfHeader = CollectElfHeaderData(header->elf_offset);
+    struct elf64header elfHeader = CollectElfHeaderData(memdev, header->elf_offset);
     if(printAll)
     {
         printf("sh_type : %08X\n", header->sh_type);
@@ -189,7 +189,7 @@ void PrintSectionHeaderData(struct elf64shdr* header, bool printAll)
         printf("sh_entsize : %016X\n", header->sh_entsize);
         printf("\n");
     }
-    printf("sh_name : %s\n", GetOneHeaderName(&elfHeader, header));
+    printf("sh_name : %s\n", GetOneHeaderName(memdev, &elfHeader, header));
 }
 
 void PrintElfHeaderData(struct elf64header* header)
@@ -211,14 +211,14 @@ void PrintElfHeaderData(struct elf64header* header)
     printf("shstrndx: %d\n", header->e_shstrndx);
 }
 
-void CrawlProgramHeaders(struct elf64header* elf, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
+void CrawlProgramHeaders(uint8_t* memdev, struct elf64header* elf, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t segmentPtr = elf->RamOffset + elf->e_phoff;
     uint8_t* segmentDigests = calloc(elf->e_phnum, DIGEST_NUM_BYTES);
     int numDigests = 0;
     for(int i=0; i<elf->e_phnum; i++)
     {
-        struct elf64phdr thisPhdr = CollectProgramHeader(segmentPtr, elf->RamOffset);
+        struct elf64phdr thisPhdr = CollectProgramHeader(memdev, segmentPtr, elf->RamOffset);
         if(!(thisPhdr.p_flags & 2)) // "if this progrm header refers to a non-writable segment..."
         {
             HashMeasure( ((char*)memdev+thisPhdr.p_vaddr), thisPhdr.p_memsz, (uint8_t (*) [DIGEST_NUM_BYTES])&segmentDigests[numDigests*DIGEST_NUM_BYTES] );
@@ -230,10 +230,10 @@ void CrawlProgramHeaders(struct elf64header* elf, uint8_t (*outputDigest)[DIGEST
     free(segmentDigests);
 }
 
-bool TryMeasureElfRodata(uint64_t elfAddr, uint64_t pgd, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
+bool TryMeasureElfRodata(uint8_t* memdev, uint64_t elfAddr, uint64_t pgd, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
 {
-    struct elf64header elf = CollectElfHeaderData(elfAddr);
+    struct elf64header elf = CollectElfHeaderData(memdev, elfAddr);
     /* PrintElfHeaderData(&elf); */
-    CrawlProgramHeaders(&elf, outputDigest);
+    CrawlProgramHeaders(memdev, &elf, outputDigest);
     return true;
 }

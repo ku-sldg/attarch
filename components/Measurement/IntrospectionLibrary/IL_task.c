@@ -133,7 +133,7 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     printf("\n");
 }
 
-void GetTaskNamePointer(uint64_t task, char (*output_name)[TASK_COMM_LEN])
+void GetTaskNamePointer(uint8_t* memdev, uint64_t task, char (*output_name)[TASK_COMM_LEN])
 {
     char* index = ((char*)memdev) + task + 1640;
     for(int i=0; i<TASK_COMM_LEN; i++)
@@ -145,7 +145,7 @@ void GetTaskNamePointer(uint64_t task, char (*output_name)[TASK_COMM_LEN])
 /* We use this function to check whether a given address "task"
 ** acutally points to a genuine task_struct in VM memory.
 */
-bool ValidateTaskStruct(uint64_t task)
+bool ValidateTaskStruct(uint8_t* memdev, uint64_t task)
 {
     if(task > RAM_SIZE)
     {
@@ -177,7 +177,7 @@ bool ValidateTaskStruct(uint64_t task)
 ** The remainder of the arguments are pointers which are loaded with relevant
 ** output data
 */
-void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr)
+void InterpVMA(uint8_t* memdev, uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, uint64_t* flags, uint64_t pgdPaddr)
 {
     uint64_t vm_start = ((uint64_t*)((char*)memdev+vma))[0];
     /* TODO */
@@ -230,14 +230,14 @@ void InterpVMA(uint64_t vma, uint64_t* start, uint64_t* size, uint64_t* next, ui
 ** It takes an address "pgdPaddr" to the relevant Page Global Directory.
 ** It outputs a hash digest into eponymous pointer argument.
 */
-void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
+void CrawlVMAs(uint8_t* memdev, uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t start;
     uint64_t size;
     uint64_t next;
     uint64_t flags;
     DebugLog("before interpVMA\n");
-    InterpVMA(vma, &start, &size, &next, &flags, pgdPaddr);
+    InterpVMA(memdev, vma, &start, &size, &next, &flags, pgdPaddr);
     DebugLog("after\n");
     if( start + size < RAM_SIZE
             && ((char*)memdev+start)[0] == 0x7f
@@ -246,7 +246,7 @@ void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_N
             && ((char*)memdev+start)[3] == 'F' )
     {
         DebugLog("before measure elf rodata\n");
-        if(TryMeasureElfRodata(start, pgdPaddr, rodataDigest))
+        if(TryMeasureElfRodata(memdev, start, pgdPaddr, rodataDigest))
         {
             DebugLog("after\n");
             // we got a good digest
@@ -258,14 +258,14 @@ void CrawlVMAs(uint64_t vma, uint64_t pgdPaddr, uint8_t (*rodataDigest)[DIGEST_N
     }
     if(next != 0)
     {
-        CrawlVMAs(next, pgdPaddr, rodataDigest);
+        CrawlVMAs(memdev, next, pgdPaddr, rodataDigest);
     }
 }
 
 /* InterpretMemory takes a pointer to a valid task_struct in VM memory "task"
 ** and returns a hash digest of its rodata (if it exists)
 */
-void InterpretMemory(uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
+void InterpretMemory(uint8_t* memdev, uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
     uint64_t mmAddrLoc = task + 1024;
     uint64_t mmAddr = ((uint64_t*)((char*)memdev+mmAddrLoc))[0];
@@ -293,14 +293,14 @@ void InterpretMemory(uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
     }
     /* One ELF per file */
     DebugLog("before crawlVMAs\n");
-    CrawlVMAs(mmap, pgdPaddr, rodataDigest);
+    CrawlVMAs(memdev, mmap, pgdPaddr, rodataDigest);
     DebugLog("after\n");
 }
 
 /* takes an address to a task_struct in vm memory
 ** returns its pid
 */
-void GetPID(uint64_t task, int* myPid)
+void GetPID(uint8_t* memdev, uint64_t task, int* myPid)
 {
     int myPidLoc = task + 1200;
     *myPid =((int*)((char*)memdev+myPidLoc))[0];
@@ -309,22 +309,22 @@ void GetPID(uint64_t task, int* myPid)
 /* takes an address to a task_struct in vm memory
 ** returns its pid and its parent's pid
 */
-void GetPIDs(uint64_t task, int* myPid, int* parentPid)
+void GetPIDs(uint8_t* memdev, uint64_t task, int* myPid, int* parentPid)
 {
-    GetPID(task, myPid);
+    GetPID(memdev, task, myPid);
     uint64_t parentAddrLoc = task + 1216;
     uint64_t parentAddr = ((uint64_t*)((char*)memdev+parentAddrLoc))[0];
     uint64_t parent = TranslateVaddr(parentAddr);
-    if(ValidateTaskStruct(parent))
+    if(ValidateTaskStruct(memdev, parent))
     {
-        GetPID(parent, parentPid);
+        GetPID(memdev, parent, parentPid);
     }
 }
 
 /* takes an address to a task_struct in vm memory
 ** returns a cred struct populated with the task's creds
 */
-void InterpretCred(uint64_t task, struct cred* cred)
+void InterpretCred(uint8_t* memdev, uint64_t task, struct cred* cred)
 {
     uint64_t credAddrLoc = task + 1640 - 8 - 8; //"real_cred"
     uint64_t credVaddr = ((uint64_t*)((char*)memdev+credAddrLoc))[0];
@@ -359,7 +359,7 @@ void InterpretCred(uint64_t task, struct cred* cred)
 /* InterpretTaskStruct takes an address to a task_struct in vm memory
 ** it returns the addresses of it's leftmost child and left sibling
 */
-void InterpretTaskStruct(uint64_t thisTaskStructPaddr, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
+void InterpretTaskStruct(uint8_t* memdev, uint64_t thisTaskStructPaddr, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
 {
     int childLoc = thisTaskStructPaddr + 1232;
     uint64_t firstChild = ((uint64_t*)((char*)memdev+childLoc))[0];
@@ -376,19 +376,19 @@ void InterpretTaskStruct(uint64_t thisTaskStructPaddr, uint64_t* children, uint6
 ** as well as the address of the related task_struct in vm memory,
 ** and returns the filled out TaskMeasurement
 */
-void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
+void CollectTaskMeasurement(uint8_t* memdev, TaskMeasurement* msmt, uint64_t taskptr)
 {
-    GetTaskNamePointer(taskptr, &msmt->name);
+    GetTaskNamePointer(memdev, taskptr, &msmt->name);
     /* printf("Currently Crawling: %s\n", msmt->name); */
-    GetPIDs(taskptr, &msmt->myPid, &msmt->parentPid);
-    InterpretCred(taskptr, &msmt->cred);
+    GetPIDs(memdev, taskptr, &msmt->myPid, &msmt->parentPid);
+    InterpretCred(memdev, taskptr, &msmt->cred);
 
     // TODO explain this unconditional block
     /* if(strcmp(&msmt->name, "init")==0) */
     {
         bool isKernelThread = msmt->parentPid == 2;
         DebugLog("before interpret memory\n");
-        InterpretMemory(msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
+        InterpretMemory(memdev, msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
         DebugLog("after\n");
     }
     return;
@@ -398,32 +398,32 @@ void CollectTaskMeasurement(TaskMeasurement* msmt, uint64_t taskptr)
 ** and a pointer to the parent TaskMeasurement,
 ** and returns a pointer to a newly crafted TaskMeasurement for the input task
 */
-TaskMeasurement* BuildTaskTreeNode(uint64_t taskPaddr, TaskMeasurement* parent)
+TaskMeasurement* BuildTaskTreeNode(uint8_t* memdev, uint64_t taskPaddr, TaskMeasurement* parent)
 {
     TaskMeasurement* thisMsmt = calloc(1,sizeof(TaskMeasurement));
     thisMsmt->paddr = taskPaddr;
     thisMsmt->parent = parent;
     DebugLog("before collect measurement\n");
-    CollectTaskMeasurement(thisMsmt, taskPaddr);
+    CollectTaskMeasurement(memdev, thisMsmt, taskPaddr);
     DebugLog("after\n");
     // prepare to crawl further
     uint64_t myChild;
     uint64_t mySibling;
     DebugLog("interpret task struct\n");
-    InterpretTaskStruct(taskPaddr, &myChild, &mySibling);
+    InterpretTaskStruct(memdev, taskPaddr, &myChild, &mySibling);
     DebugLog("after\n");
     // if we have any children, enqueue them all
-    if(ValidateTaskStruct(myChild))
+    if(ValidateTaskStruct(memdev, myChild))
     {
         int childNumber = 0;
-        thisMsmt->children[childNumber++] = BuildTaskTreeNode(myChild, thisMsmt);
+        thisMsmt->children[childNumber++] = BuildTaskTreeNode(memdev, myChild, thisMsmt);
         uint64_t dummy;
         uint64_t siblingIterator;
-        InterpretTaskStruct(myChild, &dummy, &siblingIterator);
-        while( ValidateTaskStruct(siblingIterator) && siblingIterator != myChild )
+        InterpretTaskStruct(memdev, myChild, &dummy, &siblingIterator);
+        while( ValidateTaskStruct(memdev, siblingIterator) && siblingIterator != myChild )
         {
-            thisMsmt->children[childNumber++] = BuildTaskTreeNode(siblingIterator, thisMsmt);
-            InterpretTaskStruct(siblingIterator, &dummy, &siblingIterator);
+            thisMsmt->children[childNumber++] = BuildTaskTreeNode(memdev, siblingIterator, thisMsmt);
+            InterpretTaskStruct(memdev, siblingIterator, &dummy, &siblingIterator);
         }
     }
     return thisMsmt;
@@ -500,12 +500,12 @@ void FreeTaskTree(TaskMeasurement* root)
 ** INIT_TASK_ADDR, which is collected from the System.map file generated as a
 ** side-effect of linux kernel compilation.
 */
-TaskMeasurement* MeasureTaskTree()
+TaskMeasurement* MeasureTaskTree(uint8_t* memdev)
 {
     /* printf("DEBUG: Measurement: Beginning task tree measurement.\n"); */
     uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
     DebugLog("before build tree\n");
-    TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(init_task_ptr, NULL);
+    TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(memdev, init_task_ptr, NULL);
     DebugLog("after\n");
     swapperMeasurement->parent = swapperMeasurement;
     return swapperMeasurement;
