@@ -11,6 +11,7 @@
 #include "../hash.h"
 #include "../KnownDigests.h"
 #include "../configurations/include.h"
+#include "IL_AddressTranslation.c"
 #include "IL_utils.c"
 #include "IL_kernel_modules.c"
 #include "IL_task.c"
