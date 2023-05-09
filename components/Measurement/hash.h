@@ -18,9 +18,9 @@ void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_N
 
 bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES]);
 
-void MeasureKernelPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr);
+void MeasureKernelPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr);
 
-void MeasureUserPage(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr);
+void MeasureUserPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr);
 
 #endif
 

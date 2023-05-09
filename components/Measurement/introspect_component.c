@@ -9,12 +9,12 @@
 #include "hash.h"
 #include "IntrospectionLibrary/IL_library.c"
 
-bool IsModulesOkay(uint8_t* memdev)
+bool IsModulesOkay(uint8_t* memory_device)
 {
     bool result = true;
     uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES] = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
     char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN] = calloc(NUM_MODULE_DIGESTS, MODULE_NAME_LEN);
-    MeasureKernelModules(memdev, module_digests, module_names);
+    MeasureKernelModules(memory_device, module_digests, module_names);
 
     printf("DEBUG: Measurement: Appraising digests\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
@@ -43,19 +43,19 @@ bool IsModulesOkay(uint8_t* memdev)
     return result;
 }
 
-bool IsTasksOkay(uint8_t* memdev)
+bool IsTasksOkay(uint8_t* memory_device)
 {
-    TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memdev);
+    TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memory_device);
     bool result = AppraiseTaskTree(rootTaskMeasurement);
     FreeTaskTree(rootTaskMeasurement);
     return result;
 }
 
-bool IsKernelRodataOkay(uint8_t* memdev)
+bool IsKernelRodataOkay(uint8_t* memory_device)
 {
     bool result = true;
     uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    MeasureKernelRodata(memdev, kernelRodataDigest);
+    MeasureKernelRodata(memory_device, kernelRodataDigest);
     if(IsThisAKnownDigest(kernelRodataDigest))
     {
         printf("Kernel Rodata recognized\n");

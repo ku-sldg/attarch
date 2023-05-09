@@ -13,7 +13,7 @@ struct module_layout {
     unsigned int ro_after_init_size;
 };
 
-struct module_layout GetModuleLayoutFromListHead(uint8_t* memdev, int physAddr)
+struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int physAddr)
 {
     int index = physAddr;
     index += 16; // skip list_head
@@ -43,16 +43,16 @@ struct module_layout GetModuleLayoutFromListHead(uint8_t* memdev, int physAddr)
 
     //by inspection
     struct module_layout thisModule;
-    thisModule.base = ((uint64_t*)((char*)memdev+physAddr+47*8))[0];
-    thisModule.size = ((unsigned int*)((char*)memdev+physAddr+47*8))[2];
-    thisModule.text_size = ((unsigned int*)((char*)memdev+physAddr+47*8))[3];
-    thisModule.ro_size = ((unsigned int*)((char*)memdev+physAddr+47*8))[4];
-    thisModule.ro_after_init_size = ((unsigned int*)((char*)memdev+physAddr+47*8))[5];
+    thisModule.base = ((uint64_t*)((char*)memory_device+physAddr+47*8))[0];
+    thisModule.size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[2];
+    thisModule.text_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[3];
+    thisModule.ro_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[4];
+    thisModule.ro_after_init_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[5];
 
     return thisModule;
 }
 
-void InterpretKernelModule(uint8_t* memdev, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[MODULE_NAME_LEN])
+void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[MODULE_NAME_LEN])
 {
     bool IKMDebug = false;
     if(IKMDebug)
@@ -62,14 +62,14 @@ void InterpretKernelModule(uint8_t* memdev, uint64_t inputAddress, uint8_t (*rod
 
     for(int j=16; j<MODULE_NAME_LEN+16; j++)
     {
-        (*name)[j-16] = ((char*)memdev)[inputAddress+j];
+        (*name)[j-16] = ((char*)memory_device)[inputAddress+j];
     }
 
     char msg[13] = "Found Module ";
     introLog(3, msg, (*name), "\n");
 
-    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memdev, (int)inputAddress);
-    uint64_t basePtr = TranslateVaddr(thisModuleLayout.base);
+    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, (int)inputAddress);
+    uint64_t basePtr = TranslateVaddr(memory_device, thisModuleLayout.base);
 
     if(IKMDebug)
     {
@@ -89,13 +89,13 @@ void InterpretKernelModule(uint8_t* memdev, uint64_t inputAddress, uint8_t (*rod
     uint8_t (*digestArray)[this_module_num_ro_pages * DIGEST_NUM_BYTES] = calloc(this_module_num_ro_pages, DIGEST_NUM_BYTES);
     for(int i=0; i<thisModuleLayout.ro_size / INTRO_PAGE_SIZE; i++)
     {
-        MeasureUserPage((uint8_t*)memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*INTRO_PAGE_SIZE);
+        MeasureUserPage((uint8_t*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*INTRO_PAGE_SIZE);
     }
     HashMeasure((uint8_t*)digestArray, this_module_num_ro_pages, rodataDigest);
     free(digestArray);
 }
 
-void MeasureKernelModules(uint8_t* memdev, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN])
+void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN])
 {
     bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
@@ -103,7 +103,7 @@ void MeasureKernelModules(uint8_t* memdev, uint8_t (*module_digests)[NUM_MODULE_
     {
         printf("Collecting module pointers...\n");
     }
-    /* modulePtrs is a list of offsets into memdev that refer to kernel
+    /* modulePtrs is a list of offsets into memory_device that refer to kernel
     ** modules. They are physical memory addresses with the RAM_BASE
     ** already subtracted.
     */
@@ -113,15 +113,15 @@ void MeasureKernelModules(uint8_t* memdev, uint8_t (*module_digests)[NUM_MODULE_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
-    uint64_t* list_head_ptr = (uint64_t*)(((char*)memdev)+LIST_HEAD_ADDR);
-    uint64_t module_pointer = TranslationTableWalk(list_head_ptr[0]);
+    uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+LIST_HEAD_ADDR);
+    uint64_t module_pointer = TranslationTableWalk(memory_device, list_head_ptr[0]);
     while(module_pointer != LIST_HEAD_ADDR)
     {
         modulePtrs[numModulePtrs] = module_pointer;
         numModulePtrs++;
-        char* modBytePtr = ((char*)memdev)+module_pointer;
+        char* modBytePtr = ((char*)memory_device)+module_pointer;
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
-        module_pointer = TranslationTableWalk(modLongPtr[0]);
+        module_pointer = TranslationTableWalk(memory_device, modLongPtr[0]);
     }
     if(MKMDebug)
     {
@@ -131,7 +131,7 @@ void MeasureKernelModules(uint8_t* memdev, uint8_t (*module_digests)[NUM_MODULE_
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(memdev, modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [MODULE_NAME_LEN])&((*module_names)[MODULE_NAME_LEN*i]));
+            InterpretKernelModule(memory_device, modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [MODULE_NAME_LEN])&((*module_names)[MODULE_NAME_LEN*i]));
         }
     }
 }

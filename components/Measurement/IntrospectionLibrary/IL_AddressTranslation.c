@@ -18,7 +18,7 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
 }
 
 // pgd should be the physical address of the page global directory structure
-uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
+uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputAddr, uint64_t pgd)
 {
     bool TTWalkDebug = false;
 
@@ -33,7 +33,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
         printf("input %016X,\nPGDindex %016X,\nPUDindex %016X,\nPMDindex %016X,\nPTEindex %016X\n", inputAddr, PGDindex, PUDindex, PMDindex, PTEindex); 
         printf("PGDindex %d,\nPUDindex %d,\nPMDindex %d,\nPTEindex %X\n", PGDindex, PUDindex, PMDindex, PTEindex); 
     }
-    char* PGDTablePtr = ((char*)memdev)+pgd;
+    char* PGDTablePtr = ((char*)memory_device)+pgd;
     uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
     uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE;
     //uint64_t pudAddr = pgd;
@@ -50,7 +50,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
     }
 
     // TODO investigate these bits we drop from every table entry
-    char* pudTablePtr = ((char*)memdev)+pudAddr;
+    char* pudTablePtr = ((char*)memory_device)+pudAddr;
     uint64_t* PUDTable = (uint64_t*)pudTablePtr;
     uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
@@ -64,7 +64,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
         printf("pmdAddr is %016X\n", pmdAddr);
     }
 
-    char* pmdTablePtr = ((char*)memdev)+pmdAddr;
+    char* pmdTablePtr = ((char*)memory_device)+pmdAddr;
     uint64_t* pmdTable = (uint64_t*)pmdTablePtr;
     uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
@@ -78,7 +78,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
         printf("pteAddr is %016X\n", pteAddr);
     }
 
-    char* pteTablePtr = ((char*)memdev)+pteAddr;
+    char* pteTablePtr = ((char*)memory_device)+pteAddr;
     uint64_t* pteTable = (uint64_t*)pteTablePtr;
     uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE;
     uint64_t finalPaddr = offsetAddr | PAGindex;
@@ -98,15 +98,13 @@ uint64_t TranslationTableWalkSuppliedPGD(uint64_t inputAddr, uint64_t pgd)
     return finalPaddr;
 }
 
-uint64_t TranslationTableWalk(uint64_t inputAddr)
+uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
-    /* char* PGDTablePtr = ((char*)memdev)+0x4113D000 - RAM_BASE; */
     char* PGDTablePtr = 0x4113D000 - RAM_BASE;
-    /* uint64_t PGDTable = ((uint64_t*)PGDTablePtr)[0]; */
-    return TranslationTableWalkSuppliedPGD(inputAddr,  PGDTablePtr);
+    return TranslationTableWalkSuppliedPGD(memory_device, inputAddr,  PGDTablePtr);
 }
 
-uint64_t TranslateVaddr(uint64_t vaddr)
+uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
 {
     //TODO I don't think this conditional is right
     // but the funtion never dies terribly
@@ -115,6 +113,6 @@ uint64_t TranslateVaddr(uint64_t vaddr)
     {
         return intro_virt_to_phys(vaddr);
     }
-    return TranslationTableWalk(vaddr);
+    return TranslationTableWalk(memory_device, vaddr);
 }
 

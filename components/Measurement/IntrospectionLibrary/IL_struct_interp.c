@@ -5,6 +5,7 @@
  * 21 July 2022
  */
 
+/*
 void ScanTaskStruct(uint64_t inputAddress)
 {
     int index = inputAddress;
@@ -75,7 +76,6 @@ void ScanTaskStruct(uint64_t inputAddress)
     introspectScan(&index, 8, "struct task_struct *, group_leader");
     introspectScan(&index, 16, "struct list_head , ptraced");
     introspectScan(&index, 16, "struct list_head , ptrace_entry");
-    /*
     introspectScan(&index, 24, "struct pid_link , pids1");
     introspectScan(&index, 24, "struct pid_link , pids2");
     introspectScan(&index, 24, "struct pid_link , pids3");
@@ -186,5 +186,5 @@ void ScanTaskStruct(uint64_t inputAddress)
     introspectScan(&index, 4, "int , pagefault_disabled");
     introspectScan(&index, 8, "struct task_struct *, oom_reaper_list");
     introspectScan(&index, 960, "struct thread_struct , thread");
-    */
 }
+    */

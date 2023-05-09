@@ -15,7 +15,7 @@ uint64_t RoundDownToCurrentPage(uint64_t x)
     return (x >> 12) << 12;
 }
 
-void CollectRodataHashingAsWeGo(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     uint8_t (*digestArray)[NUM_RODATA_PAGES * DIGEST_NUM_BYTES] = calloc(NUM_RODATA_PAGES, DIGEST_NUM_BYTES);
     /* We found some "ro_after_init" data */
@@ -31,14 +31,14 @@ void CollectRodataHashingAsWeGo(uint8_t* memdev, uint8_t (*output_digest)[DIGEST
             /* printf("this was a ro_after_init page...\n"); */
             continue;
         }
-        MeasureKernelPage((char*)memdev, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
+        MeasureKernelPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
     free(digestArray);
 }
 
-void MeasureKernelRodata(uint8_t* memdev, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void MeasureKernelRodata(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
-    CollectRodataHashingAsWeGo(memdev, output_digest);
+    CollectRodataHashingAsWeGo(memory_device, output_digest);
 }
 
