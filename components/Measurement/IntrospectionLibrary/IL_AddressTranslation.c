@@ -11,10 +11,59 @@
  * 2 May 2023
  */
 
+
+// #define MEM_SV_START        _AC(0xfd000000, UL)
+//  OR
+// #define KERNEL_HIGH_VADDR   _AC(0xfffffff800000000, UL)  /* high 32GB */
+// #define MEM_SV_START        (KERNEL_HIGH_VADDR - 0x100000000) /* 256 MB */
+
+// #define TEXT_OFFSET MEM_SV_START
+
+// linux/arch/arm64/include/asm/kernel-pgtable.h
+// #define ARM64_MEMSTART_ALIGN 0x40000000
+
+// BY INSPECTION: (via printing it in a kernel module)
+// #define PHYS_OFFSET RAM_BASE
+//see linux/arch/arm64/kernel/head.S
+// kimage_vaddr = 0xFFFF000004000001
+// kimage_voffset = 0xFFFF000004000001- 0x40000000
+// kimage_voffset = 0xFFFEFFFFC4000000
+
+// ./include/linux/kernel.h:69:#define __round_mask(x, y) ((__typeof__(x))((y)-1))
+// ./include/linux/kernel.h:71:#define round_down(x, y) ((x) & ~__round_mask(x, y))
+
+// see linux/arch/arm64/mm/init.c
+//  memstart_addr = round_down(memblock_start_of_DRAM(),
+//                     0x40000000);
+
+// see linux/arch/arm64/include/asm/memory.h
+
+// kimage_vaddr := 0xFFFF000004000001
+// #define VA_START 0xFFFF000000000001
+// #define PHYS_OFFSET memstart_addr
+// #define PAGE_OFFSET 0xFFFF800000000001
+// #define CONFIG_ARM64_VA_BITS 48
+
+/* uint64_t intro_virt_to_phys_new(uint64_t virtaddr) */
+/* { */
+/*     uint64_t ret = virtaddr & (1 << 47) ? (virtaddr & ~0xFFFF800000000001) + PHYS_OFFSET : (virtaddr - kimage_voffset); */
+/*     return ret; */
+/* } */
+
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
 {
-    //return((virtaddr & 0xFFFFFFFF) + 0x40000000);
-    return(virtaddr & 0xFFFFFFFF);
+    uint64_t ret;
+    if(virtaddr & (1ULL << 47))
+    {
+        uint64_t page_offset = 0xFFFF800000000001;
+        ret = ( (virtaddr & ~page_offset) );
+    }
+    else
+    {
+        uint64_t kimage_vaddr = 0xFFFF000004000001;
+        ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
+    }
+    return ret;
 }
 
 // pgd should be the physical address of the page global directory structure
@@ -100,16 +149,19 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
+    // this literal is derived from the swapper_pg_dir virtual address as given
+    // in the System.map file
     char* PGDTablePtr = 0x4113D000 - RAM_BASE;
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr,  PGDTablePtr);
 }
 
 uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
 {
-    //TODO I don't think this conditional is right
-    // but the funtion never dies terribly
+    // This corresponds to PAGE_OFFSET defined in arch/.../memory.h
+    // If the virtual address is a kernel address, it will be higher than this
+    // cut_off point, PAGE_OFFSET
     uint64_t vaddr_base = 0xffff800000000000;
-    if( vaddr_base <= vaddr && vaddr <= vaddr_base+RAM_SIZE )
+    if( vaddr_base < vaddr && vaddr <= vaddr_base+RAM_SIZE )
     {
         return intro_virt_to_phys(vaddr);
     }
