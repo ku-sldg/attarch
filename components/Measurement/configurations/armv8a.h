@@ -31,16 +31,16 @@
 #define NUM_RODATA_PAGES (END_RODATA-START_RODATA)/INTRO_PAGE_SIZE
 
 // introspection level definitions
-#define INTRO_NUM_DIGESTS 100
-#define DIGEST_NUM_BYTES 64
+#define INTRO_NUM_DIGESTS 100 //arbitrary
+#define DIGEST_NUM_BYTES 64 // representative of 512 bit hash digests
 
 // task specific definitions
-#define NUM_TASKS 20
-#define NUM_CHILD_TASKS 64
+#define NUM_TASKS 20 //arbitrary
+#define NUM_CHILD_TASKS 64 //arbitrary
 
 // kernel module specific definitions
-#define NUM_MODULE_DIGESTS 128
-#define MODULE_NAME_LEN 56
+#define NUM_MODULE_DIGESTS 128 //arbitrary
+#define MODULE_NAME_LEN 56 // this is a scraped kernel value
 
 #endif
 
