@@ -497,16 +497,16 @@ void FreeTaskTree(TaskMeasurement* root)
 
 /* MeasureTaskTree returns a tree of TaskMeasurements which correspond
 ** to the real task tree in VM memory. It requires a defined value:
-** INIT_TASK_ADDR, which is collected from the System.map file generated as a
+** INTRO_INIT_TASK_VADDR, which is collected from the System.map file generated as a
 ** side-effect of linux kernel compilation.
 */
 TaskMeasurement* MeasureTaskTree(uint8_t* memory_device)
 {
-    /* printf("DEBUG: Measurement: Beginning task tree measurement.\n"); */
-    uint64_t init_task_ptr = (uint64_t)INIT_TASK_ADDR;
+    DebugLog("Measurement: Beginning task tree measurement.\n");
+    uint64_t init_task_paddr = TranslationTableWalk(memory_device, (uint64_t)INTRO_INIT_TASK_VADDR);
     DebugLog("before build tree\n");
-    TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(memory_device, init_task_ptr, NULL);
-    DebugLog("after\n");
+    TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(memory_device, init_task_paddr, NULL);
+    DebugLog("after build tree\n");
     swapperMeasurement->parent = swapperMeasurement;
     return swapperMeasurement;
 }
