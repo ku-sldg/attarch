@@ -63,7 +63,7 @@ bool IsThisAKnownDigest(uint8_t (*input_digest)[DIGEST_NUM_BYTES])
     return false;
 }
 
-void RenderDigestDeclaration(char (*name)[MODULE_NAME_LEN], uint8_t (*digest)[DIGEST_NUM_BYTES])
+void RenderDigestDeclaration(char (*name)[INTRO_MODULE_NAME_LEN], uint8_t (*digest)[DIGEST_NUM_BYTES])
 {
     printf("\tconst char %s[] = \"", (*name));
     PrintDigest(digest);        

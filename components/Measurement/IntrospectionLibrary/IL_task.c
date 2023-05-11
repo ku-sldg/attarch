@@ -452,7 +452,7 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
                 appraisalResult = false;
                 printf("Be warned! Task %s NOT recognized:\n", thisTaskMsmt->name);
             }
-            RenderDigestDeclaration((char (*) [MODULE_NAME_LEN])(thisTaskMsmt->name), (uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest);
+            RenderDigestDeclaration((char (*) [INTRO_MODULE_NAME_LEN])(thisTaskMsmt->name), (uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest);
         }
         for(int i=0; i<NUM_CHILD_TASKS; i++)
         {

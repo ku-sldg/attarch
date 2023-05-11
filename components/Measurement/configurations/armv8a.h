@@ -40,7 +40,6 @@
 
 // kernel module specific definitions
 #define NUM_MODULE_DIGESTS 128 //arbitrary
-#define MODULE_NAME_LEN 56 // this is a scraped kernel value
 
 #endif
 

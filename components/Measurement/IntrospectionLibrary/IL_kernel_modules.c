@@ -52,7 +52,7 @@ struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int phy
     return thisModule;
 }
 
-void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[MODULE_NAME_LEN])
+void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[INTRO_MODULE_NAME_LEN])
 {
     bool IKMDebug = false;
     if(IKMDebug)
@@ -60,7 +60,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("Module Address: %016X\n", inputAddress);
     }
 
-    for(int j=16; j<MODULE_NAME_LEN+16; j++)
+    for(int j=16; j<INTRO_MODULE_NAME_LEN+16; j++)
     {
         (*name)[j-16] = ((char*)memory_device)[inputAddress+j];
     }
@@ -95,7 +95,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
     free(digestArray);
 }
 
-void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * MODULE_NAME_LEN])
+void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
     bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
@@ -131,13 +131,13 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
     {
         if(modulePtrs[i] != 0)
         {
-            InterpretKernelModule(memory_device, modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [MODULE_NAME_LEN])&((*module_names)[MODULE_NAME_LEN*i]));
+            InterpretKernelModule(memory_device, modulePtrs[i], (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[DIGEST_NUM_BYTES*i]), (char (*) [INTRO_MODULE_NAME_LEN])&((*module_names)[INTRO_MODULE_NAME_LEN*i]));
         }
     }
 }
-bool IsThisAValidModuleMeasurement(char (*moduleName)[MODULE_NAME_LEN])
+bool IsThisAValidModuleMeasurement(char (*moduleName)[INTRO_MODULE_NAME_LEN])
 {
-    for(int i=0; i<MODULE_NAME_LEN; i++)
+    for(int i=0; i<INTRO_MODULE_NAME_LEN; i++)
     {
         if((*moduleName)[i] != '\0')
         {
