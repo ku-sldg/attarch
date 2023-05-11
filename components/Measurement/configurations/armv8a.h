@@ -17,8 +17,6 @@
 // TODO extract these automatically from system.map
 #define LIST_HEAD_ADDR 0xFB61E0
 #define INIT_TASK_ADDR 0xF92280
-#define START_READ_ONLY_AFTER_INIT 0xffff00000899d7dc
-#define END_READ_ONLY_AFTER_INIT 0xffff00000899e160
 
 // derived Linux level definitions
 #define NUM_RODATA_PAGES (INTRO___END_RODATA_VADDR-INTRO___START_RODATA_VADDR)/INTRO_PAGE_SIZE
