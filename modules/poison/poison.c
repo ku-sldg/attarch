@@ -26,4 +26,5 @@ module_init(poison_init);
 module_exit(poison_exit);
 
 
+MODULE_LICENSE("GPL");
 
