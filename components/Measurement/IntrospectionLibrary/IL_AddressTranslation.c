@@ -55,12 +55,12 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
     uint64_t ret;
     if(virtaddr & (1ULL << 47))
     {
-        uint64_t page_offset = 0xFFFF800000000001;
+        uint64_t page_offset = 0xFFFF800000000000;
         ret = ( (virtaddr & ~page_offset) );
     }
     else
     {
-        uint64_t kimage_vaddr = 0xFFFF000004000001;
+        uint64_t kimage_vaddr = 0xFFFF000008000000;
         ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
     }
     return ret;
@@ -149,9 +149,8 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
-    // this literal is derived from the swapper_pg_dir virtual address as given
-    // in the System.map file
-    char* PGDTablePtr = 0x4113D000 - RAM_BASE;
+    uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR);
+    char* PGDTablePtr = swapper_pgd_table_paddr;
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr,  PGDTablePtr);
 }
 
