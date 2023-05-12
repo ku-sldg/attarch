@@ -55,12 +55,12 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
     uint64_t ret;
     if(virtaddr & (1ULL << 47))
     {
-        uint64_t page_offset = 0xFFFF800000000001;
+        uint64_t page_offset = 0xFFFF800000000000;
         ret = ( (virtaddr & ~page_offset) );
     }
     else
     {
-        uint64_t kimage_vaddr = 0xFFFF000004000001;
+        uint64_t kimage_vaddr = 0xFFFF000008000000;
         ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
     }
     return ret;
