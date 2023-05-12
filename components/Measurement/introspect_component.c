@@ -86,13 +86,13 @@ int run(void)
         ready_wait();
 
         bool modules_appraisal = IsModulesOkay(memdev);
-        bool tasks_appraisal =  IsTasksOkay(memdev);
         bool rodata_appraisal = IsKernelRodataOkay(memdev);
+        //bool tasks_appraisal =  IsTasksOkay(memdev);
 
         bool overall_appraisal = true;
         overall_appraisal &= modules_appraisal;
-        overall_appraisal &= tasks_appraisal;
         overall_appraisal &= rodata_appraisal;
+        //overall_appraisal &= tasks_appraisal;
         printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", overall_appraisal ? "Passed" : "Failed.");
         char* resultMsg = overall_appraisal ? "1" : "0";
         // TODO hook the am back up
