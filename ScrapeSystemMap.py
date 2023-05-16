@@ -25,7 +25,7 @@ def process_map_file(filename):
             if len(parts) == 3:
                 symbol = parts[2]
                 if symbol in ["__start_rodata", "__end_rodata", "modules", "init_task", "__start_ro_after_init", "__end_ro_after_init", "swapper_pg_dir"]:
-                    print(f"#define INTRO_{symbol.upper()}_VADDR {parts[0]}")
+                    print(f"#define INTRO_{symbol.upper()}_VADDR 0x{parts[0]}")
 
 def process_config_file(filename):
     with open(filename, 'r') as file:
