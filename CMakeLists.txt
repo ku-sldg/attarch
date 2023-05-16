@@ -31,7 +31,7 @@ endif()
 # END SECTION
 # ==================================================================================================
 
-AddToFileServer("linux" "${CMAKE_CURRENT_SOURCE_DIR}/linux/arch/arm64/boot/Image")
+AddToFileServer("linux" "${CMAKE_CURRENT_SOURCE_DIR}/linux-stable/arch/arm64/boot/Image")
 
 #set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/${KernelARMPlatform}/rootfs_crossvm.cpio.gz")
 set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/rootfs.cpio.gz")
@@ -41,11 +41,11 @@ set(rootfs_file "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/rootfs.cpio.gz")
 # ==================================================================================================
 
 # Setup and Configure Linux Sources
-set(linux_config "${CMAKE_CURRENT_SOURCE_DIR}/linux/.config")
-set(linux_symvers "${CMAKE_CURRENT_SOURCE_DIR}/linux/Module.symvers")
+set(linux_config "${CMAKE_CURRENT_SOURCE_DIR}/linux-stable/.config")
+set(linux_symvers "${CMAKE_CURRENT_SOURCE_DIR}/linux-stable/Module.symvers")
 
 # linux_dir should point to wherever you built the kernel
-set(linux_dir "${CMAKE_CURRENT_SOURCE_DIR}/linux")
+set(linux_dir "${CMAKE_CURRENT_SOURCE_DIR}/linux-stable")
 
 # Add the external signal module project
 ExternalProject_Add(connection-module
