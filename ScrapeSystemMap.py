@@ -69,7 +69,7 @@ def main():
     else:
         print(f"File {map_file} does not exist.")
         
-    config_file = './linux/.config'
+    config_file = './linux-stable/.config'
     if os.path.exists(config_file):
         process_config_file(config_file)
     else:
