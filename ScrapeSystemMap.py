@@ -63,7 +63,7 @@ def process_module_files(module_h, moduleparam_h, config):
 
 
 def main():
-    map_file = './linux/System.map'
+    map_file = './linux-stable/System.map'
     if os.path.exists(map_file):
         process_map_file(map_file)
     else:
@@ -75,8 +75,8 @@ def main():
     else:
         print(f"File {config_file} does not exist.")
 
-    module_h_file = './linux/include/linux/module.h'
-    moduleparam_h_file = './linux/include/linux/moduleparam.h'
+    module_h_file = './linux-stable/include/linux/module.h'
+    moduleparam_h_file = './linux-stable/include/linux/moduleparam.h'
 
     if os.path.exists(module_h_file) and os.path.exists(moduleparam_h_file) and os.path.exists(config_file):
         process_module_files(module_h_file, moduleparam_h_file, config_file)
