@@ -1,22 +1,27 @@
-cd linux &&
+#!/bin/bash
+
+# Navigate to 'linux-stable' directory
+cd linux-stable || { echo "Failed to change directory to: linux-stable"; exit 1; }
 
 # ensure the working directories are clean
-make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- clean &&
-(rm .config || true) &&
-(rm .config.old || true) &&
-(rm Module.symvers || true) &&
+# Clean the build using make clean and remove config files if they exist
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- clean || { echo "Failed to clean"; exit 1; }
+rm -f .config .config.old Module.symvers || { echo "Failed to remove .config, .config.old, or Module.symvers"; exit 1; }
 
 # copy in our specific config file
-cp  ../../../../../camkes-vm-images/qemu-arm-virt/linux_configs/config .config &&
-cp .config .config.old &&
+# Copy the specific config file and check if operation was successful
+cp  ../../../../../camkes-vm-images/qemu-arm-virt/linux_configs/config .config || { echo "Failed to copy config file"; exit 1; }
+cp .config .config.old || { echo "Failed to backup .config file"; exit 1; }
 
 # when our config file doesn't account for some of this kernel version's
 # options, choose the default everywhere.
-(yes "" | make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- oldconfig) &&
+# Update the config file with default options for new options
+yes "" | make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- oldconfig || { echo "Failed to update .config file"; exit 1; }
 
 # prepare the source tree for compilation
-make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- prepare &&
+# Prepare the source tree for compilation and check if operation was successful
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- prepare || { echo "Failed to prepare source tree for compilation"; exit 1; }
 
 # compile the kernel using all available CPU cores
-make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
-
+# Compile the kernel and check if operation was successful
+make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- || { echo "Failed to compile the kernel"; exit 1; }
