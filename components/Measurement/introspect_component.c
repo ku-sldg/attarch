@@ -7,7 +7,7 @@
 #include <camkes.h>
 #include "configurations/include.h"
 #include "hash.h"
-#include "IntrospectionLibrary/IL_library.c"
+#include "IntrospectionLibrary/IntrospectionLibrary.c"
 
 bool IsModulesOkay(uint8_t* memory_device)
 {
