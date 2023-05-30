@@ -7,8 +7,8 @@
 
 #define INTRO_TASK_DEBUG 0
 
-#include "IL_struct_interp.c"
-#include "IL_elf_header.c"
+#include "struct_interp.c"
+#include "elf_header.c"
 #include "../hash.h"
 
 /* C program for array implementation of queue */
