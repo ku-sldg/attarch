@@ -26,6 +26,11 @@ def process_map_file(filename):
                 symbol = parts[2]
                 if symbol in ["__start_rodata", "__end_rodata", "modules", "init_task", "__start_ro_after_init", "__end_ro_after_init", "swapper_pg_dir"]:
                     print(f"#define INTRO_{symbol.upper()}_VADDR 0x{parts[0]}")
+                # the following two conditions account for linux 4.9
+                if symbol in ["__start_data_ro_after_init"]:
+                    print(f"#define INTRO___START_RO_AFTER_INIT_VADDR 0x{parts[0]}")
+                if symbol in ["__end_data_ro_after_init"]:
+                    print(f"#define INTRO___END_RO_AFTER_INIT_VADDR 0x{parts[0]}")
 
 def process_config_file(filename):
     with open(filename, 'r') as file:
