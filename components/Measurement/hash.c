@@ -41,9 +41,15 @@ bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
     return true;
 }
 
-void MeasureKernelPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
+// for Linux 4.x.y
+void MeasureKernelPageLinux4(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
-    //uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000); // Linux major version 4
+    uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
+    HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
+}
+// for Linux 5.x.y
+void MeasureKernelPageLinux5(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
+{
     uint64_t pagePaddr = TranslateVaddr(pageVaddr);
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
