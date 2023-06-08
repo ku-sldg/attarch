@@ -80,7 +80,7 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
 // pgd should be the physical address of the page global directory structure
 uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputAddr, uint64_t pgd)
 {
-    bool TTWalkDebug = false;
+    bool TTWalkDebug = true;
 
     uint64_t PGDindex = (inputAddr & 0x0000FF8000000000) >> 39;
     uint64_t PUDindex = (inputAddr & 0x0000007FC0000000) >> 30;
@@ -93,74 +93,185 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
         printf("input %016X,\nPGDindex %016X,\nPUDindex %016X,\nPMDindex %016X,\nPTEindex %016X\n", inputAddr, PGDindex, PUDindex, PMDindex, PTEindex); 
         printf("PGDindex %d,\nPUDindex %d,\nPMDindex %d,\nPTEindex %X\n", PGDindex, PUDindex, PMDindex, PTEindex); 
     }
-    char* PGDTablePtr = ((char*)memory_device)+pgd;
-    uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
-    uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE;
-    //uint64_t pudAddr = pgd;
 
-    if(TTWalkDebug)
+
+
+
+    int numPossible = 16;
+    uint64_t* addyList = calloc(sizeof(uint64_t), numPossible);
+    int numCapturedAddies = 0;
+
+
+    printf("Searching for reasonable pgd...\n");
+    for(int i=RAM_SIZE-0x1000; 0 < i; i--)
     {
-        printf("Here is the PGD\n");
-        for(int i=0; i<0x4; i++)
+        char* PGDTablePtr = ((char*)memory_device) + i;
+        uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
+        uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE;
+        bool isValidAddy = 0 < pudAddr && pudAddr < RAM_SIZE;
+        if(!isValidAddy)
         {
-            printf("%016X\n", PGDTable[i]);
+            continue;
         }
-        printf("Get PUD base address from PGD\n");
-        printf("pudAddr is %016X\n", pudAddr);
-    }
+        
+        /* printf("Starting inspection at offset %X\n", i); */
+        /* printf("valid pudAddr is %016X\n", pudAddr); */
 
-    // TODO investigate these bits we drop from every table entry
-    char* pudTablePtr = ((char*)memory_device)+pudAddr;
-    uint64_t* PUDTable = (uint64_t*)pudTablePtr;
-    uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
-    if(TTWalkDebug)
-    {
-        printf("Here is the PUD\n");
-        for(int i=0; i<0x4; i++)
+
+        char* pudTablePtr = ((char*)memory_device)+pudAddr;
+        uint64_t* PUDTable = (uint64_t*)pudTablePtr;
+        uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE;
+
+        isValidAddy = 0 < pmdAddr && (pmdAddr < RAM_SIZE);
+        if(!isValidAddy)
         {
-            printf("%X: %016X\n", i, PUDTable[i]);
+            continue;
         }
-        printf("pmdAddr is %016X\n", pmdAddr);
-    }
+        /* printf("valid pmdAddr is %016X\n", i, pmdAddr); */
 
-    char* pmdTablePtr = ((char*)memory_device)+pmdAddr;
-    uint64_t* pmdTable = (uint64_t*)pmdTablePtr;
-    uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE;
 
-    if(TTWalkDebug)
-    {
-        printf("Here is the pmd\n");
-        for(int i=0; i<0x4; i++)
+
+        char* pmdTablePtr = ((char*)memory_device)+pmdAddr;
+        uint64_t* pmdTable = (uint64_t*)pmdTablePtr;
+        uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE;
+
+        isValidAddy = 0 < pteAddr && (pteAddr < RAM_SIZE);
+        if(!isValidAddy)
         {
-            printf("%X: %016X\n", i, pmdTable[i]);
+            continue;
         }
-        printf("pteAddr is %016X\n", pteAddr);
-    }
+        /* printf("valid pteAddr is %016X\n", i, pteAddr); */
 
-    char* pteTablePtr = ((char*)memory_device)+pteAddr;
-    uint64_t* pteTable = (uint64_t*)pteTablePtr;
-    uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE;
-    uint64_t finalPaddr = offsetAddr | PAGindex;
 
-    if(TTWalkDebug)
-    {
-        printf("Here is the pte at 1C2\n");
-        for(int i=0x1C2; i<0x1C6; i++)
+        char* pteTablePtr = ((char*)memory_device)+pteAddr;
+        uint64_t* pteTable = (uint64_t*)pteTablePtr;
+        uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE;
+
+        isValidAddy = 0 < offsetAddr && (offsetAddr < RAM_SIZE);
+        if(!isValidAddy)
         {
-            printf("%X: %016X\n", i, pteTable[i]);
+            continue;
         }
-        printf("offsetAddr is %016X\n", offsetAddr);
-        printf("Output Address is %016X\n", finalPaddr + RAM_BASE);
-        printf("\nTable walk complete\n");
-    }
+        uint64_t finalPaddr = offsetAddr | PAGindex;
+        isValidAddy = 0 < finalPaddr && (finalPaddr < RAM_SIZE);
+        if(!isValidAddy)
+        {
+            continue;
+        }
 
-    return finalPaddr;
+
+
+        bool isAddyKnown = false;
+        for(int j=0; j<numPossible; j++)
+        {
+            if(addyList[j] == finalPaddr)
+            {
+                isAddyKnown = true;
+                break;
+            }
+        }
+        if(isAddyKnown)
+        {
+            continue;
+        }
+        addyList[numCapturedAddies++] = finalPaddr;
+        printf("From offset %X, Output Address is %016X\n", i, finalPaddr + RAM_BASE);
+    }
+    printf("Done searching for reasonable pgd.\n");
+
+
+    printf("Returning %llx\n", addyList[0]);
+    return addyList[0];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // below this is the old good table walk. above is inspection/development
+
+    /* char* PGDTablePtr = ((char*)memory_device)+pgd; */
+    /* uint64_t* PGDTable = (uint64_t*)PGDTablePtr; */
+    /* uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE; */
+
+    /* if(TTWalkDebug) */
+    /* { */
+    /*     printf("Here is the PGD\n"); */
+    /*     for(int i=0; i<0x4; i++) */
+    /*     { */
+    /*         printf("%016X\n", PGDTable[i]); */
+    /*     } */
+    /*     printf("Get PUD base address from PGD\n"); */
+    /*     printf("pudAddr is %016X\n", pudAddr); */
+    /* } */
+    /* // TODO investigate these bits we drop from every table entry */
+    /* char* pudTablePtr = ((char*)memory_device)+pudAddr; */
+    /* uint64_t* PUDTable = (uint64_t*)pudTablePtr; */
+    /* uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE; */
+
+    /* if(TTWalkDebug) */
+    /* { */
+    /*     printf("Here is the PUD\n"); */
+    /*     for(int i=0; i<0x4; i++) */
+    /*     { */
+    /*         printf("%X: %016X\n", i, PUDTable[i]); */
+    /*     } */
+    /*     printf("pmdAddr is %016X\n", pmdAddr); */
+    /* } */
+
+    /* char* pmdTablePtr = ((char*)memory_device)+pmdAddr; */
+    /* uint64_t* pmdTable = (uint64_t*)pmdTablePtr; */
+    /* uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE; */
+
+    /* if(TTWalkDebug) */
+    /* { */
+    /*     printf("Here is the pmd\n"); */
+    /*     for(int i=0; i<0x4; i++) */
+    /*     { */
+    /*         printf("%X: %016X\n", i, pmdTable[i]); */
+    /*     } */
+    /*     printf("pteAddr is %016X\n", pteAddr); */
+    /* } */
+
+    /* char* pteTablePtr = ((char*)memory_device)+pteAddr; */
+    /* uint64_t* pteTable = (uint64_t*)pteTablePtr; */
+    /* uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE; */
+    /* uint64_t finalPaddr = offsetAddr | PAGindex; */
+
+    /* if(TTWalkDebug) */
+    /* { */
+    /*     printf("Here is the pte at 1C2\n"); */
+    /*     for(int i=0x1C2; i<0x1C6; i++) */
+    /*     { */
+    /*         printf("%X: %016X\n", i, pteTable[i]); */
+    /*     } */
+    /*     printf("offsetAddr is %016X\n", offsetAddr); */
+    /*     printf("Output Address is %016X\n", finalPaddr + RAM_BASE); */
+    /*     printf("\nTable walk complete\n"); */
+    /* } */
+
+    /* return finalPaddr; */
+
 }
 
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
     uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR);
+    //swapper_pgd_table_paddr = 0x3EF80;
+    swapper_pgd_table_paddr = 0x7FFC5D8;
     char* PGDTablePtr = swapper_pgd_table_paddr;
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr,  PGDTablePtr);
 }
