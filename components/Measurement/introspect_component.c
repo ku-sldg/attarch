@@ -16,7 +16,7 @@ bool IsModulesOkay(uint8_t* memory_device)
     char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN] = calloc(NUM_MODULE_DIGESTS, INTRO_MODULE_NAME_LEN);
     MeasureKernelModules(memory_device, module_digests, module_names);
 
-    printf("DEBUG: Measurement: Appraising digests\n");
+    printf("DEBUG: Measurement: Appraising modules\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
         if(IsThisAValidModuleMeasurement((char (*) [INTRO_MODULE_NAME_LEN])&((*module_names)[i*INTRO_MODULE_NAME_LEN])))
@@ -46,6 +46,7 @@ bool IsModulesOkay(uint8_t* memory_device)
 bool IsTasksOkay(uint8_t* memory_device)
 {
     TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memory_device);
+    printf("DEBUG: Measurement: Appraising tasks\n");
     bool result = AppraiseTaskTree(rootTaskMeasurement);
     FreeTaskTree(rootTaskMeasurement);
     return result;
@@ -56,6 +57,7 @@ bool IsKernelRodataOkay(uint8_t* memory_device)
     bool result = true;
     uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     MeasureKernelRodata(memory_device, kernelRodataDigest);
+    printf("DEBUG: Measurement: Appraising kernel rodata\n");
     if(IsThisAKnownDigest(kernelRodataDigest))
     {
         printf("Kernel Rodata recognized\n");
