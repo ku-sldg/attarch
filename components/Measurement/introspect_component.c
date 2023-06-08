@@ -72,6 +72,59 @@ bool IsKernelRodataOkay(uint8_t* memory_device)
     return result;
 }
 
+
+
+/* #include <stdint.h> */
+/* #include <stdlib.h> */
+
+/* size_t* find_potential_pgd(uint8_t* list, size_t size, size_t* num_found) { */
+/*     *num_found = 0; */
+
+/*     // Every entry is 8 bytes long, so we'll have at most size / 8 potential entries. */
+/*     size_t* offsets = (size_t*)malloc((size / 8) * sizeof(size_t)); */
+/*     if (offsets == NULL) { */
+/*         return NULL; // Failed to allocate memory. */
+/*     } */
+
+/*     size_t potential_entries = 0; */
+/*     for (size_t i = 0; i < size - 7; i += 8) { */
+/*         uint64_t* potential_pgd = (uint64_t*)(list + i); */
+
+/*         // Simple heuristic: a valid entry is 8 bytes long, the valid bit is set, */
+/*         // and it points to an aligned address (we'll check for alignment to a 4KB page). */
+/*         if ((*potential_pgd & 0x1) != 0 && (*potential_pgd & 0xFFF000000000) != 0) { */
+/*             potential_entries++; */
+/*             if (potential_entries >= 256) { */
+/*                 offsets[*num_found] = i - (255 * 8); */
+/*                 (*num_found)++; */
+/*             } */
+/*         } else { */
+/*             potential_entries = 0; // Reset the count of potential entries. */
+/*         } */
+/*     } */
+
+/*     return offsets; */
+/* } */
+
+
+void print_byte_list(uint64_t *byte_list, int number_of_bytes_to_read) {
+    int i;
+    int number_of_chunks = number_of_bytes_to_read / sizeof(uint64_t);  // 8 bytes in a chunk
+    for (i = 0; i < number_of_chunks; i++) {
+        uint64_t chunk = byte_list[i] & 0x00000000FFFFF000;
+
+        bool isValidAddress = 0 < chunk && ((chunk - RAM_BASE) < RAM_SIZE);
+        if(!isValidAddress)
+        {
+            continue;
+        }
+        printf("%016X  %s  %X\n", chunk, isValidAddress ? "valid" : "invalid", i*8);
+    }
+}
+
+
+
+
 int run(void)
 {
     ShaTest();
@@ -85,13 +138,17 @@ int run(void)
         printf("DEBUG: Measurement: Waiting.\n");
         ready_wait();
 
-        bool modules_appraisal = IsModulesOkay(memdev);
+
+        /* print_byte_list(memdev, 8096 * 64 * 2); */
+
+
         bool rodata_appraisal = IsKernelRodataOkay(memdev);
+        /* bool modules_appraisal = IsModulesOkay(memdev); */
         //bool tasks_appraisal =  IsTasksOkay(memdev);
 
         bool overall_appraisal = true;
-        overall_appraisal &= modules_appraisal;
         overall_appraisal &= rodata_appraisal;
+        //overall_appraisal &= modules_appraisal;
         //overall_appraisal &= tasks_appraisal;
         printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", overall_appraisal ? "Passed" : "Failed.");
         char* resultMsg = overall_appraisal ? "1" : "0";
