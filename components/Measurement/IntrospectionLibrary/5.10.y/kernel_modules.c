@@ -113,9 +113,23 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
+
+    // TODO
+    /* printf("Translating list_head vaddr\n"); */
     uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR);
+    /* printf("List_head paddr is %llx\n", list_head_paddr); */
+    /* uint64_t list_head_paddr = 0x133BF80; */
+
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
+    /* printf("list_head has r\n%llx\n%llx\n", list_head_ptr[0], list_head_ptr[1]); */
+
+
+    /* printf("Translating module_ptr vaddr\n"); */
     uint64_t module_pointer = TranslateVaddr(memory_device, list_head_ptr[0]);
+    /* printf("module paddr is %llx\n", module_pointer); */
+    /* return; */
+
+
     while(module_pointer != list_head_paddr)
     {
         modulePtrs[numModulePtrs] = module_pointer;
