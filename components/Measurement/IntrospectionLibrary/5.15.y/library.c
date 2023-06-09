@@ -1,7 +1,7 @@
 /*
  * An introspection library for Linux 4.9.307
  * Michael Neises
- * 11 July 2022
+ * 09 June 2023
  */
 
 #include <string.h>
@@ -16,3 +16,21 @@
 #include "kernel_modules.c"
 #include "task.c"
 #include "kernel_rodata.c"
+#include "../measurements.c"
+
+/* This function is here to easily control which measurements */
+/* are performed for which versions of linux. */
+bool MeasureAndAppraiseLinux()
+{
+        bool rodata_appraisal = IsKernelRodataOkay(memdev);
+        bool modules_appraisal = IsModulesOkay(memdev);
+        /* bool tasks_appraisal =  IsTasksOkay(memdev); */
+
+        bool overall_appraisal = true;
+        overall_appraisal &= rodata_appraisal;
+        overall_appraisal &= modules_appraisal;
+        /* overall_appraisal &= tasks_appraisal; */
+       
+        return overall_appraisal;
+}
+
