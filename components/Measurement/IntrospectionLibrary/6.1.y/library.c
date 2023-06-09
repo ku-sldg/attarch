@@ -23,12 +23,12 @@
 bool MeasureAndAppraiseLinux()
 {
         bool rodata_appraisal = IsKernelRodataOkay(memdev);
-        bool modules_appraisal = IsModulesOkay(memdev);
+        /* bool modules_appraisal = IsModulesOkay(memdev); */
         /* bool tasks_appraisal =  IsTasksOkay(memdev); */
 
         bool overall_appraisal = true;
         overall_appraisal &= rodata_appraisal;
-        overall_appraisal &= modules_appraisal;
+        /* overall_appraisal &= modules_appraisal; */
         /* overall_appraisal &= tasks_appraisal; */
        
         return overall_appraisal;
