@@ -503,7 +503,7 @@ void FreeTaskTree(TaskMeasurement* root)
 TaskMeasurement* MeasureTaskTree(uint8_t* memory_device)
 {
     DebugLog("Measurement: Beginning task tree measurement.\n");
-    uint64_t init_task_paddr = TranslationTableWalk(memory_device, (uint64_t)INTRO_INIT_TASK_VADDR);
+    uint64_t init_task_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_INIT_TASK_VADDR);
     DebugLog("before build tree\n");
     TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(memory_device, init_task_paddr, NULL);
     DebugLog("after build tree\n");

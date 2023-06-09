@@ -113,16 +113,16 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
-    uint64_t list_head_paddr = TranslationTableWalk(memory_device, (uint64_t)INTRO_MODULES_VADDR);
+    uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR);
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
-    uint64_t module_pointer = TranslationTableWalk(memory_device, list_head_ptr[0]);
+    uint64_t module_pointer = TranslateVaddr(memory_device, list_head_ptr[0]);
     while(module_pointer != list_head_paddr)
     {
         modulePtrs[numModulePtrs] = module_pointer;
         numModulePtrs++;
         char* modBytePtr = ((char*)memory_device)+module_pointer;
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
-        module_pointer = TranslationTableWalk(memory_device, modLongPtr[0]);
+        module_pointer = TranslateVaddr(memory_device, modLongPtr[0]);
     }
     if(MKMDebug)
     {

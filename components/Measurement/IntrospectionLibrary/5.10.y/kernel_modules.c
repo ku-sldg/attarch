@@ -136,7 +136,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         numModulePtrs++;
         char* modBytePtr = ((char*)memory_device)+module_pointer;
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
-        module_pointer = TranslationTableWalk(memory_device, modLongPtr[0]);
+        module_pointer = TranslateVaddr(memory_device, modLongPtr[0]);
     }
     if(MKMDebug)
     {
