@@ -45,7 +45,7 @@ bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
 /*       but more appropriately they are "measurement" things. */
 /*       The reason they are here is because it was once awkward to include files the right way. */
 /*       The current solution is not idea, but it should allow these functions to be moved into the introspection library. */
-// for Linux 4.x.y
+// for Linux 4.9.y
 void MeasureKernelPageLinux4(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
     // what's with this offset?
