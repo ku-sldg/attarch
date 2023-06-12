@@ -40,6 +40,10 @@ def process_config_file(filename):
                 shift_val = int(parts[1])
                 page_size = hex(1 << shift_val)
                 print(f"#define INTRO_PAGE_SIZE {page_size}")
+            if "CONFIG_ARM64_VA_BITS=" in line:
+                parts = line.split('=')
+                va_bits = int(parts[1])
+                print(f"#define INTRO_VA_BITS {va_bits}")
 
 def process_module_files(module_h, moduleparam_h, config):
     unsigned_long_size = 4  # Default to 32-bit
