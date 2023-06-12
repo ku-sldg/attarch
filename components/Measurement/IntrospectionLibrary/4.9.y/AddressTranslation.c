@@ -54,7 +54,7 @@
 
 bool is_linear_map_address(uint64_t vaddr)
 {
-    return( vaddr & BIT(VA_BITS - 1) );
+    return( vaddr & BIT(INTRO_VA_BITS - 1) );
 }
 
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
