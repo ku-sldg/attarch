@@ -49,6 +49,8 @@ bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
 void MeasureKernelPageLinux4(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
     // what's with this offset?
+    // this hard-coded thing only works for 4.9.y apparently, but not 4.14 or 4.19
+    // which is curious
     uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
