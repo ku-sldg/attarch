@@ -60,7 +60,7 @@ bool is_linear_map_address(uint64_t vaddr)
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
 {
     uint64_t ret;
-    if(is_linear_map_address(virtaddr))
+    if(!is_linear_map_address(virtaddr))
     {
         uint64_t page_offset = 0xFFFF800000000000;
         ret = ( (virtaddr & ~page_offset) );
