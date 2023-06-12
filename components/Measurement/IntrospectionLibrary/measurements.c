@@ -35,6 +35,7 @@ bool IsModulesOkay(uint8_t* memory_device)
     }
     free(module_digests);
     free(module_names);
+    printf("Module Appraisal %s\n", result ? "Passed" : "Failed");
     return result;
 }
 
@@ -44,6 +45,7 @@ bool IsTasksOkay(uint8_t* memory_device)
     printf("DEBUG: Measurement: Appraising tasks\n");
     bool result = AppraiseTaskTree(rootTaskMeasurement);
     FreeTaskTree(rootTaskMeasurement);
+    printf("Task Appraisal %s\n", result ? "Passed" : "Failed");
     return result;
 }
 
@@ -66,6 +68,7 @@ bool IsKernelRodataOkay(uint8_t* memory_device)
     char (*rodataName)[INTRO_MODULE_NAME_LEN] = &actualArray;
     RenderDigestDeclaration(rodataName, kernelRodataDigest);
     free(kernelRodataDigest);
+    printf("Kernel Rodata Appraisal %s\n", result ? "Passed" : "Failed");
     return result;
 }
 
