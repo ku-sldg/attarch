@@ -51,7 +51,8 @@ void MeasureKernelPageLinux4(uint8_t* memory_device, uint8_t (*output_digest)[DI
     // what's with this offset?
     // this hard-coded thing only works for 4.9.y apparently, but not 4.14 or 4.19
     // which is curious
-    uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
+    //uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
+    uint64_t pagePaddr = pageVaddr-0xFFFF000008000000; // this is simply vaddr - kimage_vaddr
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 // for Linux 5.x.y and 6.x.y
