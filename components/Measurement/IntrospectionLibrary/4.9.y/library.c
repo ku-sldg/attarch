@@ -13,7 +13,6 @@
 #include "../configurations/include.h"
 #include "AddressTranslation.c"
 #include "../common/common.c"
-#include "kernel_rodata.c"
 #include "../measurements.c"
 
 /* This function is here to easily control which measurements */
