@@ -12,9 +12,7 @@
 #include "../KnownDigests.h"
 #include "../configurations/include.h"
 #include "AddressTranslation.c"
-#include "utils.c"
-#include "kernel_modules.c"
-#include "task.c"
+#include "../common/common.c"
 #include "kernel_rodata.c"
 #include "../measurements.c"
 

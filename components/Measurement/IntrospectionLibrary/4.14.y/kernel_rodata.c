@@ -25,13 +25,12 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     for(int i=0; i<NUM_RODATA_PAGES; i++)
     {
         uint64_t thisPageVaddr = INTRO___START_RODATA_VADDR + i * INTRO_PAGE_SIZE;
-        if(thisPageVaddr == RoundDownToCurrentPage(INTRO___START_RO_AFTER_INIT_VADDR)
-                || thisPageVaddr == RoundUpToNextPage(INTRO___END_RO_AFTER_INIT_VADDR))
+        if(thisPageVaddr >= RoundDownToCurrentPage(INTRO___START_RO_AFTER_INIT_VADDR)
+                || thisPageVaddr <= RoundUpToNextPage(INTRO___END_RO_AFTER_INIT_VADDR))
         {
             /* printf("this was a ro_after_init page...\n"); */
             continue;
         }
-        /* MeasureKernelPageLinux4((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr); */
         MeasureKernelPageLinux5((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
