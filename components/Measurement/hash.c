@@ -53,12 +53,14 @@ void MeasureKernelPageLinux4(uint8_t* memory_device, uint8_t (*output_digest)[DI
     // which is curious
     //uint64_t pagePaddr = intro_virt_to_phys(pageVaddr-0x8000000);
     uint64_t pagePaddr = pageVaddr-0xFFFF000008000000; // this is simply vaddr - kimage_vaddr
+    //uint64_t pagePaddr = intro_virt_to_phys(pageVaddr);
+    /* printf("translating kernel rodata page vaddr: %llx\n", pageVaddr); */
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 // for Linux 5.x.y and 6.x.y
 void MeasureKernelPageLinux5(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
-    uint64_t pagePaddr = TranslateVaddr(pageVaddr);
+    uint64_t pagePaddr = TranslateVaddr(memory_device, pageVaddr);
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 
