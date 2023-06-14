@@ -5,18 +5,25 @@
 
 #include "../hash.h"
 
-uint64_t RoundUpToNextPage(uint64_t x)
+void MeasureKernelRodataPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
-    return ((x + 0xFFF) >> 12) << 12;
-}
-
-uint64_t RoundDownToCurrentPage(uint64_t x)
-{
-    return (x >> 12) << 12;
+    uint64_t pagePaddr = pageVaddr-INTRO_KIMAGE_VADDR; // this is simply vaddr - kimage_vaddr
+    HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 
 void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
+
+    uint64_t RoundUpToNextPage(uint64_t x)
+    {
+        return ((x + 0xFFF) >> 12) << 12;
+    }
+
+    uint64_t RoundDownToCurrentPage(uint64_t x)
+    {
+        return (x >> 12) << 12;
+    }
+
     uint8_t (*digestArray)[NUM_RODATA_PAGES * DIGEST_NUM_BYTES] = calloc(NUM_RODATA_PAGES, DIGEST_NUM_BYTES);
     /* We found some "ro_after_init" data */
     /* This offers us a unique chance to do provisioning for this data at boot-time */
@@ -28,10 +35,9 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
         if(thisPageVaddr >= RoundDownToCurrentPage(INTRO___START_RO_AFTER_INIT_VADDR)
                 && thisPageVaddr <= RoundUpToNextPage(INTRO___END_RO_AFTER_INIT_VADDR))
         {
-            printf("this was a ro_after_init page...\n");
             continue;
         }
-        MeasureKernelPageLinux5((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
     free(digestArray);
