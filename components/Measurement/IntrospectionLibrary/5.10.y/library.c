@@ -1,5 +1,5 @@
 /*
- * An introspection library for Linux 4.9.307
+ * An introspection library for Linux 5.10.y
  * Michael Neises
  * 09 June 2023
  */
