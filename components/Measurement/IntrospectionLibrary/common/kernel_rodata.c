@@ -8,6 +8,7 @@
 
 void MeasureKernelRodataPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
+    uint64_t pagePaddr = 0;
     if(pageVaddr < 0xFFFF800000000000)
     {
 
@@ -16,7 +17,7 @@ void MeasureKernelRodataPage(uint8_t* memory_device, uint8_t (*output_digest)[DI
        /* In particular, we will simply subtract KIMAGE_VADDR, */
        /*    which is the offset of the kernel in physical memory. */
 
-        uint64_t pagePaddr = pageVaddr-INTRO_KIMAGE_VADDR; // this is simply vaddr - kimage_vaddr
+        pagePaddr = pageVaddr-INTRO_KIMAGE_VADDR; // this is simply vaddr - kimage_vaddr
     }
     else
     {
@@ -29,7 +30,7 @@ void MeasureKernelRodataPage(uint8_t* memory_device, uint8_t (*output_digest)[DI
         /*     except in the special case of the System.map addresses, which, despite being kernel addresses, */
         /*     are for some reason stored as virtual addresses in the user range. */
 
-        uint64_t pagePaddr = TranslateVaddr(memory_device, pageVaddr);
+        pagePaddr = TranslateVaddr(memory_device, pageVaddr);
     }
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
