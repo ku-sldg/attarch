@@ -4,6 +4,8 @@
  * 09 June 2023
  */
 
+#define INTRO_KIMAGE_VADDR 0xffff800008000000
+
 #include <string.h>
 #include <camkes.h>
 #include <stdarg.h>

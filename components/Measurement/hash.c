@@ -60,7 +60,8 @@ void MeasureKernelPageLinux4(uint8_t* memory_device, uint8_t (*output_digest)[DI
 // for Linux 5.x.y and 6.x.y
 void MeasureKernelPageLinux5(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
 {
-    uint64_t pagePaddr = TranslateVaddr(memory_device, pageVaddr);
+    /* uint64_t pagePaddr = TranslateVaddr(memory_device, pageVaddr); */
+    pagePaddr = pageVaddr-INTRO_KIMAGE_VADDR; // this is simply vaddr - kimage_vaddr
     HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
 }
 
