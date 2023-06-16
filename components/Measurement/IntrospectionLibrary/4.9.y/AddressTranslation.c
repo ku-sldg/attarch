@@ -167,7 +167,7 @@ uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
     // If the virtual address is a kernel address, it will be higher than this
     // cut_off point, PAGE_OFFSET
     uint64_t vaddr_base = 0xffff800000000000;
-    if( vaddr_base < vaddr && vaddr <= vaddr_base+RAM_SIZE )
+    if( vaddr_base < vaddr )
     {
         return intro_virt_to_phys(vaddr);
     }

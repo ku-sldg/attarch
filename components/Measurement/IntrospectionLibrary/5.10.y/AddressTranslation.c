@@ -241,7 +241,7 @@ uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
 {
     printf("TranslateVaddr on %llx\n", vaddr);
-    if( PAGE_OFFSET < vaddr && vaddr <= PAGE_OFFSET+RAM_SIZE )
+    if( PAGE_OFFSET < vaddr )
     {
         printf("Passing to virt_to_phys\n");
         return intro_virt_to_phys(vaddr);
