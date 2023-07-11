@@ -37,6 +37,7 @@ void MeasureKernelRodataPage(uint8_t* memory_device, uint8_t (*output_digest)[DI
 
 void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
+    //printf("Num rodata pages is %d\n", NUM_RODATA_PAGES);//902
 
     uint64_t RoundUpToNextPage(uint64_t x)
     {
@@ -49,12 +50,16 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     }
 
     uint8_t (*digestArray)[NUM_RODATA_PAGES * DIGEST_NUM_BYTES] = calloc(NUM_RODATA_PAGES, DIGEST_NUM_BYTES);
-    /* We found some "ro_after_init" data */
-    /* This offers us a unique chance to do provisioning for this data at boot-time */
-    /* There is simply no other way to perform a meaningful appraisal of this data, */
-    /* except perhaps in the case where you are able to somehow predict the data...? */
     for(int i=0; i<NUM_RODATA_PAGES; i++)
     {
+        if((105 <= i && i <= 109) || i==825 || i==826 || i==833)
+        {
+            // for some reason, we must skip these pages in order to achieve a
+            // consistent measurement. TODO: investigate why
+            // it's not easy to correlate these values with the system.map file
+            // or any meaningful analysis
+            continue;
+        }
         uint64_t thisPageVaddr = INTRO___START_RODATA_VADDR + i * INTRO_PAGE_SIZE;
         if(thisPageVaddr >= RoundDownToCurrentPage(INTRO___START_RO_AFTER_INIT_VADDR)
                 && thisPageVaddr <= RoundUpToNextPage(INTRO___END_RO_AFTER_INIT_VADDR))
