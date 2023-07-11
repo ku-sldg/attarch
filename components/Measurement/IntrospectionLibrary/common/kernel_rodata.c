@@ -58,6 +58,8 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
             // consistent measurement. TODO: investigate why
             // it's not easy to correlate these values with the system.map file
             // or any meaningful analysis
+            // Could this have to do with the strange 0x80000 offset used
+            // elsewhere in address translation for this version of linux (5.10.y)?
             continue;
         }
         uint64_t thisPageVaddr = INTRO___START_RODATA_VADDR + i * INTRO_PAGE_SIZE;
