@@ -113,13 +113,17 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
-    printf("Translating modules list_head vaddr\n");
+    if(MKMDebug)
+    {
+        printf("Translating modules list_head vaddr\n");
+    }
     uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR + 0x80000); // TODO justify this offset
-    printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
-
+    if(MKMDebug)
+    {
+        printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
+        printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
+    }
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
-    printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
-
     uint64_t module_pointer = TranslationTableWalk(memory_device, list_head_ptr[0]);
     while(module_pointer != list_head_paddr)
     {
