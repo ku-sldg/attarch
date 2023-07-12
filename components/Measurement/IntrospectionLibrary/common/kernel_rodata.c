@@ -52,16 +52,6 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     uint8_t (*digestArray)[NUM_RODATA_PAGES * DIGEST_NUM_BYTES] = calloc(NUM_RODATA_PAGES, DIGEST_NUM_BYTES);
     for(int i=0; i<NUM_RODATA_PAGES; i++)
     {
-        if((105 <= i && i <= 109) || i==825 || i==826 || i==833)
-        {
-            // for some reason, we must skip these pages in order to achieve a
-            // consistent measurement. TODO: investigate why
-            // it's not easy to correlate these values with the system.map file
-            // or any meaningful analysis
-            // Could this have to do with the strange 0x80000 offset used
-            // elsewhere in address translation for this version of linux (5.10.y)?
-            continue;
-        }
         uint64_t thisPageVaddr = INTRO___START_RODATA_VADDR + i * INTRO_PAGE_SIZE;
         if(thisPageVaddr >= RoundDownToCurrentPage(INTRO___START_RO_AFTER_INIT_VADDR)
                 && thisPageVaddr <= RoundUpToNextPage(INTRO___END_RO_AFTER_INIT_VADDR))
@@ -69,7 +59,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
             printf("Skipping ro_after_init data.\n");
             continue;
         }
-        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
     }
     HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
     free(digestArray);
