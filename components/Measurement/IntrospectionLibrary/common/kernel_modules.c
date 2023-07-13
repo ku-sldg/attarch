@@ -54,7 +54,7 @@ struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int phy
 
 void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[INTRO_MODULE_NAME_LEN])
 {
-    bool IKMDebug = true;
+    bool IKMDebug = false;
     if(IKMDebug)
     {
         printf("Module Address: %016X\n", inputAddress);
@@ -69,7 +69,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
     introLog(3, msg, (*name), "\n");
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, (int)inputAddress);
-    uint64_t basePtr = TranslateVaddr(memory_device, thisModuleLayout.base);
+    uint64_t basePtr = TranslationTableWalk(memory_device, thisModuleLayout.base);
 
     if(IKMDebug)
     {
@@ -97,7 +97,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
-    bool MKMDebug = true;
+    bool MKMDebug = false;
     printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
     if(MKMDebug)
     {
@@ -113,21 +113,27 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
-    printf("Translating modules list_head vaddr\n");
+    if(MKMDebug)
+    {
+        printf("Translating modules list_head vaddr\n");
+    }
     uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR);
-    printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
 
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
-    printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
+    if(MKMDebug)
+    {
+        printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
+        printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
+    }
 
-    uint64_t module_pointer = TranslateVaddr(memory_device, list_head_ptr[0]);
+    uint64_t module_pointer = TranslationTableWalk(memory_device, list_head_ptr[0]);
     while(module_pointer != list_head_paddr)
     {
         modulePtrs[numModulePtrs] = module_pointer;
         numModulePtrs++;
         char* modBytePtr = ((char*)memory_device)+module_pointer;
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
-        module_pointer = TranslateVaddr(memory_device, modLongPtr[0]);
+        module_pointer = TranslationTableWalk(memory_device, modLongPtr[0]);
     }
     if(MKMDebug)
     {
