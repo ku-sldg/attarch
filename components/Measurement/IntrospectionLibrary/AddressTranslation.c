@@ -67,13 +67,17 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
     uint64_t ret;
     if(is_linear_map_address(virtaddr))
     {
+        /* printf("linear marty\n"); */
         ret = ( (virtaddr & ~PAGE_OFFSET) );
     }
     else // this is a bit funny, no?
     {
-        uint64_t kimage_vaddr = 0xFFFF800010000000; // from inspection via kernel module
+        /* printf("nonlinear marty\n"); */
+        //uint64_t kimage_vaddr = 0xFFFF800010000000; // from inspection via kernel module
+        uint64_t kimage_vaddr = 0xFFFF800008000000; // from inspection via kernel module... did this change???
         ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
     }
+    /* printf("returning %llx\n", ret); */
     return ret;
 }
 
@@ -90,8 +94,8 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 
     if(TTWalkDebug)
     {
-        printf("input %016X,\nPGDindex %016X,\nPUDindex %016X,\nPMDindex %016X,\nPTEindex %016X\n", inputAddr, PGDindex, PUDindex, PMDindex, PTEindex); 
-        printf("PGDindex %d,\nPUDindex %d,\nPMDindex %d,\nPTEindex %X\n", PGDindex, PUDindex, PMDindex, PTEindex); 
+        printf("input %016X\nPGDindex %016X\nPUDindex %016X\nPMDindex %016X\nPTEindex %016X\nPAGindex %016X\n", inputAddr, PGDindex, PUDindex, PMDindex, PTEindex, PAGindex); 
+        printf("PGDindex %d\nPUDindex %d\nPMDindex %d\nPTEindex %d\nPAGindex %d\n", PGDindex, PUDindex, PMDindex, PTEindex, PAGindex); 
     }
     char* PGDTablePtr = ((char*)memory_device)+pgd;
     uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
@@ -152,7 +156,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
         }
         printf("offsetAddr is %016X\n", offsetAddr);
         printf("Output Address is %016X\n", finalPaddr + RAM_BASE);
-        printf("\nTable walk complete\n");
+        printf("Table walk complete\n\n");
     }
 
     return finalPaddr;
@@ -160,8 +164,10 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
-    uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR);
+    /* printf("translating swapper pgd\n"); */
+    uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR + 0x80000);
     char* PGDTablePtr = swapper_pgd_table_paddr;
+    /* printf("swapper pgd translated. actually walking table now\n"); */
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr,  PGDTablePtr);
 }
 
@@ -169,8 +175,10 @@ uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
 {
     if( PAGE_OFFSET < vaddr )
     {
+        /* printf("passing to virt_to_phys\n"); */
         return intro_virt_to_phys(vaddr);
     }
+    /* printf("walking table\n"); */
     return TranslationTableWalk(memory_device, vaddr);
 }
 
