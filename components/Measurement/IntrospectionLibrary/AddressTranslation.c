@@ -76,7 +76,7 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
         uint64_t kimage_vaddr = 0xFFFF800008000000;
         ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
     }
-    /* printf("returning %llx\n", ret); */
+    printf("virt_to_phys transformed %llx into %llx\n", virtaddr, ret);
     return ret;
 }
 
@@ -158,6 +158,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
         printf("Table walk complete\n\n");
     }
 
+    printf("Table Walk transformed %llx into %llx\n", inputAddr, finalPaddr);
     return finalPaddr;
 }
 
