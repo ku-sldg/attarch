@@ -267,13 +267,10 @@ void CrawlVMAs(uint8_t* memory_device, uint64_t vma, uint64_t pgdPaddr, uint8_t 
     }
 }
 
-/* InterpretMemory takes a pointer to a valid task_struct in VM memory "task"
-** and returns a hash digest of its rodata (if it exists)
-*/
-void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
+uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
 {
-    /*
-    uint64_t mmAddrLoc = task + 1208;
+    printf("getting paddr from task\n");
+    uint64_t mmAddrLoc = taskPaddr + 1208;
     uint64_t mmAddr = ((uint64_t*)((char*)memory_device+mmAddrLoc))[0];
     if(mmAddr==0)
     {
@@ -283,26 +280,78 @@ void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDige
             return;
         }
     }
-    uint64_t mm = TranslateVaddr(memory_device, mmAddr);
-    //TODO I AM HERE I AM HERE
-    uint64_t pgdVaddr = ((uint64_t*)((char*)memory_device+mm+64))[0];
+    uint64_t mmPaddr = TranslateVaddr(memory_device, mmAddr);
+    uint64_t pgdVaddr = ((uint64_t*)((char*)memory_device+mmPaddr+56))[0];
     uint64_t pgdPaddr = TranslateVaddr(memory_device, pgdVaddr);
-    uint64_t mmapAddr = ((uint64_t*)((char*)memory_device+mm))[0];
-    uint64_t mmap = TranslateVaddr(memory_device, mmapAddr);
+    printf("Recovered PGD paddr: %llx\n", pgdPaddr);
+    return pgdPaddr;
+}
+
+/* InterpretMemory takes a pointer to a valid task_struct in VM memory "task"
+** and returns a hash digest of its rodata (if it exists)
+*/
+void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
+{
+    printf("translating pgd vaddr\n");
+    uint64_t pgdPaddr = GetPgdPaddrFromTask(memory_device, task);
+
+    uint64_t mmAddrLoc = task + 1208;
+    uint64_t mmVaddr = ((uint64_t*)((char*)memory_device+mmAddrLoc))[0];
+    if(mmVaddr==0)
+    {
+        mmVaddr = ((uint64_t*)((char*)memory_device+mmAddrLoc+8))[0];
+        if(mmVaddr==0)
+        {
+            return;
+        }
+    }
+    printf("translating mm vaddr\n");
+    uint64_t mmPaddr = TranslateVaddr(memory_device, mmVaddr);
+
+    for(int i=0; i<896; i++)
+    {
+        if(i%8 == 0)
+        {
+            printf(" ");
+        }
+        if( i%(8*8) == 0 )
+        {
+            printf("\nOffset: %04d | ", i);
+        }
+        printf("%02X", (memory_device+mmPaddr)[i]);
+        /* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; */
+    }
+
+
+
+    uint64_t mapleTreeVaddr = ((uint64_t*)((char*)memory_device+mmPaddr))[1];
+    printf("translating maple tree vaddr\n");
+    uint64_t mapleTreePaddr = TranslateVaddr(memory_device, mapleTreeVaddr);
+
+
+    // traverse the maple tree ?
+
+
+    return;
+
+
+
+    //traverse the mmap list
+
     // these linked lists are apparently null terminated on the ends,
     // so here we put ourselves at the "leftmost" position,
     // before we crawl strictly to the right
-    uint64_t prevVaddr = ((uint64_t*)((char*)memory_device+mmap))[3];
-    while(prevVaddr != 0)
-    {
-        mmap = TranslateVaddr(memory_device, prevVaddr);
-        prevVaddr = ((uint64_t*)((char*)memory_device+mmap))[3];
-    }
-    //One ELF per file
-    DebugLog("before crawlVMAs\n");
-    CrawlVMAs(memory_device, mmap, pgdPaddr, rodataDigest);
-    DebugLog("after\n");
-    */
+    /* printf("accessing mmap\n"); */
+    /* uint64_t prevVaddr = ((uint64_t*)((char*)memory_device+mmap))[3]; */
+    /* while(prevVaddr != 0) */
+    /* { */
+    /*     mmap = TranslateVaddr(memory_device, prevVaddr); */
+    /*     prevVaddr = ((uint64_t*)((char*)memory_device+mmap))[3]; */
+    /* } */
+    /* /1* One ELF per file *1/ */
+    /* DebugLog("before crawlVMAs\n"); */
+    /* CrawlVMAs(memory_device, mmap, pgdPaddr, rodataDigest); */
+    /* DebugLog("after\n"); */
 }
 
 /* takes an address to a task_struct in vm memory
@@ -434,7 +483,7 @@ TaskMeasurement* BuildTaskTreeNode(uint8_t* memory_device, uint64_t taskPaddr, T
         }
         if( i%(8*8) == 0 )
         {
-            printf("\nOffset: %03d | ", i);
+            printf("\nOffset: %04d | ", i);
         }
         printf("%02X", (memory_device+taskPaddr)[i]);
         /* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; */
@@ -461,17 +510,19 @@ TaskMeasurement* BuildTaskTreeNode(uint8_t* memory_device, uint64_t taskPaddr, T
     if(ValidateTaskStruct(memory_device, myChild))
     {
         int childNumber = 0;
+
+        printf("==========iterate siblings=========\n");
+        uint64_t dummy;
+        uint64_t siblingIterator;
+        InterpretTaskStruct(memory_device, myChild, &dummy, &siblingIterator);
+        while( ValidateTaskStruct(memory_device, siblingIterator) && siblingIterator != myChild )
+        {
+            thisMsmt->children[childNumber++] = BuildTaskTreeNode(memory_device, siblingIterator, thisMsmt);
+            InterpretTaskStruct(memory_device, siblingIterator, &dummy, &siblingIterator);
+        }
+        printf("==========done with siblings=========\n");
+
         thisMsmt->children[childNumber++] = BuildTaskTreeNode(memory_device, myChild, thisMsmt);
-        /* uint64_t dummy; */
-        /* uint64_t siblingIterator; */
-        /* InterpretTaskStruct(memory_device, myChild, &dummy, &siblingIterator); */
-        /* printf("==========iterate siblings=========\n"); */
-        /* while( ValidateTaskStruct(memory_device, siblingIterator) && siblingIterator != myChild ) */
-        /* { */
-        /*     thisMsmt->children[childNumber++] = BuildTaskTreeNode(memory_device, siblingIterator, thisMsmt); */
-        /*     InterpretTaskStruct(memory_device, siblingIterator, &dummy, &siblingIterator); */
-        /* } */
-        /* printf("==========done with siblings=========\n"); */
     }
     printf("node built\n");
     return thisMsmt;
