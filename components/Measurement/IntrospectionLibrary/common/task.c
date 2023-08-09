@@ -5,7 +5,7 @@
  * 21 July 2022
  */
 
-#define INTRO_TASK_DEBUG 1
+#define INTRO_TASK_DEBUG 0
 
 #include "struct_interp.c"
 #include "elf_header.c"
@@ -147,32 +147,30 @@ void GetTaskNamePointer(uint8_t* memory_device, uint64_t task, char (*output_nam
 */
 bool ValidateTaskStruct(uint8_t* memory_device, uint64_t task)
 {
-    printf("Validating task_struct at %llx\n", task);
-
     if(task > RAM_SIZE)
     {
-        printf("out of range\n");
+        /* printf("out of range\n"); */
         return false;
     }
     int nameLoc = task + 1856;
     if(((char*)memory_device+nameLoc)[0] == '\0')
     {
-        printf("null name\n");
+        /* printf("null name\n"); */
         return false;
     }
     for(int i=0; i<TASK_COMM_LEN; i++)
     {
         if(((char*)memory_device+nameLoc)[i] > 127)
         {
-            printf("illegal characters in name\n");
-            int thisShouldBeNameData = nameLoc;
-            introspectScanMaybeChar(memory_device, &thisShouldBeNameData, 64, "offending task name");
+            /* printf("illegal characters in name\n"); */
+            /* int thisShouldBeNameData = nameLoc; */
+            /* introspectScanMaybeChar(memory_device, &thisShouldBeNameData, 64, "offending task name"); */
             return false;
         }
     }
-    printf("Valid Task Struct: ");
-    int thisShouldBeNameData = nameLoc;
-    introspectScanMaybeChar(memory_device, &thisShouldBeNameData, 64, "task name");
+    /* printf("Valid Task Struct: "); */
+    /* int thisShouldBeNameData = nameLoc; */
+    /* introspectScanMaybeChar(memory_device, &thisShouldBeNameData, 64, "task name"); */
     return true;
 }
 
@@ -269,7 +267,6 @@ void CrawlVMAs(uint8_t* memory_device, uint64_t vma, uint64_t pgdPaddr, uint8_t 
 
 uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
 {
-    printf("getting paddr from task\n");
     uint64_t mmAddrLoc = taskPaddr + 1208;
     uint64_t mmAddr = ((uint64_t*)((char*)memory_device+mmAddrLoc))[0];
     if(mmAddr==0)
@@ -283,7 +280,7 @@ uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
     uint64_t mmPaddr = TranslateVaddr(memory_device, mmAddr);
     uint64_t pgdVaddr = ((uint64_t*)((char*)memory_device+mmPaddr+56))[0];
     uint64_t pgdPaddr = TranslateVaddr(memory_device, pgdVaddr);
-    printf("Recovered PGD paddr: %llx\n", pgdPaddr);
+    /* DebugLog("Recovered PGD paddr: %llx\n", pgdPaddr); */
     return pgdPaddr;
 }
 
@@ -292,7 +289,7 @@ uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
 */
 void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
-    printf("translating pgd vaddr\n");
+    /* printf("translating pgd vaddr\n"); */
     uint64_t pgdPaddr = GetPgdPaddrFromTask(memory_device, task);
 
     uint64_t mmAddrLoc = task + 1208;
@@ -305,32 +302,39 @@ void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDige
             return;
         }
     }
-    printf("translating mm vaddr\n");
+    /* printf("translating mm vaddr\n"); */
     uint64_t mmPaddr = TranslateVaddr(memory_device, mmVaddr);
 
-    for(int i=0; i<896; i++)
-    {
-        if(i%8 == 0)
-        {
-            printf(" ");
-        }
-        if( i%(8*8) == 0 )
-        {
-            printf("\nOffset: %04d | ", i);
-        }
-        printf("%02X", (memory_device+mmPaddr)[i]);
-        /* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; */
-    }
+    /* for(int i=0; i<896; i++) */
+    /* { */
+    /*     if(i%8 == 0) */
+    /*     { */
+    /*         printf(" "); */
+    /*     } */
+    /*     if( i%(8*8) == 0 ) */
+    /*     { */
+    /*         printf("\nOffset: %04d | ", i); */
+    /*     } */
+    /*     printf("%02X", (memory_device+mmPaddr)[i]); */
+    /*     /1* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; *1/ */
+    /* } */
 
 
 
     uint64_t mapleTreeVaddr = ((uint64_t*)((char*)memory_device+mmPaddr))[1];
-    printf("translating maple tree vaddr\n");
+    /* printf("translating maple tree vaddr\n"); */
     uint64_t mapleTreePaddr = TranslateVaddr(memory_device, mapleTreeVaddr);
 
 
     // traverse the maple tree ?
+    uint64_t mapleTreeRoot = ((uint64_t*)((char*)memory_device+mapleTreePaddr))[1];
 
+    if(mapleTreeRoot == 0) // is NULL
+    {
+        // then the maple tree is empty
+        // TODO maybe need to set the output digest?
+        return;
+    }
 
     return;
 
@@ -368,7 +372,7 @@ void GetPID(uint8_t* memory_device, uint64_t task, int* myPid)
 */
 void GetPIDs(uint8_t* memory_device, uint64_t task, int* myPid, int* parentPid)
 {
-    printf("Get PIDs\n");
+    DebugLog("Get PIDs\n");
     GetPID(memory_device, task, myPid);
     uint64_t parentAddrLoc = task + 1368; //the offset of real_parent in task_struct
     uint64_t parentAddr = ((uint64_t*)((char*)memory_device+parentAddrLoc))[0];
@@ -384,12 +388,11 @@ void GetPIDs(uint8_t* memory_device, uint64_t task, int* myPid, int* parentPid)
 */
 void InterpretCred(uint8_t* memory_device, uint64_t task, struct cred* cred)
 {
-    printf("Interpret Cred\n");
+    DebugLog("Interpret Cred\n");
     uint64_t credAddrLoc = task + 1832; //"real_cred"
     uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0];
     uint64_t credPaddr = TranslateVaddr(memory_device, credVaddr);
 
-    // TODO I don't know that these remained valid since 4.9
     cred->usage = ((int*)((char*)memory_device+credPaddr))[0];
     cred->uid = ((int*)((char*)memory_device+credPaddr+4))[0];
     cred->gid = ((int*)((char*)memory_device+credPaddr+8))[0];
@@ -421,22 +424,28 @@ void InterpretCred(uint8_t* memory_device, uint64_t task, struct cred* cred)
 */
 void InterpretTaskStruct(uint8_t* memory_device, uint64_t thisTaskStructPaddr, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
 {
-    printf("Interpret Task Struct\n");
+    DebugLog("Interpret Task Struct\n");
     int childLoc = thisTaskStructPaddr + 1384; //the offset of children in task_struct
     uint64_t firstChild = ((uint64_t*)((char*)memory_device+childLoc))[0];
-    printf("firstChild: %p\n", firstChild);
+    /* DebugLog("firstChild: %p\n", firstChild); */
     *children = TranslateVaddr(memory_device, firstChild)-1400; //the offset of siblings list_head in task_struct
-    /* *children = TranslationTableWalk(memory_device, firstChild)-1368; //the offset of real_parent in task_struct */
-    ValidateTaskStruct(memory_device, *children);
+
+    /* bool isThisTaskStructValid = ValidateTaskStruct(memory_device, *children); */
+    /* if(!isThisTaskStructValid) */
+    /* { */
+    /*     children = NULL; */
+    /*     sibling = NULL: */
+    /*     return; */
+    /* } */
 
     int siblingLoc = thisTaskStructPaddr + 1400; //the offset of sibling in task_struct
     uint64_t leftSibling = ((uint64_t*)((char*)memory_device+siblingLoc))[0];
-    printf("leftSibling: %p\n", leftSibling);
+    /* DebugLog("leftSibling: %p\n", leftSibling); */
     *sibling = TranslateVaddr(memory_device, leftSibling)-1400; //the offset of siblings list_head in task_struct
     if( !ValidateTaskStruct(memory_device, *sibling) )
     {
+        // fall back to a table walk here.
         *sibling = TranslationTableWalk(memory_device, leftSibling)-1400; //the offset of sibling in task_struct
-        ValidateTaskStruct(memory_device, *sibling);
     }
 }
 
@@ -468,28 +477,24 @@ void CollectTaskMeasurement(uint8_t* memory_device, TaskMeasurement* msmt, uint6
 */
 TaskMeasurement* BuildTaskTreeNode(uint8_t* memory_device, uint64_t taskPaddr, TaskMeasurement* parent)
 {
-    printf("==========Built Task Tree Node==========\n");
 
-
-    char task_name[16];
-    GetTaskNamePointer(memory_device, taskPaddr, &task_name);
-    printf("Inspecting Task: %s\n", &task_name);
-
-    for(int i=0; i<496*8; i++)
-    {
-        if(i%8 == 0)
-        {
-            printf(" ");
-        }
-        if( i%(8*8) == 0 )
-        {
-            printf("\nOffset: %04d | ", i);
-        }
-        printf("%02X", (memory_device+taskPaddr)[i]);
-        /* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; */
-    }
-
-
+    /* printf("==========Built Task Tree Node==========\n"); */
+    /* char task_name[16]; */
+    /* GetTaskNamePointer(memory_device, taskPaddr, &task_name); */
+    /* printf("Inspecting Task: %s\n", &task_name); */
+    /* for(int i=0; i<496*8; i++) */
+    /* { */
+    /*     if(i%8 == 0) */
+    /*     { */
+    /*         printf(" "); */
+    /*     } */
+    /*     if( i%(8*8) == 0 ) */
+    /*     { */
+    /*         printf("\nOffset: %04d | ", i); */
+    /*     } */
+    /*     printf("%02X", (memory_device+taskPaddr)[i]); */
+    /*     /1* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; *1/ */
+    /* } */
 
 
 
@@ -506,12 +511,12 @@ TaskMeasurement* BuildTaskTreeNode(uint8_t* memory_device, uint64_t taskPaddr, T
     InterpretTaskStruct(memory_device, taskPaddr, &myChild, &mySibling);
     DebugLog("after\n");
     // if we have any children, enqueue them all
-    printf("==========check children==========\n");
+    /* printf("==========check children==========\n"); */
     if(ValidateTaskStruct(memory_device, myChild))
     {
         int childNumber = 0;
 
-        printf("==========iterate siblings=========\n");
+        /* printf("==========iterate siblings=========\n"); */
         uint64_t dummy;
         uint64_t siblingIterator;
         InterpretTaskStruct(memory_device, myChild, &dummy, &siblingIterator);
@@ -520,11 +525,11 @@ TaskMeasurement* BuildTaskTreeNode(uint8_t* memory_device, uint64_t taskPaddr, T
             thisMsmt->children[childNumber++] = BuildTaskTreeNode(memory_device, siblingIterator, thisMsmt);
             InterpretTaskStruct(memory_device, siblingIterator, &dummy, &siblingIterator);
         }
-        printf("==========done with siblings=========\n");
+        /* printf("==========done with siblings=========\n"); */
 
         thisMsmt->children[childNumber++] = BuildTaskTreeNode(memory_device, myChild, thisMsmt);
     }
-    printf("node built\n");
+    /* printf("node built\n"); */
     return thisMsmt;
 }
 
@@ -540,6 +545,7 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
+        PrintTaskEvidence(thisTaskMsmt);
         if(!IsDigestEmpty((uint8_t (*)[DIGEST_NUM_BYTES])(thisTaskMsmt->rodataDigest)))
         {
             if(IsThisAKnownDigest((uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest))
