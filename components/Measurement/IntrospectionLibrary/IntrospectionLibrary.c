@@ -21,9 +21,9 @@
 /* are performed for which versions of linux. */
 bool MeasureAndAppraiseLinux()
 {
-        bool rodata_appraisal = IsKernelRodataOkay(memdev);
-        bool modules_appraisal = IsModulesOkay(memdev);
-        bool tasks_appraisal =  IsTasksOkay(memdev);
+        bool rodata_appraisal = IsKernelRodataOkay((uint8_t*)memdev);
+        bool modules_appraisal = IsModulesOkay((uint8_t*)memdev);
+        bool tasks_appraisal =  IsTasksOkay((uint8_t*)memdev);
 
         bool overall_appraisal = true;
         overall_appraisal &= rodata_appraisal;
