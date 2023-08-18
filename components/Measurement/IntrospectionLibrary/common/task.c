@@ -307,38 +307,26 @@ void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDige
     }
     printf("translating mm vaddr\n");
     uint64_t mmPaddr = TranslateVaddr(memory_device, mmVaddr);
+
+    unsigned int maple_tree_flags = ((unsigned int*)((char*)memory_device+mmPaddr+16))[0];
+    printf("Maple Tree Flags is %08X\n", maple_tree_flags);
+
     uint64_t mapleTreeRootVaddr = ((uint64_t*)((char*)memory_device+mmPaddr))[1];
     printf("translating maple tree vaddr\n");
     uint64_t mapleTreeRootPaddr = TranslateVaddr(memory_device, mapleTreeRootVaddr);
-    printf("translating maple tree vaddr differently\n");
-    /* uint64_t mapleTreePaddr2 = TranslationTableWalkSuppliedPGD(memory_device, mapleTreeRootVaddr, pgdPaddr); */
-    /* printf("MapleTree Paddr 1: %llx\nMapleTree Paddr 2: %llx\n", mapleTreeRootPaddr, mapleTreePaddr2); */
-
-    // traverse the maple tree ?
 
     void GetMapleTypeFromMapleNode(uint64_t offset)
     {
-        char type_byte1 = ((char*)memory_device+offset)[0];
-        char type_byte2 = ((char*)memory_device+offset)[1];
-        char type_byte3 = ((char*)memory_device+offset)[2];
-        char type_byte4 = ((char*)memory_device+offset)[3];
-        printf("Maple Type Chars Found To Be: %02X %02X %02X %02X\n", type_byte1, type_byte2, type_byte3, type_byte4);
-
-        int type = 0;
-        type |= (type_byte1 << 24); // Move the first byte to the leftmost position
-        type |= (type_byte2 << 16); // Move the second byte 16 bits to the left
-        type |= (type_byte3 << 8);  // Move the third byte 8 bits to the left
-        type |= type_byte4;         // No need to shift the fourth byte
-        printf("Maple Type is: %d\n", type);
-
+        int type_int = ((int*)((char*)memory_device+offset+36))[0];
+        printf("Maple Type is: %d\n", type_int);
     }
     
     printf("Inspecting Maple Tree\n");
-    for(int i=0; i<16; i++)
+    for(int i=0; i<1; i++)
     {
-        /* GetMapleTypeFromMapleNode(mapleTreeRootPaddr + 256*i); */
+        GetMapleTypeFromMapleNode(mapleTreeRootPaddr + 256*i);
         introspectScanManyLongs(memory_device, mapleTreeRootPaddr+(256*i));
-        uint64_t thisEnode = ((uint64_t*)((char*)memory_device+mapleTreeRootPaddr))[i * 256];
+        uint64_t thisEnode = ((uint64_t*)((char*)memory_device+mapleTreeRootPaddr))[i * 32];
         thisEnode = thisEnode << 3;
         printf("enode %d is %llx\n", i, thisEnode);//(memory_device+mapleTreeRoot)[i]);
         /* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; */
