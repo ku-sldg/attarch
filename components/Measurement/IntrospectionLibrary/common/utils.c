@@ -57,6 +57,21 @@ void introspectScanLong(uint8_t* memory_device, int* head, char* name)
     printf("\n");
     *head += 8;
 }
+
+void introspectScanManyLongs(uint8_t* memory_device, uint64_t offset)
+{
+    printf("\nas llx");
+    for(int i=0; i<32; i++)
+    {
+        if( i%(8) == 0 )
+        {
+            printf("\nOffset: %04d | ", i*8);
+        }
+        printf("%llx ", ((uint64_t*)(memory_device+offset))[i]);
+    }
+    printf("\n\n");
+}
+
 void introspectScanAddr(uint8_t* memory_device, int* head, char* name)
 {
     printf("%s: ", name);

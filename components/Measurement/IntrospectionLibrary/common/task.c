@@ -267,74 +267,84 @@ void CrawlVMAs(uint8_t* memory_device, uint64_t vma, uint64_t pgdPaddr, uint8_t 
 
 uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
 {
-    uint64_t mmAddrLoc = taskPaddr + 1208;
-    uint64_t mmAddr = ((uint64_t*)((char*)memory_device+mmAddrLoc))[0];
+    uint64_t mmAddr = ((uint64_t*)((char*)memory_device+taskPaddr+1208))[0];
     if(mmAddr==0)
     {
-        mmAddr = ((uint64_t*)((char*)memory_device+mmAddrLoc+8))[0];
+        mmAddr = ((uint64_t*)((char*)memory_device+taskPaddr+1208))[1];
         if(mmAddr==0)
         {
-            return;
+            return 0;
         }
     }
     uint64_t mmPaddr = TranslateVaddr(memory_device, mmAddr);
     uint64_t pgdVaddr = ((uint64_t*)((char*)memory_device+mmPaddr+56))[0];
     uint64_t pgdPaddr = TranslateVaddr(memory_device, pgdVaddr);
-    /* DebugLog("Recovered PGD paddr: %llx\n", pgdPaddr); */
+    printf("Recovered PGD paddr: %llx\n", pgdPaddr);
     return pgdPaddr;
 }
 
 /* InterpretMemory takes a pointer to a valid task_struct in VM memory "task"
 ** and returns a hash digest of its rodata (if it exists)
+**
+** We retrieve the pointer to a maple tree from within the task's mm_struct.
+** In task, at offset 1208, we find the mm pointer. VALIDATED
+** In mm, at offset 0, we find the maple tree struct (NOT A POINTER). VALIDATED
+** in the mt struct, at offset 8, we find the maple tree root node. VALIDATED
+** In each maple node, at offset 36, we find the maple_type. 
 */
 void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
-    /* printf("translating pgd vaddr\n"); */
+    printf("interp memory\n");
     uint64_t pgdPaddr = GetPgdPaddrFromTask(memory_device, task);
-
-    uint64_t mmAddrLoc = task + 1208;
-    uint64_t mmVaddr = ((uint64_t*)((char*)memory_device+mmAddrLoc))[0];
-    if(mmVaddr==0)
+    uint64_t mmVaddr = ((uint64_t*)((char*)memory_device+task+1208))[0];
+    if(mmVaddr==0) // If there is no "mm," then check for an "active_mm."
     {
-        mmVaddr = ((uint64_t*)((char*)memory_device+mmAddrLoc+8))[0];
+        mmVaddr = ((uint64_t*)((char*)memory_device+task+1208))[1];
         if(mmVaddr==0)
         {
-            return;
+            return; // if there's no mm at all...
         }
     }
-    /* printf("translating mm vaddr\n"); */
+    printf("translating mm vaddr\n");
     uint64_t mmPaddr = TranslateVaddr(memory_device, mmVaddr);
-
-    /* for(int i=0; i<896; i++) */
-    /* { */
-    /*     if(i%8 == 0) */
-    /*     { */
-    /*         printf(" "); */
-    /*     } */
-    /*     if( i%(8*8) == 0 ) */
-    /*     { */
-    /*         printf("\nOffset: %04d | ", i); */
-    /*     } */
-    /*     printf("%02X", (memory_device+mmPaddr)[i]); */
-    /*     /1* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; *1/ */
-    /* } */
-
-
-
-    uint64_t mapleTreeVaddr = ((uint64_t*)((char*)memory_device+mmPaddr))[1];
-    /* printf("translating maple tree vaddr\n"); */
-    uint64_t mapleTreePaddr = TranslateVaddr(memory_device, mapleTreeVaddr);
-
+    uint64_t mapleTreeRootVaddr = ((uint64_t*)((char*)memory_device+mmPaddr))[1];
+    printf("translating maple tree vaddr\n");
+    uint64_t mapleTreeRootPaddr = TranslateVaddr(memory_device, mapleTreeRootVaddr);
+    printf("translating maple tree vaddr differently\n");
+    /* uint64_t mapleTreePaddr2 = TranslationTableWalkSuppliedPGD(memory_device, mapleTreeRootVaddr, pgdPaddr); */
+    /* printf("MapleTree Paddr 1: %llx\nMapleTree Paddr 2: %llx\n", mapleTreeRootPaddr, mapleTreePaddr2); */
 
     // traverse the maple tree ?
-    uint64_t mapleTreeRoot = ((uint64_t*)((char*)memory_device+mapleTreePaddr))[1];
 
-    if(mapleTreeRoot == 0) // is NULL
+    void GetMapleTypeFromMapleNode(uint64_t offset)
     {
-        // then the maple tree is empty
-        // TODO maybe need to set the output digest?
-        return;
+        char type_byte1 = ((char*)memory_device+offset)[0];
+        char type_byte2 = ((char*)memory_device+offset)[1];
+        char type_byte3 = ((char*)memory_device+offset)[2];
+        char type_byte4 = ((char*)memory_device+offset)[3];
+        printf("Maple Type Chars Found To Be: %02X %02X %02X %02X\n", type_byte1, type_byte2, type_byte3, type_byte4);
+
+        int type = 0;
+        type |= (type_byte1 << 24); // Move the first byte to the leftmost position
+        type |= (type_byte2 << 16); // Move the second byte 16 bits to the left
+        type |= (type_byte3 << 8);  // Move the third byte 8 bits to the left
+        type |= type_byte4;         // No need to shift the fourth byte
+        printf("Maple Type is: %d\n", type);
+
     }
+    
+    printf("Inspecting Maple Tree\n");
+    for(int i=0; i<16; i++)
+    {
+        /* GetMapleTypeFromMapleNode(mapleTreeRootPaddr + 256*i); */
+        introspectScanManyLongs(memory_device, mapleTreeRootPaddr+(256*i));
+        uint64_t thisEnode = ((uint64_t*)((char*)memory_device+mapleTreeRootPaddr))[i * 256];
+        thisEnode = thisEnode << 3;
+        printf("enode %d is %llx\n", i, thisEnode);//(memory_device+mapleTreeRoot)[i]);
+        /* uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0]; */
+    }
+
+    printf("\n");
 
     return;
 
@@ -545,7 +555,7 @@ bool AppraiseTaskTree(TaskMeasurement* swapper)
     while(!isEmpty(queue))
     {
         TaskMeasurement* thisTaskMsmt = dequeue(queue);
-        PrintTaskEvidence(thisTaskMsmt);
+        /* PrintTaskEvidence(thisTaskMsmt); */
         if(!IsDigestEmpty((uint8_t (*)[DIGEST_NUM_BYTES])(thisTaskMsmt->rodataDigest)))
         {
             if(IsThisAKnownDigest((uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest))
