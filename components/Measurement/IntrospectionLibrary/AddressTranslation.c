@@ -100,6 +100,10 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
     uint64_t* PGDTable = (uint64_t*)PGDTablePtr;
     uint64_t pudAddr = (PGDTable[PGDindex] & 0x00000000FFFFF000) - RAM_BASE;
     //uint64_t pudAddr = pgd;
+    if(RAM_SIZE < pudAddr)
+    {
+        return 0;
+    }
 
     if(TTWalkDebug)
     {
@@ -116,6 +120,10 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
     char* pudTablePtr = ((char*)memory_device)+pudAddr;
     uint64_t* PUDTable = (uint64_t*)pudTablePtr;
     uint64_t pmdAddr = (PUDTable[PUDindex] & 0x00000000FFFFF000) - RAM_BASE;
+    if(RAM_SIZE < pmdAddr)
+    {
+        return 0;
+    }
 
     if(TTWalkDebug)
     {
@@ -130,6 +138,10 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
     char* pmdTablePtr = ((char*)memory_device)+pmdAddr;
     uint64_t* pmdTable = (uint64_t*)pmdTablePtr;
     uint64_t pteAddr = (pmdTable[PMDindex] & 0x00000000FFFFF000) - RAM_BASE;
+    if(RAM_SIZE < pteAddr)
+    {
+        return 0;
+    }
 
     if(TTWalkDebug)
     {
@@ -145,14 +157,13 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
     uint64_t* pteTable = (uint64_t*)pteTablePtr;
     uint64_t offsetAddr = (pteTable[PTEindex] & 0x00000000FFFFF000) - RAM_BASE;
     uint64_t finalPaddr = offsetAddr | PAGindex;
+    if(RAM_SIZE < finalPaddr)
+    {
+        return 0;
+    }
 
     if(TTWalkDebug)
     {
-        printf("Here is the pte at 1C2\n");
-        for(int i=0x1C2; i<0x1C6; i++)
-        {
-            printf("%X: %016X\n", i, pteTable[i]);
-        }
         printf("offsetAddr is %016X\n", offsetAddr);
         printf("Output Address is %016X\n", finalPaddr + RAM_BASE);
         printf("Table walk complete\n\n");

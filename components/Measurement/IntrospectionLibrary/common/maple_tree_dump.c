@@ -33,17 +33,14 @@ static bool MeasureThisVMA(void *entry, char* memory_device, uint64_t pgd_paddr,
     uint64_t size = end - start;
 
     uint64_t maybeELF = TranslationTableWalkSuppliedPGD(memory_device, start, pgd_paddr);
-    if(RAM_SIZE < (maybeELF + size))
+    if(0 == maybeELF)
     {
-        // How do I explain that sometimes we get a bad result here?
-        // In other words, why do we sometimes take this path out?
-        // Wish this were a monad.
-        /* printf("Impossible memory access. Quitting.\n"); */
+        /* printf("Address Translation Weirdly Failed\n"); */
         return;
     }
 
-    if( 
-               ((char*)memory_device+maybeELF)[0] == 0x7f
+    if( size < RAM_SIZE
+            && ((char*)memory_device+maybeELF)[0] == 0x7f
             && ((char*)memory_device+maybeELF)[1] == 'E'
             && ((char*)memory_device+maybeELF)[2] == 'L'
             && ((char*)memory_device+maybeELF)[3] == 'F' )
