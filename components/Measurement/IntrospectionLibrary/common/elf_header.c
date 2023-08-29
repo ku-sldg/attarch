@@ -221,7 +221,8 @@ void CrawlProgramHeaders(uint8_t* memory_device, struct elf64header* elf, uint8_
         struct elf64phdr thisPhdr = CollectProgramHeader(memory_device, segmentPtr, elf->RamOffset);
         if(!(thisPhdr.p_flags & 2)) // "if this progrm header refers to a non-writable segment..."
         {
-            HashMeasure( ((char*)memory_device+thisPhdr.p_vaddr), thisPhdr.p_memsz, (uint8_t (*) [DIGEST_NUM_BYTES])&segmentDigests[numDigests*DIGEST_NUM_BYTES] );
+            // Interestingly, p_paddr seems to always match p_vaddr :shrug:
+            HashMeasure( ((char*)memory_device+thisPhdr.p_paddr), thisPhdr.p_memsz, (uint8_t (*) [DIGEST_NUM_BYTES])&segmentDigests[numDigests*DIGEST_NUM_BYTES] );
             numDigests++;
         }
         segmentPtr+=elf->e_phentsize;
@@ -233,7 +234,9 @@ void CrawlProgramHeaders(uint8_t* memory_device, struct elf64header* elf, uint8_
 bool TryMeasureElfRodata(uint8_t* memory_device, uint64_t elfAddr, uint64_t pgd, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
 {
     struct elf64header elf = CollectElfHeaderData(memory_device, elfAddr);
-    /* PrintElfHeaderData(&elf); */
-    CrawlProgramHeaders(memory_device, &elf, outputDigest);
+    uint8_t* intermediateDigest = calloc( 1, DIGEST_NUM_BYTES );
+    CrawlProgramHeaders(memory_device, &elf, intermediateDigest);
+    HashExtend(outputDigest, intermediateDigest);
+    free(intermediateDigest);
     return true;
 }
