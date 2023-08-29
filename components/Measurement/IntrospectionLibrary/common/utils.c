@@ -58,16 +58,18 @@ void introspectScanLong(uint8_t* memory_device, int* head, char* name)
     *head += 8;
 }
 
-void introspectScanManyLongs(uint8_t* memory_device, uint64_t offset)
+void introspectScanManyLongs(uint8_t* memory_device, uint64_t offset, int numLongs, char* label)
 {
-    printf("\nas llx");
-    for(int i=0; i<32; i++)
+    /* printf("\nas llx"); */
+    printf("Label: %s", label);
+    for(int i=0; i<numLongs; i++)
     {
         if( i%(8) == 0 )
         {
             printf("\nOffset: %04d | ", i*8);
         }
-        printf("%llx ", ((uint64_t*)(memory_device+offset))[i]);
+        /* printf("%016llx ", ((uint64_t*)(memory_device+offset))[i]); */
+        printf("%p ", ((uint64_t*)(memory_device+offset))[i]);
     }
     printf("\n\n");
 }
@@ -81,22 +83,21 @@ void introspectScanAddr(uint8_t* memory_device, int* head, char* name)
     *head += 8;
 }
 
-void introspectScanMaybeChar(uint8_t* memory_device, int* head, int size, char* name)
+void introspectScanMaybeChar(uint8_t* memory_device, uint64_t offset, int num_bytes, char* label)
 {
-    printf("%s: ", name);
-    for(int i=0; i<size; i++)
+    printf("Label: %s: ", label);
+    for(int i=0; i<num_bytes; i++)
     {
-        uint8_t thisChar = ((char*)memory_device+*head)[i];
+        uint8_t thisChar = ((char*)memory_device+offset)[i];
         if( 0 < thisChar && thisChar < 128 )
         {
-            printf("%c",((char*)memory_device+*head)[i]);
+            printf("%c",((char*)memory_device+offset)[i]);
         }
         else
         {
-            printf("%02X",((char*)memory_device+*head)[i]);
+            /* printf("%02X",((char*)memory_device+offset)[i]); */
         }
     }
     printf("\n");
-    *head += size;
 }
 
