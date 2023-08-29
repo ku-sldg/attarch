@@ -29,6 +29,21 @@ void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_N
     Hacl_Hash_SHA2_hash_512(input, inputLen, ((uint8_t*)output_digest));
 }
 
+void HashExtend(uint8_t (*baseHash)[DIGEST_NUM_BYTES], uint8_t (*newHash)[DIGEST_NUM_BYTES])
+{
+    uint8_t* longHash = calloc(1, 2*DIGEST_NUM_BYTES);
+    for(int i=0; i<DIGEST_NUM_BYTES; i++)
+    {
+        longHash[i] = baseHash[i];
+    }
+    for(int i=0; i<DIGEST_NUM_BYTES; i++)
+    {
+        longHash[i+DIGEST_NUM_BYTES] = newHash[i];
+    }
+    HashMeasure(longHash, 2*DIGEST_NUM_BYTES, baseHash);
+    free(longHash);
+}
+
 bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
 {
     for(int i=0; i<DIGEST_NUM_BYTES; i++)

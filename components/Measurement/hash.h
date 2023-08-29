@@ -16,6 +16,8 @@ void ShaTest();
 
 void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
+void HashExtend(uint8_t (*baseHash)[DIGEST_NUM_BYTES], uint8_t (*newHash)[DIGEST_NUM_BYTES]);
+
 bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES]);
 
 void MeasureUserPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr);
