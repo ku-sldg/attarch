@@ -47,7 +47,7 @@ set(linux_symvers "${CMAKE_CURRENT_SOURCE_DIR}/linux-stable/Module.symvers")
 # linux_dir should point to wherever you built the kernel
 set(linux_dir "${CMAKE_CURRENT_SOURCE_DIR}/linux-stable")
 
-# Add the external signal module project
+# Add the external connection module project
 ExternalProject_Add(connection-module
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/connection-module
@@ -89,10 +89,34 @@ ${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.307/kernel/dr
 # END SECTION
 # ==================================================================================================
 
+# Cross-compile am-cakeml app "vm_client" for the VM
+ ExternalProject_Add(
+     useram
+     URL
+     file:///${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml
+     BINARY_DIR
+     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml
+     INSTALL_COMMAND
+     ""
+     BUILD_ALWAYS
+     ON
+     EXCLUDE_FROM_ALL
+     CMAKE_ARGS
+       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+       -DIS_VM_USERAM=true
+       -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/camkes_apps/client/config.cmake
+ )
+ AddExternalProjFilesToOverlay(
+     useram
+     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/camkes_apps/client/
+     overlay
+     "/useram"
+     FILES
+     useram
+ )
 
-
-
-
+# This project is the simplest test that the introspection capabilities
+# are still live.
 ExternalProject_Add(
     introspect-app
     URL
@@ -164,6 +188,7 @@ CAmkESAddImportPath(${KernelARMPlatform})
 DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ram.c)
 
 add_subdirectory(components/Measurement)
+add_subdirectory(components/server_am)
 
 # Declare root server
 DeclareCAmkESRootserver(

@@ -8,4 +8,7 @@
 set -e
 
 #/usr/bin/useramClientTest 127.0.0.1
-/usr/bin/introspect
+
+# The simplest introspection mechanical test.
+# "Do we have access to the VM memory?"
+#/usr/bin/introspect

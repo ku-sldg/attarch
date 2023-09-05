@@ -1,4 +1,8 @@
 /*
+ * Michael Neises
+ * 3 March 2023
+ * Describe the attestation architecture
+ *
  * Copyright 2020, Data61, CSIRO (ABN 41 687 119 230)
  *
  * SPDX-License-Identifier: BSD-2-Clause
@@ -16,51 +20,94 @@ import <FileServer/FileServer.camkes>;
 import <SerialServer/SerialServer.camkes>;
 import <TimeServer/TimeServer.camkes>;
 
+component dummy {
+    dataport Buf(2097152) cakeML_heap_and_stack_space;
+}
+component server_am {
+    control;
+
+    dataport Buf(2097152) cakeML_heap_and_stack_space;
+
+    // shared data with the introspect component
+    dataport Buf(4096) inspect_dp;
+    emits Ready measurement_request;
+    consumes Done measurement_done;
+
+    // shared data with the client in the vm 
+    dataport Buf(4096) client_dp;
+    consumes Ready client_ready;
+    emits Done client_done;
+}
+
 component introspect_memdev {
     control;
-    //guest memory connection
+    // shared data with the vm
     dataport Buf memdev;
 
-    //data to introspect
-    dataport Buf introspect_data;
+    // shared data with client
+    dataport Buf client_dp;
+    consumes Ready client_ready;
+    emits Done client_done;
 
-    //signals
-    consumes Ready ready;
-    emits Done done;
+    // shared data with the server
+    dataport Buf(4096) server_dp;
+    consumes Ready measurement_request;
+    emits Done measurement_done;
 }
 
 component VM {
     VM_INIT_DEF()
-    
-    //guest memory region
+    // memory region for introspection
     dataport Buf memdev;
+    
+    // connections with the inspector
+    dataport Buf inspect_dp;
+    emits Ready inspect_ready;
+    consumes Done inspect_done;
 
-    //data to pass through to memdev to look at
-    dataport Buf introspect_data;
+    // connections with the server_am
+    dataport Buf(4096) server_dp;
+    emits Ready server_ready;
+    consumes Done server_done;
 
-    //communication signals
-    emits Ready ready;
-    consumes Done done;
+    // signals the introspect the vm is done initializing
+    emits Ready vm_init; // server_to_client
+
 }
 
 assembly {
     composition {
+        component server_am server;
+        component introspect_memdev md;
+        component dummy dummy;
+
         VM_GENERAL_COMPOSITION_DEF()
         VM_COMPOSITION_DEF(0)
-        component introspect_memdev md;
+        connection seL4VMDTBPassthrough vm_dtb(from vm0.dtb_self, to vm0.dtb);
 
-
-        connection seL4Notification event_conn_0(from vm0.ready,
-                                             to md.ready);
-        connection seL4GlobalAsynch event_conn_1(from md.done,
-                                             to vm0.done);
-
-        connection seL4SharedDataWithCaps conn_introspect_data(from md.introspect_data,
-                                                               to vm0.introspect_data);
-
+        // introspection dataport
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
 
-        connection seL4VMDTBPassthrough vm_dtb(from vm0.dtb_self, to vm0.dtb);
+        // dataports
+        connection seL4SharedDataWithCaps client_and_introspect(from vm0.inspect_dp, to md.client_dp);
+        connection seL4SharedDataWithCaps server_and_introspect(from server.inspect_dp, to md.server_dp);
+        connection seL4SharedDataWithCaps server_and_client(from server.client_dp, to vm0.server_dp);
+        connection seL4SharedData dummy_space(from server.cakeML_heap_and_stack_space, to dummy.cakeML_heap_and_stack_space);
+
+        // notifications
+        connection seL4Notification server_to_inspector(from server.measurement_request, to md.measurement_request);
+        connection seL4Notification inspector_to_server(from md.measurement_done, to server.measurement_done);
+        connection seL4Notification server_to_client(from server.client_done, to vm0.server_done);
+        connection seL4Notification client_to_server(from vm0.server_ready, to server.client_ready);
+        connection seL4Notification inspector_to_client(from md.client_done, to vm0.inspect_done);
+        connection seL4Notification client_to_inspector(from vm0.inspect_ready, to md.client_ready);
+
+        
+
+        // don't know about this ?
+        // I kind of think I *shiould* use this done_wait combo,
+        // because maybe if I *don't* wait, it won't pause the VM.
+        //connection seL4GlobalAsynch event_conn_1(from md.done, to vm0.done);
     }
     configuration {
         VM_GENERAL_CONFIGURATION_DEF()
@@ -71,10 +118,12 @@ assembly {
         vm0.cnode_size_bits = 23;
         vm0.simple_untyped24_pool = 12;
 
-        vm0.introspect_data_id = 0;
-        vm0.introspect_data_size = 4096;
+        vm0.server_dp_id = 0;
+        vm0.server_dp_size = 4096;
 
         md.memdev_hardware_cached = false;
         vm0.memdev_hardware_cached = false;
+
+        dummy_space.size=2097152;
     }
 }

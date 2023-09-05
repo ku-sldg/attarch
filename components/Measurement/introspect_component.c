@@ -19,8 +19,27 @@ int run(void)
     // Time to Measure Kernel Rodata: 0.53s
     while (1)
     {
-        printf("DEBUG: Measurement: Waiting.\n");
-        ready_wait();
+        printf("DEBUG: Inspector Awake.\n");
+        /* Get control from Server AM */
+        printf("DEBUG: Inspector waiting for Server signal\n");
+        measurement_request_wait();
+        printf("DEBUG: Inspector recv Server signal. Emitting to Client.\n");
+        /* Pass control to Client AM */
+        client_done_emit();
+        /* Get control from Client AM */
+        printf("DEBUG: Inspector waiting for Client signal\n");
+        client_ready_wait();
+        printf("DEBUG: Inspector recv Client signal. Emitting to Server.\n");
+        /* Pass control to Server AM */
+        measurement_done_emit();
+
+
+
+
+
+        printf("DEBUG: Inspector Start.\n");
+        /* ready_wait(); */
+        measurement_request_wait();
 
         bool overall_appraisal = MeasureAndAppraiseLinux();
 
@@ -29,7 +48,8 @@ int run(void)
         // TODO hook the am back up
         /* memset(ms_dp, '0', 4096); */
         /* strcpy(ms_dp, resultMsg); */
-        done_emit();
+        /* done_emit(); */
+        measurement_done_emit();
     }
     return 0;
 }
