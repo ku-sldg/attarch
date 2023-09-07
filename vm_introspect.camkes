@@ -97,9 +97,9 @@ assembly {
         // notifications
         connection seL4Notification server_to_inspector(from server.measurement_request, to md.measurement_request);
         connection seL4Notification inspector_to_server(from md.measurement_done, to server.measurement_done);
-        connection seL4Notification server_to_client(from server.client_done, to vm0.server_done);
+        connection seL4GlobalAsynch server_to_client(from server.client_done, to vm0.server_done);
         connection seL4Notification client_to_server(from vm0.server_ready, to server.client_ready);
-        connection seL4Notification inspector_to_client(from md.client_done, to vm0.inspect_done);
+        connection seL4GlobalAsynch inspector_to_client(from md.client_done, to vm0.inspect_done);
         connection seL4Notification client_to_inspector(from vm0.inspect_ready, to md.client_ready);
 
         
