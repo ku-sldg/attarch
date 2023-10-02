@@ -9,6 +9,17 @@
 #include "hash.h"
 #include "IntrospectionLibrary/IntrospectionLibrary.c"
 
+void introspective_measurement__init(void)
+{
+    printf("DEBUG: I'm about to give you your measurement\n");
+}
+
+bool introspective_measurement_request(int id)
+{
+    printf("DEBUG: here's your measurement id: %d\n", id);
+    return 0;
+}
+
 int run(void)
 {
     ShaTest();

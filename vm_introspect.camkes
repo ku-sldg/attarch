@@ -20,11 +20,18 @@ import <FileServer/FileServer.camkes>;
 import <SerialServer/SerialServer.camkes>;
 import <TimeServer/TimeServer.camkes>;
 
+procedure measurement {
+    // id refers to which measurement is desired
+    bool request(in int id);
+}
+
 component dummy {
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 }
 component server_am {
     control;
+
+    uses measurement introspective_measurement;
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 
@@ -41,6 +48,9 @@ component server_am {
 
 component introspect_memdev {
     control;
+
+    provides measurement introspective_measurement;
+
     // shared data with the vm
     dataport Buf memdev;
 
@@ -101,6 +111,9 @@ assembly {
         connection seL4Notification client_to_server(from vm0.server_ready, to server.client_ready);
         connection seL4GlobalAsynch inspector_to_client(from md.client_done, to vm0.inspect_done);
         connection seL4Notification client_to_inspector(from vm0.inspect_ready, to md.client_ready);
+
+
+        connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);
 
         
 
