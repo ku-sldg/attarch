@@ -17,7 +17,7 @@ void introspective_measurement__init(void)
 bool introspective_measurement_request(int id)
 {
     printf("DEBUG: here's your measurement id: %d\n", id);
-    return 0;
+    return true;
 }
 
 int run(void)
