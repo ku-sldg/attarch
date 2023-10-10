@@ -65,6 +65,19 @@ component introspect_memdev {
     emits Done measurement_done;
 }
 
+procedure file_read_string {
+    string request(in string file_path);
+}
+
+component file_server {
+    control;
+    provides file_read_string file_read;
+}
+component tester_thinga {
+    control;
+    uses file_read_string file_read;
+}
+
 component VM {
     VM_INIT_DEF()
     // memory region for introspection
@@ -90,6 +103,8 @@ assembly {
         component server_am server;
         component introspect_memdev md;
         component dummy dummy;
+        component file_server fserver;
+        component tester_thinga thinga;
 
         VM_GENERAL_COMPOSITION_DEF()
         VM_COMPOSITION_DEF(0)
@@ -114,6 +129,7 @@ assembly {
 
 
         connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);
+        connection seL4RPCCall file_server(from thinga.file_read, to fserver.file_read);
 
         
 
