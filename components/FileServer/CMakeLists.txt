@@ -3,7 +3,7 @@
 # Michael Neises
 
 execute_process(
-    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/GenerateFileSystem.py
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE result_var
     OUTPUT_VARIABLE output_var
