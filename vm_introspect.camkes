@@ -32,6 +32,7 @@ component server_am {
     control;
 
     uses measurement introspective_measurement;
+    //uses file_read file_server;
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 
@@ -66,11 +67,11 @@ component introspect_memdev {
 }
 
 procedure file_read_string {
-    string request(in string file_path);
+    bool request(in string file_path, inout string file_contents, in int size);
+    bool query(in string file_path, out int size);
 }
 
 component file_server {
-    control;
     provides file_read_string file_read;
 }
 component tester_thinga {

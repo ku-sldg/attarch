@@ -1,5 +1,4 @@
 import os
-import shutil
 
 def convert_to_array(data):
     content = []
@@ -8,6 +7,8 @@ def convert_to_array(data):
             content.append("'\\n'")
         elif ch == '\'':  # apostrophe
             content.append("'\\''")
+        elif ch == '\\':  # backslash
+            content.append("'\\\\'")
         else:
             content.append(f"'{ch}'")
     content.append("'\\0'")  # null terminator
@@ -36,6 +37,7 @@ def main():
     file_mappings = []
 
     with open('./FileSystem.c', 'w') as c_file:
+        c_file.write(f'#include "FileSystem.h"\n')
         for root, _, files in os.walk('./FileSystem'):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -43,11 +45,15 @@ def main():
                 file_mappings.append((original_path[2:], array_name))
 
     # Create FileSystem.h
-    master_header_content = f"""
+    master_header_content = """
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
+#include <stddef.h>
+#include <string.h>
+
 char* read_file_as_string(const char* name);
+int query_size(const char* name);
 
 #endif  // FILESYSTEM_H
     """
@@ -55,12 +61,20 @@ char* read_file_as_string(const char* name);
         f.write(master_header_content)
 
     # Append the `read_file_as_string` function to the FileSystem.c file
-    c_function_content = "\n\nchar* read_file_as_string(const char* name) {\n"
+    read_function_content = "\n\nchar* read_file_as_string(const char* name) {\n"
     for original, array_name in file_mappings:
-        c_function_content += f'    if (strcmp(name, "{original}") == 0) return {array_name};\n'
-    c_function_content += "    return NULL;\n}"
+        read_function_content += f'    if (strcmp(name, "{original}") == 0) return {array_name};\n'
+    read_function_content += "    return NULL;\n}"
     with open("./FileSystem.c", 'a') as f:
-        f.write(c_function_content)
+        f.write(read_function_content)
+
+    # Append the `query_size` function to the FileSystem.c file
+    size_function_content = "\n\nint query_size(const char* name) {\n"
+    for original, array_name in file_mappings:
+        size_function_content += f'    if (strcmp(name, "{original}") == 0) return sizeof({array_name});\n'
+    size_function_content += "    return -1;\n}"
+    with open("./FileSystem.c", 'a') as f:
+        f.write(size_function_content)
 
 if __name__ == "__main__":
     main()
