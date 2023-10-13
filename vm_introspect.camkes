@@ -22,7 +22,8 @@ import <TimeServer/TimeServer.camkes>;
 
 procedure measurement {
     // id refers to which measurement is desired
-    bool request(in int id);
+    bool request(in int id, out string evidence);
+    bool appraise(in int id, in string evidence, out string appraisal_report);
 }
 
 component dummy {
@@ -36,11 +37,6 @@ component server_am {
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 
-    // shared data with the introspect component
-    dataport Buf(4096) inspect_dp;
-    emits Ready measurement_request;
-    consumes Done measurement_done;
-
     // shared data with the client in the vm 
     dataport Buf(4096) client_dp;
     consumes Ready client_ready;
@@ -48,22 +44,10 @@ component server_am {
 }
 
 component introspect_memdev {
-    control;
-
     provides measurement introspective_measurement;
 
     // shared data with the vm
     dataport Buf memdev;
-
-    // shared data with client
-    dataport Buf client_dp;
-    consumes Ready client_ready;
-    emits Done client_done;
-
-    // shared data with the server
-    dataport Buf(4096) server_dp;
-    consumes Ready measurement_request;
-    emits Done measurement_done;
 }
 
 procedure file_read_string {
@@ -84,11 +68,6 @@ component VM {
     // memory region for introspection
     dataport Buf memdev;
     
-    // connections with the inspector
-    dataport Buf inspect_dp;
-    emits Ready inspect_ready;
-    consumes Done inspect_done;
-
     // connections with the server_am
     dataport Buf(4096) server_dp;
     emits Ready server_ready;
@@ -115,20 +94,14 @@ assembly {
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
 
         // dataports
-        connection seL4SharedDataWithCaps client_and_introspect(from vm0.inspect_dp, to md.client_dp);
-        connection seL4SharedDataWithCaps server_and_introspect(from server.inspect_dp, to md.server_dp);
         connection seL4SharedDataWithCaps server_and_client(from server.client_dp, to vm0.server_dp);
         connection seL4SharedData dummy_space(from server.cakeML_heap_and_stack_space, to dummy.cakeML_heap_and_stack_space);
 
         // notifications
-        connection seL4Notification server_to_inspector(from server.measurement_request, to md.measurement_request);
-        connection seL4Notification inspector_to_server(from md.measurement_done, to server.measurement_done);
         connection seL4GlobalAsynch server_to_client(from server.client_done, to vm0.server_done);
         connection seL4Notification client_to_server(from vm0.server_ready, to server.client_ready);
-        connection seL4GlobalAsynch inspector_to_client(from md.client_done, to vm0.inspect_done);
-        connection seL4Notification client_to_inspector(from vm0.inspect_ready, to md.client_ready);
 
-
+        // RPC declarations
         connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);
         connection seL4RPCCall file_server(from thinga.file_read, to fserver.file_read);
 
