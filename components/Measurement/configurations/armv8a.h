@@ -22,7 +22,7 @@
 #define DIGEST_NUM_BYTES 64 // representative of 512 bit hash digests
 
 // task specific definitions
-#define NUM_TASKS 20 //arbitrary
+#define NUM_TASKS 100 //arbitrary
 #define NUM_CHILD_TASKS 64 //arbitrary
 
 // kernel module specific definitions

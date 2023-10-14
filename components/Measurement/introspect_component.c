@@ -20,7 +20,9 @@ bool introspective_measurement_request(int id, char** evidence)
     printf("DEBUG: here's your measurement id: %d\n", id);
     if(id==0)
     {
-        bool overall_appraisal = MeasureAndAppraiseLinux();
+        uint8_t* evidenceMcBundle = MeasureLinuxKernel();
+        free(evidenceMcBundle);
+        /* bool overall_appraisal = MeasureAndAppraiseLinux(); */
         *evidence = malloc(30);
         for(int i=0; i<30; i++)
         {
@@ -48,7 +50,9 @@ bool introspective_measurement_appraise(int id, const char* evidence, char** app
     printf("DEBUG: here's your evidence: %s\n", evidence);
     if(id==0)
     {
-        bool result = MeasureAndAppraiseLinux();
+        /* bool result = MeasureAndAppraiseLinux(); */
+        printf("\n\nDummy Appraisal\n\n");
+        bool result = true;
 
         *appraisal_report = malloc(30);
         for(int i=0; i<30; i++)
