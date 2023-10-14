@@ -203,8 +203,8 @@ void mt_dump(const struct maple_tree *mt, char* memory_device, uint64_t pgd_padd
     /* void *entry = rcu_dereference_check(mt->ma_root, mt_locked(mt)); */
     void *entry = mt->ma_root;
 
-    printf("maple_tree(%p) flags %X, height %u root %p\n",
-         mt, mt->ma_flags, mt_height(mt), entry);
+    /* printf("maple_tree(%p) flags %X, height %u root %p\n", */
+    /*      mt, mt->ma_flags, mt_height(mt), entry); */
     if (!xa_is_node(entry))
         mt_dump_entry(entry, 0, 0, 0, memory_device, pgd_paddr, rodataDigest);
     else if (entry)

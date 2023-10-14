@@ -304,7 +304,7 @@ void InterpretTaskStruct(uint8_t* memory_device, uint64_t thisTaskStructPaddr, u
 void CollectTaskMeasurement(uint8_t* memory_device, TaskMeasurement* msmt, uint64_t taskptr)
 {
     GetTaskNamePointer(memory_device, taskptr, &msmt->name);
-    printf("Currently Crawling: %s\n", msmt->name);
+    /* printf("Currently Crawling: %s\n", msmt->name); */
     GetPIDs(memory_device, taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(memory_device, taskptr, &msmt->cred);
 
