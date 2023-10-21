@@ -20,20 +20,13 @@ bool introspective_measurement_request(int id, char** evidence)
     printf("DEBUG: here's your measurement id: %d\n", id);
     if(id==0)
     {
-        uint8_t* evidenceMcBundle = MeasureLinuxKernel();
-        free(evidenceMcBundle);
-        /* bool overall_appraisal = MeasureAndAppraiseLinux(); */
-        *evidence = malloc(30);
-        for(int i=0; i<30; i++)
-        {
-            (*evidence)[i] = 'a';
-        }
-        (*evidence)[29] = '\0';
-        /* return overall_appraisal; */
-
-        /* evidence = malloc(10); */
-        /* (*evidence)[0] = 'A'; */
-        /* (*evidence)[1] = '\0'; */
+        EvidenceBundle* resultsBundle = MeasureLinuxKernel();
+        int resultsNum = GetCollectionLength(resultsBundle, 100); //TODO find a better supremum
+        printf("\n\nbundle is\n\n");
+        PrintCollection(resultsBundle, resultsNum);
+        ExportToByteString(resultsBundle, resultsNum, evidence);
+        printf("\n\nbytestring bundle is\n\n");
+        PrintCollection(*evidence, resultsNum);
         return true;
     }
     else
@@ -47,7 +40,9 @@ bool introspective_measurement_request(int id, char** evidence)
 bool introspective_measurement_appraise(int id, const char* evidence, char** appraisal_report)
 {
     printf("DEBUG: here's your measurement id: %d\n", id);
-    printf("DEBUG: here's your evidence: %s\n", evidence);
+    printf("DEBUG: here's your evidence:\n");
+    int resultsNum = GetCollectionLength(evidence, 100); //TODO find a better supremum
+    PrintCollection(evidence, resultsNum);
     if(id==0)
     {
         /* bool result = MeasureAndAppraiseLinux(); */

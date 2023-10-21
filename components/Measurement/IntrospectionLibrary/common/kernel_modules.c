@@ -27,7 +27,7 @@ struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int phy
 
 void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[INTRO_MODULE_NAME_LEN])
 {
-    bool IKMDebug = true;
+    bool IKMDebug = false;
     if(IKMDebug)
     {
         printf("Module Address: %016X\n", inputAddress);
@@ -57,18 +57,16 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("ro after init size: %08X\n", thisModuleLayout.ro_after_init_size);
         printf("base paddr: %016X\n", basePtr);
     }
+    
+    //TODO problem: this results in a new hash every measurement, even though
+    //the target is correct. That's because there's some adrp instructions in
+    //these text segments that have virtual address operands. Despite being
+    //read-only, these vaddr operands naturally change between boots. Can solve
+    //this by abstracting the vaddr away, perhaps for special treatment later.
+    // Current Solution: do nothing
     HashMeasure(memory_device+basePtr, thisModuleLayout.ro_size, rodataDigest);
-    /* for(int i=0; i<thisModuleLayout.text_size; i++) */
-    /* { */
-    /*     if(0<i && i%8==0) */
-    /*     { */
-    /*     } */
-    /*     if(0<i && i%64==0) */
-    /*     { */
-    /*     } */
-    /*     printf("%02X\n", (memory_device+basePtr)[i]); */
-    /* } */
 }
+
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {

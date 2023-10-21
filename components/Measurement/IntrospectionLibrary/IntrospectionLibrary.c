@@ -16,9 +16,10 @@
 #include "AddressTranslation.c"
 #include "common/common.c"
 #include "measurementAndAppraisal.c"
+#include "EvidenceBundle.h"
+#include "EvidenceBundle.c"
 #include "measurements.c"
 #include "appraisals.c"
-#include "evidence_handling.c"
 
 /* This function is here to easily control which measurements */
 /* are performed for which versions of linux. */
@@ -36,65 +37,48 @@ bool MeasureAndAppraiseLinux()
         return overall_appraisal;
 }
 
-uint8_t* MeasureLinuxKernel()
+EvidenceBundle* MeasureLinuxKernel()
 {
     int numRodataEvidences = 0;
     int numModuleEvidences = 0;
     int numTaskEvidences = 0;
 
     // Execute the measurements
-    uint8_t* rodataEvidence = InspectRodata((uint8_t*)memdev);
-
-    uint8_t* modulesEvidence = InspectModules((uint8_t*)memdev);
-
-    uint8_t* tasksEvidence = InspectTasks((uint8_t*)memdev);
-    /* PrintCollection(rodataEvidence, 1); */
+    // we have to free these
+    EvidenceBundle rodataEvidence = InspectRodata((uint8_t*)memdev);
+    EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
+    EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
 
     // Count the evidence entries so we know how much space we need.
     int numEvidenceEntries = 0;
-    if(rodataEvidence != NULL)
-    {
-        //count it
-        numRodataEvidences++;
-        PrintCollection(rodataEvidence, numRodataEvidences);
-        numEvidenceEntries += numRodataEvidences;
-        printf("rodata get. entries now %d\n", numEvidenceEntries);
-    }
-    if(modulesEvidence != NULL)
-    {
-        //count it
-        numModuleEvidences += GetLengthOfCollectionSansEmpties(modulesEvidence, NUM_MODULE_DIGESTS * EVIDENCE_ENTRY_SIZE);
-        PrintCollection(modulesEvidence, numModuleEvidences);
-        numEvidenceEntries += numModuleEvidences;
-        printf("modules get. entries now %d\n", numEvidenceEntries);
-    }
-    if(tasksEvidence != NULL)
-    {
-        //count it
-        numTaskEvidences += GetLengthOfCollectionSansEmpties(tasksEvidence, NUM_TASKS * EVIDENCE_ENTRY_SIZE);
-        PrintCollection(tasksEvidence, numTaskEvidences);
-        numEvidenceEntries += numTaskEvidences;
-        printf("Tasks get. entries now %d\n", numEvidenceEntries);
-    }
-    
-    printf("DEBUG: YOU HAD %d ENTRIES\n", numEvidenceEntries);
+    numRodataEvidences++; // we just have one
+    numEvidenceEntries += numRodataEvidences;
 
+    numModuleEvidences += GetCollectionLength(modulesEvidence, NUM_MODULE_DIGESTS * sizeof(EvidenceBundle));
+    numEvidenceEntries += numModuleEvidences;
+
+    numTaskEvidences += GetCollectionLength(tasksEvidence, NUM_TASKS * sizeof(EvidenceBundle));
+    numEvidenceEntries += numTaskEvidences;
+    
     // allocate memory
-    uint8_t* evidenceCollection = calloc(numEvidenceEntries, EVIDENCE_ENTRY_SIZE);
-    int max_size = numEvidenceEntries * EVIDENCE_ENTRY_SIZE;
+    EvidenceBundle* evidenceCollection = calloc(numEvidenceEntries, sizeof(EvidenceBundle));
 
     // pack the evidence into a single collection
-    if(rodataEvidence != NULL)
-    {
-        PackIntoCollection(evidenceCollection, rodataEvidence, max_size);
-    }
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, &rodataEvidence);
+    PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
+    PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
+
+    printf("\n\n==========\nFinal Evidence Collection\n==========\n");
+    PrintCollection(evidenceCollection, numEvidenceEntries);
+
+    // free the extra bundles
     if(modulesEvidence != NULL)
     {
-        PackIntoCollection(evidenceCollection + EVIDENCE_ENTRY_SIZE * numRodataEvidences, modulesEvidence, max_size);
+        free(modulesEvidence);
     }
     if(tasksEvidence != NULL)
     {
-        PackIntoCollection(evidenceCollection + EVIDENCE_ENTRY_SIZE * (numRodataEvidences + numModuleEvidences), tasksEvidence, max_size);
+        free(tasksEvidence);
     }
     
     return evidenceCollection;
