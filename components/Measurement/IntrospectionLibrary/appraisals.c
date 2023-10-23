@@ -1,7 +1,7 @@
 /*
- * Top level functions for linux measurement
+ * Top level functions for appraisal of linux-measurement-evidence
  * Michael Neises
- * 09 June 2023
+ * 23 October 2023
  */
 
 /* bool IsModulesOkay(uint8_t* memory_device) */

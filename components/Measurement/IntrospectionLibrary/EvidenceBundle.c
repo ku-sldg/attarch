@@ -15,6 +15,24 @@
 ** single collection of evidence. That collection is an array, and its entries
 ** are 128 bytes each (see EvidenceBundle.h for more).
 */
+static EvidenceBundle nullEvidenceBundle = {
+    .type = {1, 1, 1, 1, 1, 1, 1, 1},  // Set all bytes in 'type' to 1
+    .name = {0},                       // The rest of the bytes in 'name' will be automatically set to 0
+    .digest = {0}                      // The bytes in 'digest' will be automatically set to 0
+};
+
+bool IsBundleNullBundle(EvidenceBundle* bundle)
+{
+    if (bundle == NULL)
+    {
+        return false;
+    }
+    if (memcmp(bundle->type, "\1\1\1\1\1\1\1\1", 8) == 0)
+    {
+        return true;
+    }
+    return false;
+}
 
 /**
  * Check if the provided EvidenceBundle is empty.
@@ -146,17 +164,22 @@ int GetCollectionLength(EvidenceBundle *collection, int maxSize) {
         return 0;
     }
     int count = 0;
-
-    for (int i = 0; i < maxSize; i++) {
-        if (!IsBundleEmpty(&collection[i], false)) {
-            count++;
-        }
-        else
+    for (int i = 0; i < maxSize; i++)
+    {
+        if(IsBundleEmpty(&collection[i], false))
         {
             break;
         }
+        else if(IsBundleNullBundle(&collection[i]))
+        {
+            count++;
+            return count;
+        }
+        else
+        {
+            count++;
+        }
     }
-
     return count;
 }
 
@@ -166,6 +189,11 @@ int GetCollectionLength(EvidenceBundle *collection, int maxSize) {
  * @param bundle Pointer to the EvidenceBundle.
  */
 void PrintBundle(EvidenceBundle *bundle) {
+    if(bundle==NULL)
+    {
+        printf("ERROR: Tried to print NULL as an EvidenceBundle\n");
+        return;
+    }
     printf("Type: %.*s\n", 8, bundle->type);
     printf("Name: %.*s\n", 56, bundle->name);
     printf("Digest: ");

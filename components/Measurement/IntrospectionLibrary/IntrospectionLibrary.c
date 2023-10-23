@@ -51,6 +51,7 @@ EvidenceBundle* MeasureLinuxKernel()
 
     // Count the evidence entries so we know how much space we need.
     int numEvidenceEntries = 0;
+    numEvidenceEntries++; // we want to null terminate this list
     numRodataEvidences++; // we just have one
     numEvidenceEntries += numRodataEvidences;
 
@@ -67,9 +68,7 @@ EvidenceBundle* MeasureLinuxKernel()
     PackBundleSingle(evidenceCollection, numEvidenceEntries, &rodataEvidence);
     PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
     PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
-
-    printf("\n\n==========\nFinal Evidence Collection\n==========\n");
-    PrintCollection(evidenceCollection, numEvidenceEntries);
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
 
     // free the extra bundles
     if(modulesEvidence != NULL)
@@ -84,12 +83,26 @@ EvidenceBundle* MeasureLinuxKernel()
     return evidenceCollection;
 }
 
-bool AppraiseLinuxKernelMeasurement()
+bool AppraiseLinuxKernelMeasurement(const char* evidence)
 {
+    EvidenceBundle* bundle = (EvidenceBundle*)evidence;
+    bool result = true;
 
-    /* AppraiseKernelRodata(); */
-    /* AppraiseKernelModules(); */
-    /* AppraiseLinuxTasks(); */
-
+    while(!IsBundleNullBundle(bundle))
+    {
+        printf("Evidence Type: %s\nEvidence Name: %s\n", bundle->type, bundle->name);
+        if(IsThisAKnownDigest(bundle->digest))
+        {
+            printf("Digest Recognized.\n");
+        }
+        else
+        {
+            printf("Digest NOT Recognized.\n");
+            result = false;
+        }
+        printf("\n");
+        bundle++;
+    }
+    return result;
 }
 
