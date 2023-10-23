@@ -19,7 +19,6 @@
 #include "EvidenceBundle.h"
 #include "EvidenceBundle.c"
 #include "measurements.c"
-#include "appraisals.c"
 
 /* This function is here to easily control which measurements */
 /* are performed for which versions of linux. */
