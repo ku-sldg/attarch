@@ -30,7 +30,6 @@ component dummy {
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 }
 component server_am {
-    control;
 
     uses measurement introspective_measurement;
     //uses file_read file_server;
