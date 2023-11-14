@@ -25,14 +25,19 @@ procedure measurement {
     bool request(in int id, out string evidence);
     bool appraise(in int id, in string evidence, out string appraisal_report);
 }
+procedure file_read_string {
+    bool request(in string file_path, inout string file_contents, in int size);
+    bool query(in string file_path, out int size);
+}
 
 component dummy {
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 }
 component server_am {
+    control;
 
     uses measurement introspective_measurement;
-    //uses file_read file_server;
+    uses file_read_string file_read;
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 
@@ -49,17 +54,8 @@ component introspect_memdev {
     dataport Buf memdev;
 }
 
-procedure file_read_string {
-    bool request(in string file_path, inout string file_contents, in int size);
-    bool query(in string file_path, out int size);
-}
-
 component file_server {
     provides file_read_string file_read;
-}
-component tester_thinga {
-    control;
-    uses file_read_string file_read;
 }
 
 component VM {
@@ -83,7 +79,6 @@ assembly {
         component introspect_memdev md;
         component dummy dummy;
         component file_server fserver;
-        component tester_thinga thinga;
 
         VM_GENERAL_COMPOSITION_DEF()
         VM_COMPOSITION_DEF(0)
@@ -102,7 +97,7 @@ assembly {
 
         // RPC declarations
         connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);
-        connection seL4RPCCall file_server(from thinga.file_read, to fserver.file_read);
+        connection seL4RPCCall file_server(from server.file_read, to fserver.file_read);
 
         
 

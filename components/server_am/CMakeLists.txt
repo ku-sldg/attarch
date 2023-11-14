@@ -15,28 +15,7 @@ set(TARGET_ARCH "armv8")
 # or something?
 
 set(am_cakeml_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../am-cakeml")
-set(build_dir "${am_cakeml_dir}/build")
+add_subdirectory(../../am-cakeml "${CMAKE_CURRENT_BINARY_DIR}/am-cakeml")
 
-# Ensure the build directory exists
-file(MAKE_DIRECTORY ${build_dir})
-
-# Configure the project
-execute_process(
-    COMMAND ${CMAKE_COMMAND} ..
-    WORKING_DIRECTORY ${build_dir}
-    RESULT_VARIABLE result
-)
-if(NOT result EQUAL "0")
-    message(FATAL_ERROR "Configuration of am-cakeml failed")
-endif()
-
-# Build manifest_generator and manifest_compiler
-execute_process(
-    COMMAND ${CMAKE_COMMAND} --build . --target manifest_generator manifest_compiler
-    WORKING_DIRECTORY ${build_dir}
-    RESULT_VARIABLE result
-)
-if(NOT result EQUAL "0")
-    message(FATAL_ERROR "Build of am-cakeml failed")
-endif()
+#get_files(man_comp_src ${server_am_src} ../tests/DemoFiles/Kim/Test_Am_Lib_Kim.sml ../apps/ManifestCompiler/Client.sml )
 
