@@ -29,6 +29,11 @@ procedure file_read_string {
     bool request(in string file_path, inout string file_contents, in int size);
     bool query(in string file_path, out int size);
 }
+procedure linux_comm_utils {
+    bool fire_and_forget(in string message);
+    bool receive_request(out string response);
+    bool send_request(in string ip, in string port, in string json_request, out string response);
+}
 
 component dummy {
     dataport Buf(2097152) cakeML_heap_and_stack_space;
@@ -38,6 +43,7 @@ component server_am {
 
     uses measurement introspective_measurement;
     uses file_read_string file_read;
+    uses linux_comm_utils linux_comm;
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 
@@ -56,6 +62,10 @@ component introspect_memdev {
 
 component file_server {
     provides file_read_string file_read;
+}
+
+component linux_handler {
+    provides linux_comm_utils linux_comm;
 }
 
 component VM {
@@ -79,6 +89,7 @@ assembly {
         component introspect_memdev md;
         component dummy dummy;
         component file_server fserver;
+        component linux_handler lhandler;
 
         VM_GENERAL_COMPOSITION_DEF()
         VM_COMPOSITION_DEF(0)
@@ -98,7 +109,7 @@ assembly {
         // RPC declarations
         connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);
         connection seL4RPCCall file_server(from server.file_read, to fserver.file_read);
-
+        connection seL4RPCCall linux_comm(from server.linux_comm, to lhandler.linux_comm);
         
 
         // don't know about this ?

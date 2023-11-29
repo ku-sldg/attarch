@@ -190,6 +190,7 @@ DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ra
 add_subdirectory(components/Measurement)
 add_subdirectory(components/server_am)
 add_subdirectory(components/FileServer)
+add_subdirectory(components/LinuxHandler)
 
 # Declare root server
 DeclareCAmkESRootserver(
