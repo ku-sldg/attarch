@@ -46,11 +46,6 @@ component server_am {
     uses linux_comm_utils linux_comm;
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
-
-    // shared data with the client in the vm 
-    dataport Buf(4096) client_dp;
-    consumes Ready client_ready;
-    emits Done client_done;
 }
 
 component introspect_memdev {
@@ -66,6 +61,12 @@ component file_server {
 
 component linux_handler {
     provides linux_comm_utils linux_comm;
+
+    // shared data with the client in the vm 
+    dataport Buf(4096) client_dp;
+    consumes Ready client_ready;
+    emits Done client_done;
+
 }
 
 component VM {
@@ -99,12 +100,12 @@ assembly {
         connection seL4SharedDataWithCaps vm_memdev(from md.memdev, to vm0.memdev);
 
         // dataports
-        connection seL4SharedDataWithCaps server_and_client(from server.client_dp, to vm0.server_dp);
+        connection seL4SharedDataWithCaps server_and_client(from lhandler.client_dp, to vm0.server_dp);
         connection seL4SharedData dummy_space(from server.cakeML_heap_and_stack_space, to dummy.cakeML_heap_and_stack_space);
 
         // notifications
-        connection seL4GlobalAsynch server_to_client(from server.client_done, to vm0.server_done);
-        connection seL4Notification client_to_server(from vm0.server_ready, to server.client_ready);
+        connection seL4GlobalAsynch server_to_client(from lhandler.client_done, to vm0.server_done);
+        connection seL4Notification client_to_server(from vm0.server_ready, to lhandler.client_ready);
 
         // RPC declarations
         connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);

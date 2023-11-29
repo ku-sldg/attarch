@@ -5,37 +5,49 @@
  */
 
 #include <camkes.h>
+#include "dataports.c"
+
+#define MESSAGE_SIZE 4096
 
 void linux_comm__init(void)
 {
+    InitDataports();
     printf("DEBUG: linux_comm_utils interface ready!\n");
 }
 
 bool linux_comm_fire_and_forget(const char* message)
 {
     printf("fire_and_forget'ing %s\n", message);
+    bool result = WriteLinuxDataport(message);
+    if(!result)
+    {
+        printf("Failed to Write the Linux Dataport\n");
+        return false;
+    }
     return true;
 }
 
 bool linux_comm_receive_request(char** response)
 {
-    printf("receiving response\n");
-    *response = malloc(16);
-    (*response)[0] = 'A';
-    (*response)[1] = '\0';
+    printf("Waiting to receive 4096 bytes of response...\n");
+    WaitLinuxDataport();
+    printf("Receiving...\n");
+
+    *response = calloc(1, MESSAGE_SIZE);
+    uint8_t* contents = calloc(1, MESSAGE_SIZE);
+    bool result = ReadLinuxDataport(contents);
+    if(!result)
+    {
+        printf("Failed to Read the Linux Dataport\n");
+        return false;
+    }
+    for(int i=0; i<4096; i++)
+    {
+        (*response)[i] = contents[i];
+    }
+    free(contents);
+
     return true;
-
-    /* char* linux_comm_utils_result = read_file_as_string(file_path); */
-    /* if(linux_comm_utils_result == NULL) */
-    /* { */
-    /*     return false; */
-    /* } */
-    /* for(int i=0; i<size; i++) */
-    /* { */
-    /*     (*file_contents)[i] = linux_comm_utils_result[i]; */
-    /* } */
-    /* return true; */
-
 }
 
 bool linux_comm_send_request(const char* ip, const char* port, const char* json_request, char** response)
@@ -44,10 +56,13 @@ bool linux_comm_send_request(const char* ip, const char* port, const char* json_
     printf(" to ip: %s\n", ip);
     printf(" to port: %s\n", port);
     printf(" the request: %s\n", json_request);
+    printf("Just kidding. It's going to the linux VM.\n");
 
-    *response = malloc(16);
-    (*response)[0] = 'A';
-    (*response)[1] = '\0';
-
+    bool result = linux_comm_fire_and_forget(json_request);
+    if(!result)
+    {
+        printf("Failed to Send Request to the Linux Dataport\n");
+        return false;
+    }
     return true;
 }
