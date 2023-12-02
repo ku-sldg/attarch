@@ -12,4 +12,4 @@ insmod /lib/modules/4.9.307/kernel/drivers/vmm/poison.ko
 export CML_STACK_SIZE=10
 export CML_HEAP_SIZE=10
 
-/useram/useram
+/useram/useram -m /useram/manifest.json -k /useram/private.key -t /useram/term.json
