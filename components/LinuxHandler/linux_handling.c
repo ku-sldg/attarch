@@ -17,7 +17,6 @@ void linux_comm__init(void)
 
 bool linux_comm_fire_and_forget(const char* message)
 {
-    printf("fire_and_forget'ing %s\n", message);
     bool result = WriteLinuxDataport(message);
     if(!result)
     {
