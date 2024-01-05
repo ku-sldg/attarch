@@ -1,1 +1,1 @@
-{"appMap":[["P0","sigid"],["P0","cm_aspid"]],"asps":["cm_aspid","sigid"],"plc":"P0","policy":[],"pubKeyPlcs":["P0"],"targetPlcs":["P0","P1"],"uuidPlcs":["P0","P1"]}
+{"appMap":[["P1","sigid"],["P1","cm_aspid"]],"asps":["cm_aspid","sigid"],"plc":"P0","policy":[],"pubKeyPlcs":["P0"],"targetPlcs":["P0","P1"],"uuidPlcs":["P0","P1"]}
