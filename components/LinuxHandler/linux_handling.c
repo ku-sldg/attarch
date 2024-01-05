@@ -32,6 +32,7 @@ bool linux_comm_receive_request(char** response)
     WaitLinuxDataport();
     printf("Receiving...\n");
 
+    // We, the callee, allocate this memory. The caller must free it.
     *response = calloc(1, MESSAGE_SIZE);
     uint8_t* contents = calloc(1, MESSAGE_SIZE);
     bool result = ReadLinuxDataport(contents);
