@@ -44,18 +44,18 @@ bool introspective_measurement_appraise(int id, const char* evidence, char** app
     {
         if(AppraiseLinuxKernelMeasurement(evidence))
         {
-            *appraisal_report = strdup("PASS: All Evidence Digests Recognized");
+            *appraisal_report = strdup("PASS: All Evidence Digests Recognized\0");
         }
         else
         {
-            *appraisal_report = strdup("FAIL: Some Evidence Digests NOT Recognized");
+            *appraisal_report = strdup("FAIL: Some Evidence Digests NOT Recognized\0");
         }
         return true;
     }
     else
     {
         printf("That measurement id does not exist.\n");
-        *appraisal_report = strdup("FAIL: The requested measurement ID does not exist");
+        *appraisal_report = strdup("FAIL: The requested measurement ID does not exist\0");
         return false;
     }
 }
