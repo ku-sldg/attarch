@@ -12,6 +12,7 @@ void PrintDigest(uint8_t (*digest)[DIGEST_NUM_BYTES])
         //if(i>0&&i%16==0){printf("\n");}
         printf("%02X", ((uint8_t*)digest)[i]);
     }
+    printf("\n");
 }
 
 void ShaTest()
@@ -19,7 +20,7 @@ void ShaTest()
     uint8_t* output = malloc(DIGEST_NUM_BYTES);
     Hacl_Hash_SHA2_hash_512("abc", 3, output);
     printf("SHA512 of \"abc\" is:\n");
-    //PrintDigest(output);
+    PrintDigest(output);
     printf("\n");
     free(output);
 }
@@ -34,11 +35,11 @@ void HashExtend(uint8_t (*baseHash)[DIGEST_NUM_BYTES], uint8_t (*newHash)[DIGEST
     uint8_t* longHash = calloc(1, 2*DIGEST_NUM_BYTES);
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
     {
-        longHash[i] = baseHash[i];
+        longHash[i] = ((uint8_t*)baseHash)[i];
     }
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
     {
-        longHash[i+DIGEST_NUM_BYTES] = newHash[i];
+        longHash[i+DIGEST_NUM_BYTES] = ((uint8_t*)newHash)[i];
     }
     HashMeasure(longHash, 2*DIGEST_NUM_BYTES, baseHash);
     free(longHash);
