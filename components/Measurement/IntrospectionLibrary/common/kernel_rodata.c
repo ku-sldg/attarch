@@ -17,6 +17,14 @@ void MeasureKernelRodataPage(uint8_t* memory_device, uint8_t (*output_digest)[DI
     MeasureKernelRodataBytes(memory_device, output_digest, pageVaddr, INTRO_PAGE_SIZE);
 }
 
+void MeasureAndPrintPage(uint8_t* memory_device, uint64_t pageVaddr)
+{
+    uint8_t (*temp_digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    MeasureKernelRodataPage(memory_device, temp_digest, pageVaddr);
+    PrintDigest(temp_digest);
+    free(temp_digest);
+}
+
 void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     int numPagesMeasured = 0;
@@ -143,7 +151,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
 
     uint8_t (*temp_digestB)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     uint8_t (*digestArrayB)[NUM_INIT_PGD_PAGES * DIGEST_NUM_BYTES] = calloc(NUM_INIT_PGD_PAGES, DIGEST_NUM_BYTES);
-    printf("Measuring %d Init page global directory pages from %p to %p\n", NUM_INIT_PGD_PAGES, INTRO_INIT_PG_DIR_VADDR, INTRO_INIT_PG_END_VADDR);
+    printf("Measuring %d Init page global directory pages from %p to %p\n", NUM_INIT_PGD_PAGES, INTRO_INIT_PG_DIR_VADDR, INTRO_END_VADDR);
     for(int i=0; i<NUM_INIT_PGD_PAGES; i++)
     {
         uint64_t thisPageVaddr = (INTRO_INIT_PG_DIR_VADDR)+ i * INTRO_PAGE_SIZE;
@@ -165,16 +173,37 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
         /* In other words, we must not measure the 5% head or the 5% tail if we want a consistent measurement. */
         /* Specifically, even if we try to do a 4% head or a 4% tail, those measurements are not consistent. */
         /* Why is this? */
-        int start = 0 * (NUM_TEXT_PAGES / 20);
-        if(start <= i && i <= start + (NUM_TEXT_PAGES / 20))
+
+        /* I've narrowed it down somewhat. */
+        /* From 3% to 3.4% is inconsistent. */
+        /* From 3.4% to 3.8% is inconsistent. */
+        /* From 3.8% to 4.2% is inconsistent. */
+        /* From 4.6% to 5.0% is inconsistent. */
+
+        /* It's actually just these several pages. */
+
+        if(    i==0x05c 
+            || i==0x05d
+            || i==0x05f
+            || i==0x060
+            || i==0x06c
+            || i==0x083
+            || i==0x084
+            || i==0x087
+            || i==0x08a
+            || i==0xb31
+            || i==0xb33
+            || i==0xb34
+            || i==0xb36
+            || i==0xb38
+            || i==0xb39
+            || i==0xb3b
+            || i==0xb3f
+          )
         {
             continue;
         }
-        start = 19 * (NUM_TEXT_PAGES / 20);
-        if(start <= i && i <= start + (NUM_TEXT_PAGES / 20))
-        {
-            continue;
-        }
+
         numTextPagesActuallyMeasured++;
         uint64_t thisPageVaddr = (INTRO_TEXT_VADDR)+ i * INTRO_PAGE_SIZE;
         MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray2)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
