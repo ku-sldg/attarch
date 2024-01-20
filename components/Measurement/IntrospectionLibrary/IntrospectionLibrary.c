@@ -92,10 +92,17 @@ EvidenceBundle* MeasureLinuxKernel()
 
 bool AppraiseLinuxKernelMeasurement(const char* evidence)
 {
+    for(int i=0; i< sizeof(EvidenceBundle) * 5; i++)
+    {
+        printf("%c", evidence[i]);
+    }
+    printf("\n\n");
+
     EvidenceBundle* bundle = (EvidenceBundle*)evidence;
     bool result = true;
 
-    while(!IsBundleNullBundle(bundle))
+    /* while(!IsBundleNullBundle(bundle)) */
+    for(int i=0; i<5; i++)
     {
         PrintBundle(bundle);
         if(IsThisAKnownDigest(bundle->digest))
