@@ -20,7 +20,7 @@ bool linux_comm_fire_and_forget(const char* message)
     bool result = WriteLinuxDataport(message);
     if(!result)
     {
-        printf("Failed to Write the Linux Dataport\n");
+        printf("ERROR: Failed to Write the Linux Dataport\n");
         return false;
     }
     return true;
@@ -28,17 +28,17 @@ bool linux_comm_fire_and_forget(const char* message)
 
 bool linux_comm_receive_request(char** response)
 {
-    printf("Waiting to receive 4096 bytes of response...\n");
+    /* printf("Waiting to receive 4096 bytes of response...\n"); */
     WaitLinuxDataport();
-    printf("Receiving...\n");
+    /* printf("Receiving...\n"); */
 
-    // We, the callee, allocate this memory. The caller must free it.
+    /* We, the callee, allocate this memory. The caller must free it. */
     *response = calloc(1, MESSAGE_SIZE);
     uint8_t* contents = calloc(1, MESSAGE_SIZE);
     bool result = ReadLinuxDataport(contents);
     if(!result)
     {
-        printf("Failed to Read the Linux Dataport\n");
+        printf("ERROR: Failed to Read the Linux Dataport\n");
         return false;
     }
     for(int i=0; i<4096; i++)

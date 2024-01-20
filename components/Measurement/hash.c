@@ -12,7 +12,6 @@ void PrintDigest(uint8_t (*digest)[DIGEST_NUM_BYTES])
         //if(i>0&&i%16==0){printf("\n");}
         printf("%02X", ((uint8_t*)digest)[i]);
     }
-    printf("\n");
 }
 
 void ShaTest()
