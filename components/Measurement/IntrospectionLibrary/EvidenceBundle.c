@@ -172,7 +172,6 @@ int GetCollectionLength(EvidenceBundle *collection, int maxSize) {
         }
         else if(IsBundleNullBundle(&collection[i]))
         {
-            count++;
             return count;
         }
         else

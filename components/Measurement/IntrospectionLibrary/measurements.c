@@ -54,13 +54,15 @@ EvidenceBundle* InspectTasks(uint8_t* memory_device)
     return NULL;
 }
 
-EvidenceBundle InspectRodata(uint8_t* memory_device)
+EvidenceBundle* InspectRodata(uint8_t* memory_device)
 {
+    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
     uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     MeasureKernelRodata(memory_device, kernelRodataDigest);
     const char rodataBundleName[56] = "Kernel Rodata";
     EvidenceBundle rodataBundle = CreateBundle(RODATA_TYPE, rodataBundleName, kernelRodataDigest);
+    PackBundleSingle(evidence, 1, &rodataBundle);
     free(kernelRodataDigest);
-    return rodataBundle;
+    return evidence;
 }
 

@@ -16,7 +16,7 @@
 
 // render our convenient digest hex strings into usable form
 // why is this 129?
-void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
+void HexToByteString(const char (*input_digest)[128], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
 // copy our known digests into the argument passed in.
 // return the number of known digests

@@ -44,12 +44,12 @@ EvidenceBundle* MeasureLinuxKernel()
 
     // Execute the measurements
     // we have to free these
-    EvidenceBundle rodataEvidence = InspectRodata((uint8_t*)memdev);
+    EvidenceBundle* rodataEvidence = InspectRodata((uint8_t*)memdev);
     EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
     EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
 
     printf("Here is rodata evidence:\n");
-    PrintBundle(&rodataEvidence);
+    PrintBundle(rodataEvidence);
 
     // Count the evidence entries so we know how much space we need.
     int numEvidenceEntries = 0;
@@ -67,12 +67,16 @@ EvidenceBundle* MeasureLinuxKernel()
     EvidenceBundle* evidenceCollection = calloc(numEvidenceEntries, sizeof(EvidenceBundle));
 
     // pack the evidence into a single collection
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, &rodataEvidence);
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, rodataEvidence);
     PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
     PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
 
     // free the extra bundles
+    if(rodataEvidence != NULL)
+    {
+        free(rodataEvidence);
+    }
     if(modulesEvidence != NULL)
     {
         free(modulesEvidence);
@@ -82,6 +86,7 @@ EvidenceBundle* MeasureLinuxKernel()
         free(tasksEvidence);
     }
     
+    PrintCollection(evidenceCollection, numEvidenceEntries);
     return evidenceCollection;
 }
 
@@ -92,14 +97,15 @@ bool AppraiseLinuxKernelMeasurement(const char* evidence)
 
     while(!IsBundleNullBundle(bundle))
     {
-        printf("Evidence Type: %s\nEvidence Name: %s\n", bundle->type, bundle->name);
+        PrintBundle(bundle);
         if(IsThisAKnownDigest(bundle->digest))
         {
             printf("Digest Recognized.\n");
         }
         else
         {
-            printf("Digest NOT Recognized.\n");
+            printf("Digest NOT Recognized:\n");
+            RenderDigestDeclaration(bundle->name, bundle->digest);
             result = false;
         }
         printf("\n");
