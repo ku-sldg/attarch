@@ -21,12 +21,12 @@ bool introspective_measurement_request(int id, char** evidence)
     if(id==0)
     {
         EvidenceBundle* resultsBundle = MeasureLinuxKernel();
-        // Can I free this? ... at some point?
-        // I need to free it on the C receiving end.
-        // The Caller frees. The Callee merely provides
-
         int resultsNum = GetCollectionLength(resultsBundle, 100); //TODO find a better supremum
         ExportToByteString(resultsBundle, resultsNum, evidence);
+        PrintCollection(resultsBundle, resultsNum);
+        free(resultsBundle);
+        printf("doing with %d\n\n", resultsNum);
+        PrintCollection(((EvidenceBundle*)(*evidence)), 3);
         return true;
     }
     else
