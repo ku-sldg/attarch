@@ -24,7 +24,7 @@ def process_map_file(filename):
             parts = line.split()
             if len(parts) == 3:
                 symbol = parts[2]
-                if symbol in ["__start_rodata", "__end_rodata", "_text", "_etext", "__hyp_rodata_start", "__hyp_rodata_end", "modules", "init_task", "__start_ro_after_init", "__end_ro_after_init", "__entry_tramp_text_start", "__entry_tramp_text_end", "__hibernate_exit_text_start", "__hibernate_exit_text_end", "__relocate_new_kernel_start", "__relocate_new_kernel_end", "idmap_pg_dir", "tramp_pg_dir", "reserved_pg_dir", "swapper_pg_dir", "init_pg_dir", "init_pg_end", "_end"]:
+                if symbol in ["__start_rodata", "__end_rodata", "_text", "_etext", "__hyp_rodata_start", "__hyp_rodata_end", "modules", "init_task", "__start_ro_after_init", "__end_ro_after_init", "__entry_tramp_text_start", "__entry_tramp_text_end", "__hibernate_exit_text_start", "__hibernate_exit_text_end", "__relocate_new_kernel_start", "__relocate_new_kernel_end", "idmap_pg_dir", "tramp_pg_dir", "reserved_pg_dir", "swapper_pg_dir", "__init_begin", "__init_end", "_data", "_edata", "__bss_start", "__bss_stop", "init_pg_dir", "init_pg_end", "_end"]:
                     print(f"#define INTRO_{symbol.lstrip('_').upper()}_VADDR 0x{parts[0]}")
                 # the following two conditions account for linux 4.9
                 if symbol in ["__start_data_ro_after_init"]:
