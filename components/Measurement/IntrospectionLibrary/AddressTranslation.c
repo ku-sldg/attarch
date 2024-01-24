@@ -61,23 +61,27 @@ bool is_linear_map_address(uint64_t vaddr)
     return ((vaddr ^ PAGE_OFFSET) < (PAGE_END - PAGE_OFFSET));
 }
 
-
 uint64_t intro_virt_to_phys(uint64_t virtaddr)
 {
     uint64_t ret;
     if(is_linear_map_address(virtaddr))
     {
-        /* printf("linear marty\n"); */
+        /* printf("canonical linear map\n"); */
         ret = ( (virtaddr & ~PAGE_OFFSET) );
     }
-    else // this is a bit funny, no?
+    else
     {
-        /* printf("nonlinear marty\n"); */
+        /* printf("kernel image linear map\n"); */
         uint64_t kimage_vaddr = 0xFFFF800008000000;
         ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
     }
     /* printf("virt_to_phys transformed %llx into %llx\n", virtaddr, ret); */
     return ret;
+}
+
+uint64_t sysmap_virt_to_phys(uint64_t virtaddr)
+{
+    return intro_virt_to_phys(virtaddr + 0x80000);
 }
 
 // pgd should be the physical address of the page global directory structure
@@ -177,20 +181,9 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
     /* printf("translating swapper pgd\n"); */
-    uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR + 0x80000);
+    uint64_t swapper_pgd_table_paddr = sysmap_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR);
     /* char* PGDTablePtr = (char*)swapper_pgd_table_paddr; */
     /* printf("swapper pgd translated. actually walking table now\n"); */
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr, swapper_pgd_table_paddr);
-}
-
-uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
-{
-    if( PAGE_OFFSET < vaddr )
-    {
-        /* printf("passing to virt_to_phys\n"); */
-        return intro_virt_to_phys(vaddr);
-    }
-    /* printf("walking table\n"); */
-    return TranslationTableWalk(memory_device, vaddr);
 }
 

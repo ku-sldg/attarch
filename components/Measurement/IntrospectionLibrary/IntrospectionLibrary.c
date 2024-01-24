@@ -48,8 +48,8 @@ EvidenceBundle* MeasureLinuxKernel()
     EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
     EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
 
-    printf("Here is rodata evidence:\n");
-    PrintBundle(rodataEvidence);
+    /* printf("Here is rodata evidence:\n"); */
+    /* PrintBundle(rodataEvidence); */
 
     // Count the evidence entries so we know how much space we need.
     int numEvidenceEntries = 0;

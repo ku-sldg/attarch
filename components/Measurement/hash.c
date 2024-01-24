@@ -56,14 +56,4 @@ bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
     return true;
 }
 
-void MeasureUserPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
-{
-    uint64_t pagePaddr = TranslateVaddr(memory_device, pageVaddr);
-    /* for(int i=0; i<4096; i++) */
-    /* { */
-    /*     printf("%c", ((char*)memory_device+pagePaddr)[i]); */
-    /* } */
-    /* printf("\n\n"); */
-    HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
-}
 

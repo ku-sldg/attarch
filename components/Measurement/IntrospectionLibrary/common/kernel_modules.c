@@ -90,7 +90,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
     {
         printf("Translating modules list_head vaddr\n");
     }
-    uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR + 0x80000);
+    uint64_t list_head_paddr = sysmap_virt_to_phys((uint64_t)INTRO_MODULES_VADDR);
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
     if(MKMDebug)
     {

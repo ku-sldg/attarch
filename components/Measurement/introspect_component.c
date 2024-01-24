@@ -23,10 +23,10 @@ bool introspective_measurement_request(int id, char** evidence)
         EvidenceBundle* resultsBundle = MeasureLinuxKernel();
         int resultsNum = GetCollectionLength(resultsBundle, 100); //TODO find a better supremum
         ExportToByteString(resultsBundle, resultsNum, evidence);
-        PrintCollection(resultsBundle, resultsNum);
+        /* PrintCollection(resultsBundle, resultsNum); */
         free(resultsBundle);
-        printf("doing with %d\n\n", resultsNum);
-        PrintCollection(((EvidenceBundle*)(*evidence)), 3);
+        /* printf("doing with %d\n\n", resultsNum); */
+        /* PrintCollection(((EvidenceBundle*)(*evidence)), 3); */
         return true;
     }
     else

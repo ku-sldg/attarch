@@ -8,7 +8,7 @@
 
 void MeasureKernelRodataBytes(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t startVaddr, uint64_t num_bytes)
 {
-    uint64_t pagePaddr = TranslateVaddr(memory_device, startVaddr);
+    uint64_t pagePaddr = sysmap_virt_to_phys(startVaddr);
     HashMeasure( ((char*)memory_device+pagePaddr), num_bytes, output_digest );
 }
 
@@ -69,7 +69,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
         }
         numTextPagesMeasured++;
         uint64_t thisPageVaddr = (INTRO_TEXT_VADDR)+ i * INTRO_PAGE_SIZE;
-        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray2)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray2)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     printf("Measured %d text pages and skipped %d pages between %p and %p\n", numTextPagesMeasured, numTextPagesSkipped, INTRO_TEXT_VADDR, INTRO_ETEXT_VADDR);
     HashMeasure((uint8_t*)digestArray2, NUM_TEXT_PAGES * DIGEST_NUM_BYTES, temp_digest2);
@@ -96,7 +96,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
             continue;
         }
         numRodataPagesMeasured++;
-        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     printf("\nMeasured %d rodata pages and skipped %d pages between %p and %p\n", numRodataPagesMeasured, numRodataPagesSkipped, INTRO_START_RODATA_VADDR, INTRO_END_RODATA_VADDR);
     HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, temp_digest);
@@ -121,7 +121,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
         }
         numPagesMeasured++;
         uint64_t thisPageVaddr = (INTRO_HYP_RODATA_START_VADDR)+ i * INTRO_PAGE_SIZE;
-        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray3)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray3)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     HashMeasure((uint8_t*)digestArray3, NUM_HYP_RODATA_PAGES * DIGEST_NUM_BYTES, temp_digest3);
     free(digestArray3);
@@ -135,7 +135,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     for(int i=0; i<NUM_TRAMP_ENTRY_TEXT_PAGES; i++)
     {
         uint64_t thisPageVaddr = (INTRO_ENTRY_TRAMP_TEXT_START_VADDR)+ i * INTRO_PAGE_SIZE;
-        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray4)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray4)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     HashMeasure((uint8_t*)digestArray4, NUM_TRAMP_ENTRY_TEXT_PAGES * DIGEST_NUM_BYTES, temp_digest4);
     free(digestArray4);
@@ -153,7 +153,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     printf("Attempting to measure hibernate_exit text together with the relocate_new_kernel text as a single page.\n");
     uint64_t hibernateStartVaddr = INTRO_HIBERNATE_EXIT_TEXT_START_VADDR;
     uint64_t hibernateRelocatePageVaddr = RoundDownToCurrentPage(hibernateStartVaddr);
-    MeasureKernelRodataPage((char*)memory_device, temp_digest5, hibernateStartVaddr + 0x80000);
+    MeasureKernelRodataPage((char*)memory_device, temp_digest5, hibernateStartVaddr);
     HashExtend(output_digest, temp_digest5);
     PrintDigest(temp_digest5);
     free(temp_digest5);
@@ -163,7 +163,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     /* uint64_t num_hibernate_bytes = INTRO_HIBERNATE_EXIT_TEXT_END_VADDR - INTRO_HIBERNATE_EXIT_TEXT_START_VADDR; */
     /* printf("Measuring %d hibernate_exit text bytes starting at %p\n", num_hibernate_bytes, INTRO_HIBERNATE_EXIT_TEXT_START_VADDR); */
     /* uint64_t hibernateStartVaddr = INTRO_HIBERNATE_EXIT_TEXT_START_VADDR; */
-    /* MeasureKernelRodataBytes((char*)memory_device, temp_digest5, hibernateStartVaddr + 0x80000, num_hibernate_bytes); */
+    /* MeasureKernelRodataBytes((char*)memory_device, temp_digest5, hibernateStartVaddr, num_hibernate_bytes); */
     /* HashExtend(output_digest, temp_digest5); */
     /* PrintDigest(temp_digest5); */
     /* free(temp_digest5); */
@@ -173,7 +173,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     /* uint64_t num_relocate_kernel_bytes = INTRO_RELOCATE_NEW_KERNEL_END_VADDR - INTRO_RELOCATE_NEW_KERNEL_START_VADDR; */
     /* printf("Measuring %d relocate_kernel text bytes starting at %p\n", num_relocate_kernel_bytes, INTRO_RELOCATE_NEW_KERNEL_START_VADDR); */
     /* uint64_t relocateKernelVaddr = (INTRO_RELOCATE_NEW_KERNEL_START_VADDR); */
-    /* MeasureKernelRodataBytes((char*)memory_device, temp_digest6, relocateKernelVaddr + 0x80000, num_relocate_kernel_bytes); */
+    /* MeasureKernelRodataBytes((char*)memory_device, temp_digest6, relocateKernelVaddr, num_relocate_kernel_bytes); */
     /* HashExtend(output_digest, temp_digest6); */
     /* PrintDigest(temp_digest6); */
     /* free(temp_digest6); */
@@ -181,7 +181,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
 
     uint8_t (*temp_digest7)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     printf("\nMeasuring the whole page of the Identity Map page global directory starting at %p\n", INTRO_IDMAP_PG_DIR_VADDR);
-    MeasureKernelRodataPage((char*)memory_device, temp_digest7, INTRO_IDMAP_PG_DIR_VADDR + 0x80000);
+    MeasureKernelRodataPage((char*)memory_device, temp_digest7, INTRO_IDMAP_PG_DIR_VADDR);
     HashExtend(output_digest, temp_digest7);
     PrintDigest(temp_digest7);
     free(temp_digest7);
@@ -189,7 +189,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
 
     uint8_t (*temp_digest8)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     printf("\nMeasuring the whole page of the Trampoline page global directory starting at %p\n", INTRO_TRAMP_PG_DIR_VADDR);
-    MeasureKernelRodataPage((char*)memory_device, temp_digest8, INTRO_TRAMP_PG_DIR_VADDR + 0x80000);
+    MeasureKernelRodataPage((char*)memory_device, temp_digest8, INTRO_TRAMP_PG_DIR_VADDR);
     HashExtend(output_digest, temp_digest8);
     PrintDigest(temp_digest8);
     free(temp_digest8);
@@ -197,7 +197,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
 
     uint8_t (*temp_digest9)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     printf("\nMeasuring the whole page of the Reserved page global directory starting at %p\n", INTRO_RESERVED_PG_DIR_VADDR);
-    MeasureKernelRodataPage((char*)memory_device, temp_digest9, INTRO_RESERVED_PG_DIR_VADDR + 0x80000);
+    MeasureKernelRodataPage((char*)memory_device, temp_digest9, INTRO_RESERVED_PG_DIR_VADDR);
     HashExtend(output_digest, temp_digest9);
     PrintDigest(temp_digest9);
     free(temp_digest9);
@@ -205,7 +205,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
 
     uint8_t (*temp_digestA)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     printf("\nMeasuring the whole page of the Swapper page global directory starting at %p\n", INTRO_SWAPPER_PG_DIR_VADDR);
-    MeasureKernelRodataPage((char*)memory_device, temp_digestA, INTRO_SWAPPER_PG_DIR_VADDR + 0x80000);
+    MeasureKernelRodataPage((char*)memory_device, temp_digestA, INTRO_SWAPPER_PG_DIR_VADDR);
     HashExtend(output_digest, temp_digestA);
     PrintDigest(temp_digestA);
     free(temp_digestA);
@@ -228,7 +228,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     for(int i=0; i<NUM_INIT_PGD_PAGES; i++)
     {
         uint64_t thisPageVaddr = (INTRO_INIT_PG_DIR_VADDR)+ i * INTRO_PAGE_SIZE;
-        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArrayB)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
+        MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArrayB)[i*DIGEST_NUM_BYTES]), thisPageVaddr);
     }
     HashMeasure((uint8_t*)digestArrayB, NUM_INIT_PGD_PAGES * DIGEST_NUM_BYTES, temp_digestB);
     free(digestArrayB);
