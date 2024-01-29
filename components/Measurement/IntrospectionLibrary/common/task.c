@@ -313,14 +313,10 @@ void CollectTaskMeasurement(uint8_t* memory_device, TaskMeasurement* msmt, uint6
     GetPIDs(memory_device, taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(memory_device, taskptr, &msmt->cred);
 
-    // TODO explain this unconditional block
-    /* if(strcmp(&msmt->name, "init")==0) */
-    {
-        bool isKernelThread = msmt->parentPid == 2;
-        DebugLog("before interpret memory\n");
-        InterpretMemory(memory_device, msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
-        DebugLog("after\n");
-    }
+    bool isKernelThread = msmt->parentPid == 2;
+    DebugLog("before interpret memory\n");
+    InterpretMemory(memory_device, msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
+    DebugLog("after\n");
     return;
 }
 
