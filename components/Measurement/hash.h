@@ -5,8 +5,6 @@
 #ifndef MEASURE_HASH_H
 #define MEASURE_HASH_H
 
-#include <string.h>
-#include <stdlib.h>
 #include <Hacl_Hash.h>
 #include "configurations/include.h"
 
