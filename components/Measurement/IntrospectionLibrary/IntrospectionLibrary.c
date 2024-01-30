@@ -6,13 +6,6 @@
 
 #define INTRO_KIMAGE_VADDR 0xffff800008000000
 
-#include <string.h>
-#include <camkes.h>
-#include <stdarg.h>
-
-#include "../hash.h"
-#include "../KnownDigests.h"
-#include "../configurations/include.h"
 #include "AddressTranslation.c"
 #include "common/common.c"
 #include "measurementAndAppraisal.c"

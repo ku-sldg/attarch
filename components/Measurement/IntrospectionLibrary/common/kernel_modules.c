@@ -39,9 +39,10 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
     }
 
     char msg[13] = "Found Module ";
-    introLog(3, msg, (*name), "\n");
+    printf("Found Module: %s\n", *name);
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, (int)inputAddress);
+    printf("Getting module layout\n");
     uint64_t basePtr = TranslationTableWalk(memory_device, thisModuleLayout.base);
 
     if(IKMDebug)

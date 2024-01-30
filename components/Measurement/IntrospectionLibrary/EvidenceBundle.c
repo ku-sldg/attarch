@@ -4,10 +4,6 @@
 ** 13 October 2023
 */
 
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
 #include "EvidenceBundle.h"
 
 /*
@@ -21,17 +17,25 @@ static EvidenceBundle nullEvidenceBundle = {
     .digest = {0}                      // The bytes in 'digest' will be automatically set to 0
 };
 
+bool memoryCompare(uint8_t* first, uint8_t* second, int numBytes)
+{
+    for(int i=0; i<numBytes; i++)
+    {
+        if(first[i] != second[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool IsBundleNullBundle(EvidenceBundle* bundle)
 {
     if (bundle == NULL)
     {
         return false;
     }
-    if (memcmp(bundle->type, "\1\1\1\1\1\1\1\1", 8) == 0)
-    {
-        return true;
-    }
-    return false;
+    return memoryCompare(bundle->type, "\1\1\1\1\1\1\1\1", 8);
 }
 
 /**
@@ -56,19 +60,19 @@ bool IsBundleEmpty(EvidenceBundle *bundle, bool logerror) {
         }
     }
 
-    if (memcmp(bundle->type, "\0\0\0\0\0\0\0\0", 8) == 0) {
+    if (memoryCompare(bundle->type, "\0\0\0\0\0\0\0\0", 8)) {
         myprintf("Type is empty.\n");
     } else {
         isEmpty = false;
     }
 
-    if (memcmp(bundle->name, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 56) == 0) {
+    if (memoryCompare(bundle->name, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 56)) {
         myprintf("Name is empty.\n");
     } else {
         isEmpty = false;
     }
 
-    if (memcmp(bundle->digest, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64) == 0) {
+    if (memoryCompare(bundle->digest, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64)) {
         myprintf("Digest is empty.\n");
     } else {
         isEmpty = false;
@@ -88,9 +92,18 @@ bool IsBundleEmpty(EvidenceBundle *bundle, bool logerror) {
 EvidenceBundle CreateBundle(const char (*type)[8], const char (*name)[56], const char (*digest)[64]) {
     EvidenceBundle bundle;
 
-    memcpy(bundle.type, *type, 8);
-    memcpy(bundle.name, *name, 56);
-    memcpy(bundle.digest, *digest, 64);
+    for(int i=0; i<8; i++)
+    {
+        bundle.type[i] = (*type)[i];
+    }
+    for(int i=0; i<56; i++)
+    {
+        bundle.name[i] = (*name)[i];
+    }
+    for(int i=0; i<64; i++)
+    {
+        bundle.digest[i] = (*digest)[i];
+    }
 
     if (IsBundleEmpty(&bundle, true)) {
         printf("CreateBundle Error: Some fields are empty.\n");
@@ -230,7 +243,10 @@ void ExportToByteString(EvidenceBundle* list, int list_size, char** evidence) {
 
     // Copy each EvidenceBundle into the byte string
     for (int i = 0; i < list_size; i++) {
-        memcpy(&(*evidence)[i * bundle_size], &list[i], bundle_size);
+        for(int j=0; j< bundle_size; j++)
+        {
+            (*evidence)[i * bundle_size + j] = ((uint8_t*)(&(list[i])))[j];
+        }
     }
 
     // Null terminate the byte string

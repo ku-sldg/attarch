@@ -9,13 +9,7 @@
 
 #include "struct_interp.c"
 #include "elf_header.c"
-#include "../hash.h"
 #include "maple_tree.c"
-
-/* C program for array implementation of queue */
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 void DebugLog(char* msg)
 {
@@ -120,16 +114,7 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     sprintf(parentPid, "%ld", msmt->parentPid);
     char suid[10];
     sprintf(suid, "%d", msmt->cred.suid);
-    introLog(9,
-            "Task Evidence:\n\tName: ",
-            msmt->name,
-            "\n\tPID: ",
-            &myPid,
-            "\n\tParent PID: ",
-            &parentPid,
-            "\n\tSUID: ",
-            &suid,
-            "\n\tRead-only Data SHA512 Digest:\n");
+    printf("Task Evidence:\n\tName: %s\n\tPID: %s\n\tParent PID: %s\n\tSUID: %s\n\t Read-only Data Digest:\n", msmt->name, &myPid, &parentPid, &suid);
     PrintDigest((uint8_t (*) [DIGEST_NUM_BYTES])(msmt->rodataDigest));
     printf("\n");
 }

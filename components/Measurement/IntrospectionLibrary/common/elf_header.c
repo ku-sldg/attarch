@@ -134,18 +134,6 @@ struct elf64header CollectElfHeaderData(uint8_t* memory_device, uint64_t elfAddr
     return head;
 }
 
-bool IsThisTheHeaderName(uint8_t* memory_device, struct elf64header* elf, struct elf64shdr* shdr, uint64_t shstrtabPtr, char* nameGuess)
-{
-    if(shstrtabPtr+(shdr->sh_name) < RAM_SIZE)
-    {
-        char* shName = ((char*)memory_device+shstrtabPtr+(shdr->sh_name));
-        char shNameSubstring[strlen(nameGuess)];
-        memcpy(&shNameSubstring, shName, strlen(nameGuess));
-        return(strcmp(shNameSubstring, nameGuess)==0);
-    }
-    return false;
-}
-
 uint64_t GetHeaderName(struct elf64shdr* shdr, uint64_t shstrtabPtr)
 {
     return shstrtabPtr+(shdr->sh_name);
