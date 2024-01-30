@@ -73,7 +73,7 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
     {
         /* printf("kernel image linear map\n"); */
         uint64_t kimage_vaddr = 0xFFFF800008000000;
-        ret = virtaddr > kimage_vaddr ? (virtaddr - kimage_vaddr) : virtaddr;
+        ret = virtaddr - kimage_vaddr;
     }
     /* printf("virt_to_phys transformed %llx into %llx\n", virtaddr, ret); */
     return ret;
