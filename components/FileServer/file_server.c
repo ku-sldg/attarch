@@ -32,7 +32,8 @@ void file_read__init(void)
 ** "file_read_query." This helps ensure the caller has allocated the correct amount
 ** of mmeory for this "file_read" procedure. The caller must allocate the
 ** memory because we cannot clean it up here after we give it away, lest the
-** caller lose access prematurely.
+** caller lose access prematurely. We check the size of the file using 
+** file_read_query here as well, just to be safe.
 **
 ** RETURN: bool: "if the file_read was successful"
 ** The only cause for failure should be if the input string is not matched in
@@ -41,12 +42,20 @@ void file_read__init(void)
 */
 bool file_read_request(const char* file_path, char** file_contents, int size)
 {
-    char* file_read_result = read_file_as_string(file_path);
+    const char* file_read_result = read_file_as_string(file_path);
     if(file_read_result == NULL)
     {
         return false;
     }
-    for(int i=0; i<size; i++)
+
+    int inspectedSize = 0;
+    bool query_result = file_read_query(file_path, &inspectedSize);
+    if(!query_result)
+    {
+        return false;
+    }
+
+    for(int i=0; i<size && i<inspectedSize; i++)
     {
         (*file_contents)[i] = file_read_result[i];
     }

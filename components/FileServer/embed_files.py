@@ -27,7 +27,7 @@ def process_file(file_path, c_file):
     array_name = sanitize_file_name(file_path)
 
     # Add array definition to the .c file content
-    c_file_content = f'char {array_name}[] = {{{char_list}}};\n\n'
+    c_file_content = f'const char {array_name}[] = {{{char_list}}};\n\n'
     c_file.write(c_file_content)
     
     return file_path, array_name
@@ -52,7 +52,7 @@ def main():
 #include <stddef.h>
 #include <string.h>
 
-char* read_file_as_string(const char* name);
+const char* read_file_as_string(const char* name);
 int query_size(const char* name);
 
 #endif  // FILESYSTEM_H
@@ -61,7 +61,7 @@ int query_size(const char* name);
         f.write(master_header_content)
 
     # Append the `read_file_as_string` function to the FileSystem.c file
-    read_function_content = "\n\nchar* read_file_as_string(const char* name) {\n"
+    read_function_content = "\n\nconst char* read_file_as_string(const char* name) {\n"
     for original, array_name in file_mappings:
         read_function_content += f'    if (strcmp(name, "{original}") == 0) return {array_name};\n'
     read_function_content += "    return NULL;\n}"
