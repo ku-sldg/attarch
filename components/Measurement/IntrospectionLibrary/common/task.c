@@ -22,6 +22,10 @@ void DebugLog(char* msg)
 /* So we think this cred struct might have some useful bits
 ** The executor and owner IDs could be collected to ensure
 ** every task was started and is currently owned in a predictable way.
+** TODO
+** NOTE: in the Linux Standard Base Core - Generic 5.0,
+** UIDs 0-99 are reserved for the system.
+** This and other specifications can be found in the LSB, presumably
 */
 struct cred {
     int usage;
