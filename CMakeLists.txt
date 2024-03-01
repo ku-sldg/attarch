@@ -89,6 +89,30 @@ ${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.307/kernel/dr
 # END SECTION
 # ==================================================================================================
 
+# ==================================================================================================
+# SECTION build linux user apps
+# ==================================================================================================
+
+ExternalProject_Add(
+    dataport-app
+    URL
+    file:///${CMAKE_CURRENT_SOURCE_DIR}/dataport_src
+    BINARY_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/dataport_src
+    INSTALL_COMMAND
+    ""
+    BUILD_ALWAYS
+    ON
+    EXCLUDE_FROM_ALL
+    CMAKE_ARGS
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+)
+
+# Assuming AddExternalProjFilesToOverlay is a macro or function you've defined elsewhere
+AddExternalProjFilesToOverlay(dataport-app
+    ${CMAKE_CURRENT_BINARY_DIR} overlay "usr/bin"
+    FILES dataport_src/dataportAPI)
+
 # Cross-compile am-cakeml app "vm_client" for the VM
 ExternalProject_Add(
     useram
@@ -140,6 +164,10 @@ AddExternalProjFilesToOverlay(
     FILES
     introspect
 )
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
+
 
 # Add script to initialise dataport module
 AddFileToOverlayDir(

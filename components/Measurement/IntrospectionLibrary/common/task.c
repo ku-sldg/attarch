@@ -26,6 +26,7 @@ void DebugLog(char* msg)
 ** NOTE: in the Linux Standard Base Core - Generic 5.0,
 ** UIDs 0-99 are reserved for the system.
 ** This and other specifications can be found in the LSB, presumably
+** https://refspecs.linuxfoundation.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic.pdf
 */
 struct cred {
     int usage;

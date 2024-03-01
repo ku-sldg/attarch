@@ -65,3 +65,36 @@ bool introspective_measurement_appraise(int id, const char* evidence, char** app
     }
 }
 
+void readem(uint64_t location)
+{
+    for(int i=0; i<8; i++)
+    {
+        printf("%02X", ((uint8_t*)memdev)[location + i]);
+    }
+    printf("\n");
+}
+
+bool hypervisor_assign_pointer(const char* location, const char* value)
+{
+    uint64_t loc = ((uint64_t*)location)[0];
+    uint64_t val = ((uint64_t*)value)[0];
+    loc = loc - RAM_BASE;
+    if(RAM_SIZE < loc)
+    {
+        printf("location is %08X\n", loc);
+        printf("ram_size is %08X\n", RAM_SIZE);
+        printf("failing\n");
+        return false;
+    }
+    printf("before\n");
+    readem(loc);
+    printf("At location %08X writing %08X\n", loc, val);
+    /* ((uint64_t*)(((uint8_t*)memdev)[loc]))[0] = val; */
+    for(int i=0; i<8; i++)
+    {
+        ((uint8_t*)memdev)[loc+i] = ((uint8_t*)val)[i];//val;
+    }
+    printf("after\n");
+    readem(loc);
+    return true;
+}
