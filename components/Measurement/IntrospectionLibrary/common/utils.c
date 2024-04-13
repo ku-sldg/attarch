@@ -5,20 +5,6 @@
  * 2 May 2023
  */
 
-void introLog(int args, ...)
-{
-    if(true)
-    {
-        printf("DEBUG: Introspection: ");
-        va_list ptr;
-        va_start(ptr, args);
-        for(int i=0; i<args; i++)
-        {
-            printf("%s", va_arg(ptr,char*));
-        }
-    }
-}
-
 void introspectScan(uint8_t* memory_device, int* head, int size, char* name)
 {
     printf("%s: ", name);

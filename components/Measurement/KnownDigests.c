@@ -5,7 +5,7 @@
 
 #include "KnownDigests.h"
 
-void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void HexToByteString(const char (*input_digest)[128], uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     int value;
     for(int i=0; i < DIGEST_NUM_BYTES && sscanf(((char*)input_digest) + i * 2, "%2x", &value); i++)
@@ -47,7 +47,7 @@ void RenderDigestDeclaration(char (*name)[INTRO_MODULE_NAME_LEN], uint8_t (*dige
     printf("\tconst char %s[] = \"", (*name));
     PrintDigest(digest);        
     printf("\";\n");
-    printf("\tHexToByteString(&%s, &digests[DIGEST_NUM_BYTES*(numDigests++)]);\n", (*name));
+    printf("\tHexToByteString(&%s, &(((uint8_t*)digests)[DIGEST_NUM_BYTES*(numDigests++)]));\n", (*name));
 }
 
 

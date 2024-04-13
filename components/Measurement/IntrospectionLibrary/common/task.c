@@ -9,13 +9,7 @@
 
 #include "struct_interp.c"
 #include "elf_header.c"
-#include "../hash.h"
 #include "maple_tree.c"
-
-/* C program for array implementation of queue */
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 void DebugLog(char* msg)
 {
@@ -28,6 +22,11 @@ void DebugLog(char* msg)
 /* So we think this cred struct might have some useful bits
 ** The executor and owner IDs could be collected to ensure
 ** every task was started and is currently owned in a predictable way.
+** TODO
+** NOTE: in the Linux Standard Base Core - Generic 5.0,
+** UIDs 0-99 are reserved for the system.
+** This and other specifications can be found in the LSB, presumably
+** https://refspecs.linuxfoundation.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic.pdf
 */
 struct cred {
     int usage;
@@ -120,16 +119,7 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     sprintf(parentPid, "%ld", msmt->parentPid);
     char suid[10];
     sprintf(suid, "%d", msmt->cred.suid);
-    introLog(9,
-            "Task Evidence:\n\tName: ",
-            msmt->name,
-            "\n\tPID: ",
-            &myPid,
-            "\n\tParent PID: ",
-            &parentPid,
-            "\n\tSUID: ",
-            &suid,
-            "\n\tRead-only Data SHA512 Digest:\n");
+    printf("Task Evidence:\n\tName: %s\n\tPID: %s\n\tParent PID: %s\n\tSUID: %s\n\t Read-only Data Digest:\n", msmt->name, &myPid, &parentPid, &suid);
     PrintDigest((uint8_t (*) [DIGEST_NUM_BYTES])(msmt->rodataDigest));
     printf("\n");
 }
@@ -172,6 +162,7 @@ bool ValidateTaskStruct(uint8_t* memory_device, uint64_t task)
 
 uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
 {
+    DebugLog("GetPgdPaddrFromTask\n");
     uint64_t mmAddr = ((uint64_t*)((char*)memory_device+taskPaddr+1208))[0];
     if(mmAddr==0)
     {
@@ -181,9 +172,10 @@ uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
             return 0;
         }
     }
-    uint64_t mmPaddr = TranslateVaddr(memory_device, mmAddr);
+    uint64_t mmPaddr = intro_virt_to_phys(mmAddr);
     uint64_t pgdVaddr = ((uint64_t*)((char*)memory_device+mmPaddr+56))[0];
-    uint64_t pgdPaddr = TranslateVaddr(memory_device, pgdVaddr);
+    DebugLog("GetPgdPaddrFromTask part 2\n");
+    uint64_t pgdPaddr = intro_virt_to_phys(pgdVaddr);
     return pgdPaddr;
 }
 
@@ -198,6 +190,7 @@ uint64_t GetPgdPaddrFromTask(uint8_t* memory_device, uint64_t taskPaddr)
 */
 void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
+    DebugLog("InterpretMemory\n");
     uint64_t pgdPaddr = GetPgdPaddrFromTask(memory_device, task);
     uint64_t mmVaddr = ((uint64_t*)((char*)memory_device+task+1208))[0];
     if(mmVaddr==0) // If there is no "mm," then check for an "active_mm."
@@ -208,7 +201,7 @@ void InterpretMemory(uint8_t* memory_device, uint64_t task, uint8_t (*rodataDige
             return; // if there's no mm at all...
         }
     }
-    uint64_t mmPaddr = TranslateVaddr(memory_device, mmVaddr);
+    uint64_t mmPaddr = intro_virt_to_phys(mmVaddr);
     uint64_t maple_tree_struct_paddr = mmPaddr;
     StartDumpProcedure(memory_device, maple_tree_struct_paddr, pgdPaddr, rodataDigest);
 }
@@ -231,7 +224,7 @@ void GetPIDs(uint8_t* memory_device, uint64_t task, int* myPid, int* parentPid)
     GetPID(memory_device, task, myPid);
     uint64_t parentAddrLoc = task + 1368; //the offset of real_parent in task_struct
     uint64_t parentAddr = ((uint64_t*)((char*)memory_device+parentAddrLoc))[0];
-    uint64_t parent = TranslateVaddr(memory_device, parentAddr);
+    uint64_t parent = intro_virt_to_phys(parentAddr);
     if(ValidateTaskStruct(memory_device, parent))
     {
         GetPID(memory_device, parent, parentPid);
@@ -246,7 +239,7 @@ void InterpretCred(uint8_t* memory_device, uint64_t task, struct cred* cred)
     DebugLog("Interpret Cred\n");
     uint64_t credAddrLoc = task + 1832; //"real_cred"
     uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0];
-    uint64_t credPaddr = TranslateVaddr(memory_device, credVaddr);
+    uint64_t credPaddr = intro_virt_to_phys(credVaddr);
 
     cred->usage = ((int*)((char*)memory_device+credPaddr))[0];
     cred->uid = ((int*)((char*)memory_device+credPaddr+4))[0];
@@ -283,15 +276,17 @@ void InterpretTaskStruct(uint8_t* memory_device, uint64_t thisTaskStructPaddr, u
     int childLoc = thisTaskStructPaddr + 1384; //the offset of children in task_struct
     uint64_t firstChild = ((uint64_t*)((char*)memory_device+childLoc))[0];
     /* DebugLog("firstChild: %p\n", firstChild); */
-    *children = TranslateVaddr(memory_device, firstChild)-1400; //the offset of siblings list_head in task_struct
+    *children = intro_virt_to_phys(firstChild)-1400; //the offset of siblings list_head in task_struct
 
+    DebugLog("Interpret Task Struct part 2\n");
     int siblingLoc = thisTaskStructPaddr + 1400; //the offset of sibling in task_struct
     uint64_t leftSibling = ((uint64_t*)((char*)memory_device+siblingLoc))[0];
     /* DebugLog("leftSibling: %p\n", leftSibling); */
-    *sibling = TranslateVaddr(memory_device, leftSibling)-1400; //the offset of siblings list_head in task_struct
+    *sibling = intro_virt_to_phys(leftSibling)-1400; //the offset of siblings list_head in task_struct
     if( !ValidateTaskStruct(memory_device, *sibling) )
     {
         // fall back to a table walk here.
+        /* printf("fallback task\n"); */
         *sibling = TranslationTableWalk(memory_device, leftSibling)-1400; //the offset of sibling in task_struct
     }
 }
@@ -304,18 +299,14 @@ void InterpretTaskStruct(uint8_t* memory_device, uint64_t thisTaskStructPaddr, u
 void CollectTaskMeasurement(uint8_t* memory_device, TaskMeasurement* msmt, uint64_t taskptr)
 {
     GetTaskNamePointer(memory_device, taskptr, &msmt->name);
-    printf("Currently Crawling: %s\n", msmt->name);
+    /* printf("Currently Crawling: %s\n", msmt->name); */
     GetPIDs(memory_device, taskptr, &msmt->myPid, &msmt->parentPid);
     InterpretCred(memory_device, taskptr, &msmt->cred);
 
-    // TODO explain this unconditional block
-    /* if(strcmp(&msmt->name, "init")==0) */
-    {
-        bool isKernelThread = msmt->parentPid == 2;
-        DebugLog("before interpret memory\n");
-        InterpretMemory(memory_device, msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
-        DebugLog("after\n");
-    }
+    bool isKernelThread = msmt->parentPid == 2;
+    DebugLog("before interpret memory\n");
+    InterpretMemory(memory_device, msmt->paddr, (uint8_t (*) [DIGEST_NUM_BYTES])(&msmt->rodataDigest));
+    DebugLog("after\n");
     return;
 }
 
@@ -452,13 +443,16 @@ void FreeTaskTree(TaskMeasurement* root)
 TaskMeasurement* MeasureTaskTree(uint8_t* memory_device)
 {
     DebugLog("Measurement: Beginning task tree measurement.\n");
-    uint64_t init_task_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_INIT_TASK_VADDR + 0x80000);
+    uint64_t init_task_paddr = sysmap_virt_to_phys((uint64_t)INTRO_INIT_TASK_VADDR);
     DebugLog("before build tree\n");
     TaskMeasurement* swapperMeasurement = BuildTaskTreeNode(memory_device, init_task_paddr, NULL);
     /* TaskMeasurement* swapperMeasurement = IterateSchedulingQueue(memory_device, init_task_paddr, NULL); */
     /* TaskMeasurement* swapperMeasurement = IterateRealtimeSchedulingQueue(memory_device, init_task_paddr, NULL); */
     DebugLog("after build tree\n");
     swapperMeasurement->parent = swapperMeasurement;
+
+    AppraiseTaskTree(swapperMeasurement);
+
     return swapperMeasurement;
 }
 

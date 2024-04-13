@@ -9,14 +9,14 @@
 
 #include "configurations/include.h"
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <stdlib.h> // for malloc, calloc, free
+#include <stdbool.h> // for bool type
+#include <stdint.h> // for unsigned integer types
+#include <stdio.h> // for printf (debugging)
 
 // render our convenient digest hex strings into usable form
 // why is this 129?
-void HexToByteString(const char (*input_digest)[129], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
+void HexToByteString(const char (*input_digest)[128], uint8_t (*output_digest)[DIGEST_NUM_BYTES]);
 
 // copy our known digests into the argument passed in.
 // return the number of known digests

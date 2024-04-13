@@ -20,7 +20,7 @@ static void mt_dump_range(unsigned long min, unsigned long max,
 // return false otherwise
 static bool MeasureThisVMA(void *entry, char* memory_device, uint64_t pgd_paddr, uint8_t* rodataDigest)
 {
-    uint64_t this_entry_paddr = TranslateVaddr(memory_device, entry);
+    uint64_t this_entry_paddr = TranslationTableWalk(memory_device, entry);
     /* printf("paddr = %llx\n", this_entry_paddr); */
     /* introspectScanManyLongs(memory_device, this_entry_paddr, 4, "Entry, 4 longs, should be the prefix of a vm_area_struct: "); */
 
@@ -84,7 +84,7 @@ static void mt_dump_entry(void *entry, unsigned long min, unsigned long max, uns
 static void mt_dump_range64(const struct maple_tree *mt, void *entry,
             unsigned long min, unsigned long max, unsigned int depth, char* memory_device, uint64_t pgd_paddr, uint8_t* rodataDigest)
 {
-    struct maple_range_64 *node = (struct maple_range_64 *)(memory_device+TranslateVaddr(memory_device, mte_to_node(entry)));
+    struct maple_range_64 *node = (struct maple_range_64 *)(memory_device+TranslationTableWalk(memory_device, mte_to_node(entry)));
     bool leaf = mte_is_leaf(entry);
     unsigned long first = min;
     int i;
@@ -121,7 +121,7 @@ static void mt_dump_arange64(const struct maple_tree *mt, void *entry,
             unsigned long min, unsigned long max, unsigned int depth, char* memory_device, uint64_t pgd_paddr, uint8_t* rodataDigest)
 {
     /* struct maple_arange_64 *node = &mte_to_node(entry)->ma64; */
-    struct maple_arange_64 *node = (struct maple_arange_64 *)(memory_device+TranslateVaddr(memory_device, mte_to_node(entry)));
+    struct maple_arange_64 *node = (struct maple_arange_64 *)(memory_device+TranslationTableWalk(memory_device, mte_to_node(entry)));
     bool leaf = mte_is_leaf(entry);
     unsigned long first = min;
     int i;
@@ -166,8 +166,8 @@ static void mt_dump_node(const struct maple_tree *mt, void *entry,
         unsigned long min, unsigned long max, unsigned int depth, char* memory_device, uint64_t pgd_paddr, uint8_t* rodataDigest)
 {
     /* struct maple_node *node = mte_to_node(entry); */
-    struct maple_node *node = (struct maple_node *)(memory_device+TranslateVaddr(memory_device, mte_to_node(entry)));
-    /* introspectScanManyLongs(memory_device, TranslateVaddr(memory_device, mte_to_node(entry)), 32, "the promised node"); */
+    struct maple_node *node = (struct maple_node *)(memory_device+TranslationTableWalk(memory_device, mte_to_node(entry)));
+    /* introspectScanManyLongs(memory_device, TranslationTableWalk(memory_device, mte_to_node(entry)), 32, "the promised node"); */
 
     unsigned int type = mte_node_type(entry);
     unsigned int i;
@@ -203,8 +203,8 @@ void mt_dump(const struct maple_tree *mt, char* memory_device, uint64_t pgd_padd
     /* void *entry = rcu_dereference_check(mt->ma_root, mt_locked(mt)); */
     void *entry = mt->ma_root;
 
-    printf("maple_tree(%p) flags %X, height %u root %p\n",
-         mt, mt->ma_flags, mt_height(mt), entry);
+    /* printf("maple_tree(%p) flags %X, height %u root %p\n", */
+    /*      mt, mt->ma_flags, mt_height(mt), entry); */
     if (!xa_is_node(entry))
         mt_dump_entry(entry, 0, 0, 0, memory_device, pgd_paddr, rodataDigest);
     else if (entry)

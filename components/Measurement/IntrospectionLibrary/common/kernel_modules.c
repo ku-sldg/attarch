@@ -15,40 +15,13 @@ struct module_layout {
 
 struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int physAddr)
 {
-    int index = physAddr;
-    index += 16; // skip list_head
-    index += 56; // skip name
-    index += 96; //skip mkobj
-    index += 8; // skio modinfo_attrs
-    index += 8; // skip version
-    index += 8; // skip srcversion
-    index += 8; // skip holders_dir
-    index += 8; // skip syms
-    index += 8; // skip crcs
-    index += 4; // skip num_syms
-    index += 40; // skip struct mutex
-    index += 8; // skip kp
-    index += 4; // num_kp
-    index += 4; // num_gpl_syms
-    index += 8; // gpl_syms
-    index += 8; // gpl_crcs
-    index += 1; //async_probe_requested
-    index += 3; // to fill a 4-byte buffer
-    index += 8; // gpl_future_syms
-    index += 8; // gpl_future_crcs
-    index += 4; // num_gpl_future_syms
-    index += 4; // num_exentries
-    index += 8; // extable
-    index += 8; // (*init*(void)
-
-    //by inspection
+    //by inspection, using offsetof()
     struct module_layout thisModule;
-    thisModule.base = ((uint64_t*)((char*)memory_device+physAddr+47*8))[0];
-    thisModule.size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[2];
-    thisModule.text_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[3];
-    thisModule.ro_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[4];
-    thisModule.ro_after_init_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[5];
-
+    thisModule.base = *(uint64_t*)(memory_device+physAddr+320-8+0);
+    thisModule.size = *(unsigned int*)(memory_device+physAddr+320-8+8);
+    thisModule.text_size = *(unsigned int*)(memory_device+physAddr+320-8+12);
+    thisModule.ro_size = *(unsigned int*)(memory_device+physAddr+320-8+16);
+    thisModule.ro_after_init_size = *(unsigned int*)(memory_device+physAddr+320-8+20);
     return thisModule;
 }
 
@@ -66,9 +39,10 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
     }
 
     char msg[13] = "Found Module ";
-    introLog(3, msg, (*name), "\n");
+    printf("Found Module: %s\n", *name);
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, (int)inputAddress);
+    printf("Getting module layout\n");
     uint64_t basePtr = TranslationTableWalk(memory_device, thisModuleLayout.base);
 
     if(IKMDebug)
@@ -84,16 +58,16 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("ro after init size: %08X\n", thisModuleLayout.ro_after_init_size);
         printf("base paddr: %016X\n", basePtr);
     }
-
-    int this_module_num_ro_pages = thisModuleLayout.ro_size / INTRO_PAGE_SIZE;
-    uint8_t (*digestArray)[this_module_num_ro_pages * DIGEST_NUM_BYTES] = calloc(this_module_num_ro_pages, DIGEST_NUM_BYTES);
-    for(int i=0; i<thisModuleLayout.ro_size / INTRO_PAGE_SIZE; i++)
-    {
-        MeasureUserPage((uint8_t*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*INTRO_PAGE_SIZE);
-    }
-    HashMeasure((uint8_t*)digestArray, this_module_num_ro_pages, rodataDigest);
-    free(digestArray);
+    
+    //TODO problem: this results in a new hash every measurement, even though
+    //the target is correct. That's because there's some adrp instructions in
+    //these text segments that have virtual address operands. Despite being
+    //read-only, these vaddr operands naturally change between boots. Can solve
+    //this by abstracting the vaddr away, perhaps for special treatment later.
+    // Current Solution: do nothing
+    HashMeasure(memory_device+basePtr, thisModuleLayout.ro_size, rodataDigest);
 }
+
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
@@ -117,7 +91,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
     {
         printf("Translating modules list_head vaddr\n");
     }
-    uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR + 0x80000);
+    uint64_t list_head_paddr = sysmap_virt_to_phys((uint64_t)INTRO_MODULES_VADDR);
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
     if(MKMDebug)
     {

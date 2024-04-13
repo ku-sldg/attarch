@@ -89,31 +89,55 @@ ${CMAKE_CURRENT_BINARY_DIR}/poison-module overlay "lib/modules/4.9.307/kernel/dr
 # END SECTION
 # ==================================================================================================
 
+# ==================================================================================================
+# SECTION build linux user apps
+# ==================================================================================================
+
+ExternalProject_Add(
+    dataport-app
+    URL
+    file:///${CMAKE_CURRENT_SOURCE_DIR}/dataport_src
+    BINARY_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/dataport_src
+    INSTALL_COMMAND
+    ""
+    BUILD_ALWAYS
+    ON
+    EXCLUDE_FROM_ALL
+    CMAKE_ARGS
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+)
+
+# Assuming AddExternalProjFilesToOverlay is a macro or function you've defined elsewhere
+AddExternalProjFilesToOverlay(dataport-app
+    ${CMAKE_CURRENT_BINARY_DIR} overlay "usr/bin"
+    FILES dataport_src/dataportAPI)
+
 # Cross-compile am-cakeml app "vm_client" for the VM
- ExternalProject_Add(
-     useram
-     URL
-     file:///${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml
-     BINARY_DIR
-     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml
-     INSTALL_COMMAND
-     ""
-     BUILD_ALWAYS
-     ON
-     EXCLUDE_FROM_ALL
-     CMAKE_ARGS
-       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-       -DIS_VM_USERAM=true
-       -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/camkes_apps/client/config.cmake
- )
- AddExternalProjFilesToOverlay(
-     useram
-     ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/camkes_apps/client/
-     overlay
-     "/useram"
-     FILES
-     useram
- )
+ExternalProject_Add(
+    useram
+    URL
+    file:///${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml
+    BINARY_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml
+    INSTALL_COMMAND
+    ""
+    BUILD_ALWAYS
+    ON
+    EXCLUDE_FROM_ALL
+    CMAKE_ARGS
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+    -DIS_VM_USERAM=true
+    -C ${CMAKE_CURRENT_SOURCE_DIR}/am-cakeml/camkes_apps/client/config.cmake
+)
+AddExternalProjFilesToOverlay(
+    useram
+    ${CMAKE_CURRENT_BINARY_DIR}/am-cakeml/camkes_apps/client/
+    overlay
+    "/useram"
+    FILES
+    useram
+)
 
 # This project is the simplest test that the introspection capabilities
 # are still live.
@@ -140,6 +164,10 @@ AddExternalProjFilesToOverlay(
     FILES
     introspect
 )
+# ==================================================================================================
+# END SECTION
+# ==================================================================================================
+
 
 # Add script to initialise dataport module
 AddFileToOverlayDir(
@@ -153,6 +181,26 @@ AddFileToOverlayDir(
     "S91crossvm_test"
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/introspect_vm_test
     "etc/init.d"
+    overlay
+)
+
+# Add requisite files for the useram: manifest, private key, term file.
+AddFileToOverlayDir(
+    "manifest.json"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/user_am_files/FormalManifest_P0.json
+    "useram"
+    overlay
+)
+AddFileToOverlayDir(
+    "private.key"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/user_am_files/Test_PrivKey
+    "useram"
+    overlay
+)
+AddFileToOverlayDir(
+    "term.json"
+    ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/user_am_files/ClientCvmTermCm.json
+    "useram"
     overlay
 )
 
@@ -189,6 +237,8 @@ DeclareCAmkESComponent(VM SOURCES src/cross_vm_connection.c src/init_dataport_ra
 
 add_subdirectory(components/Measurement)
 add_subdirectory(components/server_am)
+add_subdirectory(components/FileServer)
+add_subdirectory(components/LinuxHandler)
 
 # Declare root server
 DeclareCAmkESRootserver(

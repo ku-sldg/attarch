@@ -5,78 +5,96 @@
  */
 
 #include <camkes.h>
+#include <stdbool.h> // for bool type
+#include <stdint.h> // for uint64_t and other unsigned integer types
+#include <stdio.h> // for printf (debugging)                    
+#include <stdlib.h> // for malloc, calloc, free                   
 #include "configurations/include.h"
 #include "hash.h"
+#include "KnownDigests.h"
 #include "IntrospectionLibrary/IntrospectionLibrary.c"
 
 void introspective_measurement__init(void)
 {
-    printf("DEBUG: I'm about to give you your measurement\n");
+    printf("DEBUG: Here's the result of ShaTest()\n");
+    ShaTest();
 }
 
-bool introspective_measurement_request(int id)
+bool introspective_measurement_request(int id, char** evidence)
 {
     printf("DEBUG: here's your measurement id: %d\n", id);
-    return 0;
-}
-
-int run(void)
-{
-    ShaTest();
-
-    printf("DEBUG: Inspector Awake. Waiting for Server signal\n");
-    measurement_request_wait();
-
-    char* msg_test = calloc(1,4096);
-    strcpy(msg_test, server_dp);
-    printf("recv from server: %s\n", strcmp(msg_test,"1") == 0 ? "Good" : "Failed");
-
-    msg_test = "3";
-    memset(server_dp, '0', 4096);
-    strcpy(server_dp, msg_test);
-    
-    msg_test = "4";
-    memset(client_dp, '0', 4096);
-    strcpy(client_dp, msg_test);
-
-    printf("DEBUG: Inspector recv Server signal. Emitting to Client.\n");
-    client_done_emit();
-    printf("DEBUG: Inspector waiting for Client signal\n");
-    client_ready_wait();
-    printf("DEBUG: Inspector recv Client signal. Emitting to Server.\n");
-
-    strcpy(msg_test, client_dp);
-    printf("recv from client: %s\n", msg_test);
-    printf("recv from client: %s\n", strcmp(msg_test,"6") == 0 ? "Good" : "Failed");
-
-    measurement_done_emit();
-
-
-    // Execution time without introspection: 0.66s
-    // Time to Measure Modules: 0.01s
-    // Time to Measure Tasks: 0.86s
-    // Time to Measure Kernel Rodata: 0.53s
-    while (1)
+    if(id==0)
     {
-
-
-
-
-
-        printf("DEBUG: Inspector Start.\n");
-        /* ready_wait(); */
-        measurement_request_wait();
-
-        bool overall_appraisal = MeasureAndAppraiseLinux();
-
-        printf("DEBUG: Measurement: Overall Appraisal Result: %s\n", overall_appraisal ? "Passed" : "Failed.");
-        char* resultMsg = overall_appraisal ? "1" : "0";
-        // TODO hook the am back up
-        memset(server_dp, '0', 4096);
-        strcpy(server_dp, resultMsg);
-        /* done_emit(); */
-        measurement_done_emit();
+        EvidenceBundle* resultsBundle = MeasureLinuxKernel();
+        int resultsNum = GetCollectionLength(resultsBundle, 100); //TODO find a better supremum
+        ExportToByteString(resultsBundle, resultsNum, evidence);
+        /* PrintCollection(resultsBundle, resultsNum); */
+        free(resultsBundle);
+        /* printf("doing with %d\n\n", resultsNum); */
+        /* PrintCollection(((EvidenceBundle*)(*evidence)), 3); */
+        return true;
     }
-    return 0;
+    else
+    {
+        printf("That measurement id does not exist.\n");
+        return false;
+    }
+    return false;
 }
 
+bool introspective_measurement_appraise(int id, const char* evidence, char** appraisal_report)
+{
+    printf("DEBUG: here's your measurement id: %d\n", id);
+    if(id==0)
+    {
+        if(AppraiseLinuxKernelMeasurement(evidence))
+        {
+            *appraisal_report = strdup("PASS: All Evidence Digests Recognized\0");
+        }
+        else
+        {
+            *appraisal_report = strdup("FAIL: Some Evidence Digests NOT Recognized\0");
+        }
+        return true;
+    }
+    else
+    {
+        printf("That measurement id does not exist.\n");
+        *appraisal_report = strdup("FAIL: The requested measurement ID does not exist\0");
+        return false;
+    }
+}
+
+void readem(uint64_t location)
+{
+    for(int i=0; i<8; i++)
+    {
+        printf("%02X", ((uint8_t*)memdev)[location + i]);
+    }
+    printf("\n");
+}
+
+bool hypervisor_assign_pointer(const char* location, const char* value)
+{
+    uint64_t loc = ((uint64_t*)location)[0];
+    uint64_t val = ((uint64_t*)value)[0];
+    loc = loc - RAM_BASE;
+    if(RAM_SIZE < loc)
+    {
+        printf("location is %08X\n", loc);
+        printf("ram_size is %08X\n", RAM_SIZE);
+        printf("failing\n");
+        return false;
+    }
+    printf("before\n");
+    readem(loc);
+    printf("At location %08X writing %08X\n", loc, val);
+    /* ((uint64_t*)(((uint8_t*)memdev)[loc]))[0] = val; */
+    for(int i=0; i<8; i++)
+    {
+        ((uint8_t*)memdev)[loc+i] = ((uint8_t*)val)[i];//val;
+    }
+    printf("after\n");
+    readem(loc);
+    return true;
+}

@@ -19,7 +19,7 @@ void ShaTest()
     uint8_t* output = malloc(DIGEST_NUM_BYTES);
     Hacl_Hash_SHA2_hash_512("abc", 3, output);
     printf("SHA512 of \"abc\" is:\n");
-    //PrintDigest(output);
+    PrintDigest(output);
     printf("\n");
     free(output);
 }
@@ -34,11 +34,11 @@ void HashExtend(uint8_t (*baseHash)[DIGEST_NUM_BYTES], uint8_t (*newHash)[DIGEST
     uint8_t* longHash = calloc(1, 2*DIGEST_NUM_BYTES);
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
     {
-        longHash[i] = baseHash[i];
+        longHash[i] = ((uint8_t*)baseHash)[i];
     }
     for(int i=0; i<DIGEST_NUM_BYTES; i++)
     {
-        longHash[i+DIGEST_NUM_BYTES] = newHash[i];
+        longHash[i+DIGEST_NUM_BYTES] = ((uint8_t*)newHash)[i];
     }
     HashMeasure(longHash, 2*DIGEST_NUM_BYTES, baseHash);
     free(longHash);
@@ -56,14 +56,4 @@ bool IsDigestEmpty(uint8_t (*digest)[DIGEST_NUM_BYTES])
     return true;
 }
 
-void MeasureUserPage(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES], uint64_t pageVaddr)
-{
-    uint64_t pagePaddr = TranslateVaddr(memory_device, pageVaddr);
-    /* for(int i=0; i<4096; i++) */
-    /* { */
-    /*     printf("%c", ((char*)memory_device+pagePaddr)[i]); */
-    /* } */
-    /* printf("\n\n"); */
-    HashMeasure( ((char*)memory_device+pagePaddr), INTRO_PAGE_SIZE, output_digest );
-}
 

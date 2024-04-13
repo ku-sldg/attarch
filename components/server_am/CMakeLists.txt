@@ -13,5 +13,9 @@ set(TARGET_ARCH "armv8")
 # Or perhaps can we allow an option to be passed here, like:
 # set(app camkes_server)
 # or something?
+
+set(am_cakeml_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../am-cakeml")
 add_subdirectory(../../am-cakeml "${CMAKE_CURRENT_BINARY_DIR}/am-cakeml")
+
+#get_files(man_comp_src ${server_am_src} ../tests/DemoFiles/Kim/Test_Am_Lib_Kim.sml ../apps/ManifestCompiler/Client.sml )
 

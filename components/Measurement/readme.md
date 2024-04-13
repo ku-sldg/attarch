@@ -11,3 +11,7 @@ The oddness is that the inclusion is specified in a distant folder:
 It is advantageous to use that file twice rather than duplicate its contents for this component.
 
 However, I dislike that this component's inclusions are not immediately obvious from its own declarations.
+
+In the future it would be nice to remove this cross\_include folder. It is only
+needed for the verified HACL implementation of the hash function we use.
+
