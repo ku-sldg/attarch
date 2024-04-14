@@ -16,6 +16,7 @@
 # These are some of the specific definitions required for introspection.
 
 import os
+import argparse
 import re
 
 def process_map_file(filename):
@@ -72,6 +73,12 @@ def process_module_files(module_h, moduleparam_h, config):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", type=str, help="The attarch directory")
+    args = parser.parse_args()
+    os.chdir(args.directory)
+
+
     map_file = './linux-stable/System.map'
     if os.path.exists(map_file):
         process_map_file(map_file)
