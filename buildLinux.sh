@@ -24,7 +24,7 @@ make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- prepare || { echo "Failed to pr
 
 # compile the kernel using all available CPU cores
 # Compile the kernel and check if operation was successful
-#make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- || { echo "Failed to compile the kernel"; exit 1; }
-echo "Enter the linux-stable directory and issue this command to build the Linux kernel."
-echo "X is the number of threads to use."
-echo "make -jX ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-"
+make -j$(( $(nproc)-1 )) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- || { echo "Failed to compile the kernel"; exit 1; }
+#echo "Enter the linux-stable directory and issue this command to build the Linux kernel."
+#echo "X is the number of threads to use."
+#echo "make -jX ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-"

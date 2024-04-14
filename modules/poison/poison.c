@@ -20,8 +20,8 @@
 /* #include <unistd.h> */
 /* #include <stdio.h> */
 
-#include "hypervisor_call.c"
-#include "adore.c"
+/* #include "hypervisor_call.c" */
+/* #include "adore.c" */
 
 static int __init poison_init(void)
 {
@@ -32,7 +32,7 @@ static int __init poison_init(void)
     printk("kimage_vaddr is %llx \n", KIMAGE_VADDR);
     printk("VA_BITS is %llx \n", VA_BITS);
 
-    do_adore();
+    //do_adore();
 
     return 0;
 }
