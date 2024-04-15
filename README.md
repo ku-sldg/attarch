@@ -1,5 +1,15 @@
 ## About
-An architecture for attestation. Features two Copland Attestation Managers (AMs): one in the VM, and one at the CAmkES level.
+An architecture for attestation. Features the Copland Attestation Manager and novel introspective measurements over Linux.
+
+## Prerequisites
+
+* make
+* curl
+* git 
+* [repo tool](https://android.googlesource.com/tools/repo)
+* [docker engine](https://docs.docker.com/engine/install/)
+
+## How to build
 
 1. `repo init -u https://github.com/ku-sldg/attarch-manifest.git`
 2. `repo sync`
