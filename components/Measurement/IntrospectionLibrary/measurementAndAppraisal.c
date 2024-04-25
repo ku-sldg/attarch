@@ -1,5 +1,5 @@
 /*
- * Top level functions for linux measurement
+ * Top level functions for linux measurement and inline appraisal.
  * Michael Neises
  * 09 June 2023
  */
