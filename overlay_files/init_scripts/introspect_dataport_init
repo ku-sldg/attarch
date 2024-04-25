@@ -8,6 +8,7 @@
 insmod /lib/modules/4.9.307/kernel/drivers/vmm/connection.ko
 insmod /lib/modules/4.9.307/kernel/drivers/vmm/poison.ko
 # insmod /lib/modules/4.9.307/kernel/drivers/vmm/signal.ko
+insmod /lib/modules/4.9.307/kernel/drivers/vmm/diamorphine.ko
 
 export CML_STACK_SIZE=10
 export CML_HEAP_SIZE=10
