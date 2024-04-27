@@ -20,8 +20,10 @@
 /* #include <unistd.h> */
 /* #include <stdio.h> */
 
-/* #include "hypervisor_call.c" */
-/* #include "adore.c" */
+static void printDefinition(char* name, int offset)
+{
+    printk("#define %s %d\n", name, offset);
+}
 
 static int __init poison_init(void)
 {
@@ -32,7 +34,13 @@ static int __init poison_init(void)
     printk("kimage_vaddr is %llx \n", KIMAGE_VADDR);
     printk("VA_BITS is %llx \n", VA_BITS);
 
-    //do_adore();
+    printDefinition("MM_OFFSET", offsetof(struct task_struct, mm));
+    printDefinition("PID_OFFSET", offsetof(struct task_struct, pid));
+    printDefinition("PARENT_OFFSET", offsetof(struct task_struct, parent));
+    printDefinition("CHILDREN_OFFSET", offsetof(struct task_struct, children));
+    printDefinition("SIBLING_OFFSET", offsetof(struct task_struct, sibling));
+    printDefinition("REAL_CRED_OFFSET", offsetof(struct task_struct, real_cred));
+    printDefinition("PGD_OFFSET", offsetof(struct mm_struct, pgd));
 
     return 0;
 }
