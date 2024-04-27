@@ -24,8 +24,6 @@ else
 fi
 cd attarch || { echo "Failed to change directory to: attarch"; exit 1; }
 
-echo "$opt" > components/Measurement/version
-
 # Clone the Linux kernel with the chosen version
 git clone --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable --branch linux-${opt} || { echo "Failed to clone Linux kernel"; exit 1; }
 
