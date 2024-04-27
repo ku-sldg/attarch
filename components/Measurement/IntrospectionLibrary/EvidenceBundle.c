@@ -11,11 +11,6 @@
 ** single collection of evidence. That collection is an array, and its entries
 ** are 128 bytes each (see EvidenceBundle.h for more).
 */
-static EvidenceBundle nullEvidenceBundle = {
-    .type = {1, 1, 1, 1, 1, 1, 1, 1},  // Set all bytes in 'type' to 1
-    .name = {0},                       // The rest of the bytes in 'name' will be automatically set to 0
-    .digest = {0}                      // The bytes in 'digest' will be automatically set to 0
-};
 
 bool memoryCompare(uint8_t* first, uint8_t* second, int numBytes)
 {

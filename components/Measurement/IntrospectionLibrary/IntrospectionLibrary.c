@@ -1,16 +1,17 @@
 /*
- * An introspection library for Linux 6.1.y
+ * An introspection library for Linux 4.9, 4.14, 4.19, 5.4, 5.10, 5.15, and 6.1
+ * You must choose the correct x.y.z/shelf.c for the version of linux.
  * Michael Neises
- * 09 June 2023
+ * April 2024
  */
 
-#define INTRO_KIMAGE_VADDR 0xffff800008000000
-
-#include "AddressTranslation.c"
-#include "common/common.c"
-#include "measurementAndAppraisal.c"
+#include "armv8a.h"
 #include "EvidenceBundle.h"
-#include "EvidenceBundle.c"
+#include "hash.h"
+#include "KnownDigests.h"
+#include "logging.c"
+#include "5.4.y/shelf.c" // choose your version of linux
+#include "measurementAndAppraisal.c"
 #include "measurements.c"
 
 /* This function is here to easily control which measurements */

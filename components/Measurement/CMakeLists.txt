@@ -8,8 +8,9 @@ DeclareCAmkESComponent(
     introspect_memdev
     SOURCES
         introspect_component.c
-        hash.c
-        KnownDigests.c
+        IntrospectionLibrary/hash.c
+        IntrospectionLibrary/KnownDigests.c
+        IntrospectionLibrary/EvidenceBundle.c
 )
 
 add_hacl_camkes(introspect_memdev)

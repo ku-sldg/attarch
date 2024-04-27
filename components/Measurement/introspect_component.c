@@ -9,9 +9,6 @@
 #include <stdint.h> // for uint64_t and other unsigned integer types
 #include <stdio.h> // for printf (debugging)                    
 #include <stdlib.h> // for malloc, calloc, free                   
-#include "configurations/include.h"
-#include "hash.h"
-#include "KnownDigests.h"
 #include "IntrospectionLibrary/IntrospectionLibrary.c"
 
 void introspective_measurement__init(void)
