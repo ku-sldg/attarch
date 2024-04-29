@@ -84,15 +84,12 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("ro after init size: %08X\n", thisModuleLayout.ro_after_init_size);
         printf("base paddr: %016X\n", basePtr);
     }
-
-    int this_module_num_ro_pages = thisModuleLayout.ro_size / INTRO_PAGE_SIZE;
-    uint8_t (*digestArray)[this_module_num_ro_pages * DIGEST_NUM_BYTES] = calloc(this_module_num_ro_pages, DIGEST_NUM_BYTES);
-    for(int i=0; i<thisModuleLayout.ro_size / INTRO_PAGE_SIZE; i++)
-    {
-        MeasureUserPage((uint8_t*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisModuleLayout.base + i*INTRO_PAGE_SIZE);
-    }
-    HashMeasure((uint8_t*)digestArray, this_module_num_ro_pages, rodataDigest);
-    free(digestArray);
+    // Since 6.1 Linux, this is no longer exactly right. These read-only
+    // sections have ADRP instructions which contain operands (virtual
+    // addresses) that are variable across boots. In theory, the operands
+    // should always point to the same blob, but the measurement here is left
+    // naive for now.
+    HashMeasure(memory_device+basePtr, thisModuleLayout.ro_size, rodataDigest);
 }
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
