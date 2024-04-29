@@ -1,0 +1,25 @@
+What follows is a `git diff` of the linux source code.
+In order to permit/ease the creation of an LKM rootkit, this symbol had
+its `static` keyword removed and was instead marked for export.
+
+diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+index 8e934bb44..18e6ef308 100644
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -423,7 +423,7 @@ void __init create_pgd_mapping(struct mm_struct *mm, phys_addr_t phys,
+ 			     pgd_pgtable_alloc, flags);
+ }
+ 
+-static void update_mapping_prot(phys_addr_t phys, unsigned long virt,
++void update_mapping_prot(phys_addr_t phys, unsigned long virt,
+ 				phys_addr_t size, pgprot_t prot)
+ {
+ 	if (virt < PAGE_OFFSET) {
+@@ -438,6 +438,7 @@ static void update_mapping_prot(phys_addr_t phys, unsigned long virt,
+ 	/* flush the TLBs after updating live kernel mappings */
+ 	flush_tlb_kernel_range(virt, virt + size);
+ }
++EXPORT_SYMBOL(update_mapping_prot);
+ 
+ static void __init __map_memblock(pgd_t *pgdp, phys_addr_t start,
+ 				  phys_addr_t end, pgprot_t prot, int flags)
