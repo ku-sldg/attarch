@@ -90,7 +90,14 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("base paddr: %016X\n", basePtr);
     }
 
-    HashMeasure(memory_device+basePtr, thisModuleLayout.ro_size, rodataDigest);
+    for(int i=0; i<thisModuleLayout.ro_size; i+=INTRO_PAGE_SIZE)
+    {
+        uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+        uint64_t tempBasePtr = TranslationTableWalk(memory_device, thisModuleLayout.base + i);
+        HashMeasure(memory_device+tempBasePtr, 4096, tempDigest);
+        HashExtend(rodataDigest, tempDigest);
+        free(tempDigest);
+    }
 }
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])

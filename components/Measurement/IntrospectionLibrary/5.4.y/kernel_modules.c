@@ -65,16 +65,20 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("base paddr: %016X\n", basePtr);
     }
 
-    HashMeasure(memory_device+basePtr, thisModuleLayout.ro_size, rodataDigest);
+    for(int i=0; i<thisModuleLayout.ro_size; i+=INTRO_PAGE_SIZE)
+    {
+        uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+        uint64_t tempBasePtr = TranslationTableWalk(memory_device, thisModuleLayout.base + i);
+        HashMeasure(memory_device+tempBasePtr, 4096, tempDigest);
+        HashExtend(rodataDigest, tempDigest);
+        free(tempDigest);
+    }
+
 }
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
-    bool MKMDebug = false;
-    if(MKMDebug)
-    {
-        ModuleDebugLog("Collecting module pointers...\n");
-    }
+    ModuleDebugLog("Collecting module pointers...\n");
     /* modulePtrs is a list of offsets into memory_device that refer to kernel
     ** modules. They are physical memory addresses with the RAM_BASE
     ** already subtracted.
@@ -85,10 +89,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
-    if(MKMDebug)
-    {
-        ModuleDebugLog("Translating modules list_head vaddr\n");
-    }
+    ModuleDebugLog("Translating modules list_head vaddr\n");
     uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR);
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
     if(MODULE_DEBUG_LOG)
@@ -105,10 +106,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
         module_pointer = TranslationTableWalk(memory_device, modLongPtr[0]);
     }
-    if(MKMDebug)
-    {
-        ModuleDebugLog("Collecting digests over module rodata...\n");
-    }
+    ModuleDebugLog("Collecting digests over module rodata...\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
         if(modulePtrs[i] != 0)
@@ -123,8 +121,7 @@ bool IsThisAValidModuleMeasurement(char (*moduleName)[INTRO_MODULE_NAME_LEN])
     {
         if((*moduleName)[i] != '\0')
         {
-            // an invalid (unused) module name should be completely
-            // zeroed out
+            // an invalid (unused) module name should be completely zeroed out
             return true;
         }
     }
