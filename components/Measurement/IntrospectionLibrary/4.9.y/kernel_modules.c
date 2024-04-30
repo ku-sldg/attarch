@@ -5,6 +5,17 @@
  * 21 July 2022
  */
 
+#define MODULE_DEBUG_LOG 0
+
+void ModuleDebugLog(char* msg)
+{
+    if(MODULE_DEBUG_LOG)
+    {
+        printf(msg);
+    }
+}
+
+
 struct module_layout {
     uint64_t base;
     unsigned int size;
@@ -54,24 +65,21 @@ struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int phy
 
 void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[INTRO_MODULE_NAME_LEN])
 {
-    bool IKMDebug = true;
-    if(IKMDebug)
-    {
-        printf("Module Address: %016X\n", inputAddress);
-    }
-
     for(int j=16; j<INTRO_MODULE_NAME_LEN+16; j++)
     {
         (*name)[j-16] = ((char*)memory_device)[inputAddress+j];
     }
 
-    char msg[13] = "Found Module ";
-    introLog(3, msg, (*name), "\n");
+    if(MODULE_DEBUG_LOG)
+    {
+        char msg[13] = "Found Module ";
+        introLog(3, msg, (*name), "\n");
+    }
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, (int)inputAddress);
     uint64_t basePtr = TranslateVaddr(memory_device, thisModuleLayout.base);
 
-    if(IKMDebug)
+    if(MODULE_DEBUG_LOG)
     {
         printf("base: %016X\n", thisModuleLayout.base);
         printf("size: %08X\n", thisModuleLayout.size);
@@ -84,17 +92,14 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         printf("ro after init size: %08X\n", thisModuleLayout.ro_after_init_size);
         printf("base paddr: %016X\n", basePtr);
     }
+
     HashMeasure(memory_device+basePtr, thisModuleLayout.ro_size, rodataDigest);
 }
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
-    bool MKMDebug = true;
-    printf("DEBUG: Measurement: Beginning kernel module measurement.\n");
-    if(MKMDebug)
-    {
-        printf("Collecting module pointers...\n");
-    }
+    ModuleDebugLog("DEBUG: Measurement: Beginning kernel module measurement.\n");
+    ModuleDebugLog("Collecting module pointers...\n");
     /* modulePtrs is a list of offsets into memory_device that refer to kernel
     ** modules. They are physical memory addresses with the RAM_BASE
     ** already subtracted.
@@ -105,13 +110,18 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         modulePtrs[i] = 0;
     }
     int numModulePtrs = 0;
-    printf("Translating modules list_head vaddr\n");
+    ModuleDebugLog("Translating modules list_head vaddr\n");
     uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR);
-    printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
+    if(MODULE_DEBUG_LOG)
+    {
+        printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
+    }
 
     uint64_t* list_head_ptr = (uint64_t*)(((char*)memory_device)+list_head_paddr);
-    printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
-
+    if(MODULE_DEBUG_LOG)
+    {
+        printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
+    }
     uint64_t module_pointer = TranslateVaddr(memory_device, list_head_ptr[0]);
     while(module_pointer != list_head_paddr)
     {
@@ -121,10 +131,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
         module_pointer = TranslateVaddr(memory_device, modLongPtr[0]);
     }
-    if(MKMDebug)
-    {
-        printf("Collecting digests over module rodata...\n");
-    }
+    ModuleDebugLog("Collecting digests over module rodata...\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
         if(modulePtrs[i] != 0)

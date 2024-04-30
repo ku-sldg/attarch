@@ -59,7 +59,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
         if(thisPageVaddr >= RoundDownToCurrentPage(INTRO_START_RO_AFTER_INIT_VADDR)
                 && thisPageVaddr <= RoundUpToNextPage(INTRO_END_RO_AFTER_INIT_VADDR))
         {
-            printf("Skipping ro_after_init data.\n");
+            /* printf("Skipping ro_after_init data.\n"); */
             continue;
         }
         MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr + 0x80000);
