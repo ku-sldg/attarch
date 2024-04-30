@@ -59,7 +59,7 @@ EvidenceBundle* InspectRodata(uint8_t* memory_device)
     EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
     uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     MeasureKernelRodata(memory_device, kernelRodataDigest);
-    const char rodataBundleName[56] = "Kernel Rodata";
+    const char rodataBundleName[56] = "KernelRodata";
     EvidenceBundle rodataBundle = CreateBundle(RODATA_TYPE, rodataBundleName, kernelRodataDigest);
     PackBundleSingle(evidence, 1, &rodataBundle);
     free(kernelRodataDigest);
@@ -71,7 +71,7 @@ EvidenceBundle* InspectSystemCallTable(uint8_t* memory_device)
     EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
     uint8_t (*kernelSCTDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     MeasureSystemCallTable(memory_device, kernelSCTDigest);
-    const char bundleName[56] = "Kernel System Call Table";
+    const char bundleName[56] = "KernelSystemCallTable";
     EvidenceBundle syscalltableBundle = CreateBundle(RODATA_TYPE, bundleName, kernelSCTDigest);
     PackBundleSingle(evidence, 1, &syscalltableBundle);
     free(kernelSCTDigest);
