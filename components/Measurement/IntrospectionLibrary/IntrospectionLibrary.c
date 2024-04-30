@@ -63,9 +63,9 @@ EvidenceBundle* MeasureLinuxKernel()
 
     // pack the evidence into a single collection
     PackBundleSingle(evidenceCollection, numEvidenceEntries, rodataEvidence);
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, sctEvidence);
     PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
     PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, sctEvidence);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
 
     // free the extra bundles
@@ -86,23 +86,16 @@ EvidenceBundle* MeasureLinuxKernel()
         free(sctEvidence);
     }
     
-    PrintCollection(evidenceCollection, numEvidenceEntries);
     return evidenceCollection;
 }
 
 bool AppraiseLinuxKernelMeasurement(const char* evidence)
 {
-    for(int i=0; i< sizeof(EvidenceBundle) * 5; i++)
-    {
-        printf("%c", evidence[i]);
-    }
-    printf("\n\n");
-
-    EvidenceBundle* bundle = (EvidenceBundle*)evidence;
+    int ffi_offset = 64 * 5; // explain
+    EvidenceBundle* bundle = (EvidenceBundle*)(evidence+ffi_offset);
     bool result = true;
 
-    /* while(!IsBundleNullBundle(bundle)) */
-    for(int i=0; i<5; i++)
+    while(!IsBundleNullBundle(bundle))
     {
         PrintBundle(bundle);
         if(IsThisAKnownDigest(bundle->digest))
