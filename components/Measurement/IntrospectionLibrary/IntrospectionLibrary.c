@@ -41,6 +41,7 @@ EvidenceBundle* MeasureLinuxKernel()
     EvidenceBundle* rodataEvidence = InspectRodata((uint8_t*)memdev);
     EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
     EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
+    EvidenceBundle* sctEvidence = InspectSystemCallTable((uint8_t*)memdev);
 
     /* printf("Here is rodata evidence:\n"); */
     /* PrintBundle(rodataEvidence); */
@@ -48,8 +49,8 @@ EvidenceBundle* MeasureLinuxKernel()
     // Count the evidence entries so we know how much space we need.
     int numEvidenceEntries = 0;
     numEvidenceEntries++; // we want to null terminate this list
-    numRodataEvidences++; // we just have one
-    numEvidenceEntries += numRodataEvidences;
+    numEvidenceEntries++; // one for the kernel ro-data
+    numEvidenceEntries++; // one for the system call table
 
     numModuleEvidences += GetCollectionLength(modulesEvidence, NUM_MODULE_DIGESTS * sizeof(EvidenceBundle));
     numEvidenceEntries += numModuleEvidences;
@@ -64,6 +65,7 @@ EvidenceBundle* MeasureLinuxKernel()
     PackBundleSingle(evidenceCollection, numEvidenceEntries, rodataEvidence);
     PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
     PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, sctEvidence);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
 
     // free the extra bundles
@@ -78,6 +80,10 @@ EvidenceBundle* MeasureLinuxKernel()
     if(tasksEvidence != NULL)
     {
         free(tasksEvidence);
+    }
+    if(sctEvidence != NULL)
+    {
+        free(sctEvidence);
     }
     
     PrintCollection(evidenceCollection, numEvidenceEntries);

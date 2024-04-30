@@ -66,3 +66,14 @@ EvidenceBundle* InspectRodata(uint8_t* memory_device)
     return evidence;
 }
 
+EvidenceBundle* InspectSystemCallTable(uint8_t* memory_device)
+{
+    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
+    uint8_t (*kernelSCTDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    MeasureSystemCallTable(memory_device, kernelSCTDigest);
+    const char bundleName[56] = "Kernel System Call Table";
+    EvidenceBundle syscalltableBundle = CreateBundle(RODATA_TYPE, bundleName, kernelSCTDigest);
+    PackBundleSingle(evidence, 1, &syscalltableBundle);
+    free(kernelSCTDigest);
+    return evidence;
+}
