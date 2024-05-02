@@ -3,4 +3,3 @@
 #include "kernel_modules.c"
 #include "task.c"
 #include "kernel_rodata.c"
-#include "system_call_table.c"

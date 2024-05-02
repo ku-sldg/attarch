@@ -10,7 +10,8 @@
 #include "hash.h"
 #include "KnownDigests.h"
 #include "logging.c"
-#include "5.4.y/shelf.c" // choose your version of linux
+#include "CHOOSE/shelf.c" // choose your version of linux
+#include "system_call_table.c"
 #include "measurementAndAppraisal.c"
 #include "measurements.c"
 

@@ -25,7 +25,7 @@ def process_map_file(filename):
             parts = line.split()
             if len(parts) == 3:
                 symbol = parts[2]
-                if symbol in ["__start_rodata", "__end_rodata", "_text", "_etext", "__hyp_rodata_start", "__hyp_rodata_end", "modules", "init_task", "__start_ro_after_init", "__end_ro_after_init", "__entry_tramp_text_start", "__entry_tramp_text_end", "__hibernate_exit_text_start", "__hibernate_exit_text_end", "__relocate_new_kernel_start", "__relocate_new_kernel_end", "idmap_pg_dir", "tramp_pg_dir", "reserved_pg_dir", "swapper_pg_dir", "__init_begin", "__init_end", "_data", "_edata", "__bss_start", "__bss_stop", "init_pg_dir", "init_pg_end", "_end"]:
+                if symbol in ["__start_rodata", "__end_rodata", "_text", "_etext", "__hyp_rodata_start", "__hyp_rodata_end", "modules", "init_task", "__start_ro_after_init", "__end_ro_after_init", "__entry_tramp_text_start", "__entry_tramp_text_end", "__hibernate_exit_text_start", "__hibernate_exit_text_end", "__relocate_new_kernel_start", "__relocate_new_kernel_end", "idmap_pg_dir", "tramp_pg_dir", "reserved_pg_dir", "swapper_pg_dir", "__init_begin", "__init_end", "_data", "_edata", "__bss_start", "__bss_stop", "init_pg_dir", "init_pg_end", "_end", "sys_call_table"]:
                     print(f"#define INTRO_{symbol.lstrip('_').upper()}_VADDR 0x{parts[0]}")
                 # the following two conditions account for linux 4.9
                 if symbol in ["__start_data_ro_after_init"]:
@@ -70,6 +70,18 @@ def process_module_files(module_h, moduleparam_h, config):
             if "#define MODULE_NAME_LEN MAX_PARAM_PREFIX_LEN" in line:
                 print(f"#define INTRO_MODULE_NAME_LEN {prefix_len}")
 
+def last_line_number(filepath):
+    try:
+        with open(filepath, 'r') as file:
+            lines = file.readlines()
+            if lines:
+                last_line = lines[-1].strip()
+                number = 1 + int(last_line.split()[0]) # counting starts at zero
+                print(f"#define NUM_SYS_CALL_TABLE_ENTRIES {number}")
+            else:
+                print("File is empty")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
 
 
 def main():
@@ -98,6 +110,8 @@ def main():
         process_module_files(module_h_file, moduleparam_h_file, config_file)
     else:
         print("One or more files do not exist.")
+
+    last_line_number('./linux-stable/arch/arm/tools/syscall.tbl')
 
 if __name__ == "__main__":
     main()

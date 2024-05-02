@@ -2,9 +2,6 @@
 /* Michael Neises */
 /* April 2024 */
 
-#define SYS_CALL_TABLE_VADDR 0xffff800010a31778
-#define SYS_CALL_TABLE_ENTRIES 435
-
 void MeasureSystemCallTable(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
     // Measure the system call table
@@ -13,7 +10,7 @@ void MeasureSystemCallTable(uint8_t* memory_device, uint8_t (*output_digest)[DIG
     // 435 entries, by inspection of syscall.tbl file
     // The output digest is consistent between boots
     // and across builds
-    uint64_t sctPaddr = TranslateVaddr(memory_device, SYS_CALL_TABLE_VADDR);
-    HashMeasure(memory_device+sctPaddr, sizeof(uint64_t) * SYS_CALL_TABLE_ENTRIES, output_digest);
+    uint64_t sctPaddr = TranslateVaddr(memory_device, INTRO_SYS_CALL_TABLE_VADDR);
+    HashMeasure(memory_device+sctPaddr, sizeof(uint64_t) * NUM_SYS_CALL_TABLE_ENTRIES, output_digest);
 }
 
