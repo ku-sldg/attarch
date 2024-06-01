@@ -1,0 +1,31 @@
+The following types of file systems were found in a Linux 5.4.y system.
+
+File System Type: tmpfs
+File System Type: rootfs
+File System Type: bdev
+File System Type: nsfs
+File System Type: proc
+File System Type: devtmpfs
+File System Type: securityfs
+File System Type: debugfs
+File System Type: sockfs
+File System Type: dax
+File System Type: dmabuf
+File System Type: tracefs
+File System Type: pipefs
+File System Type: anon_inodefs
+File System Type: hugetlbfs
+File System Type: hugetlbfs
+File System Type: hugetlbfs
+File System Type: hugetlbfs
+File System Type: devmem
+File System Type: aio
+File System Type: mqueue
+File System Type: devpts
+File System Type: tmpfs
+File System Type: tmpfs
+File System Type: tmpfs
+File System Type: sysfs
+Done measuring file systems
+
+
