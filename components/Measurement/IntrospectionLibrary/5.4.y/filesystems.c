@@ -4,6 +4,8 @@
  * May 2024
  */
 
+#include "xarray.c"
+
 #define S_IFMT  00170000
 #define S_IFLNK  0120000
 #define S_IFREG  0100000
@@ -100,33 +102,20 @@ void TraverseDentry(uint8_t* memdev, uint64_t dentry_paddr)
     {
         printf("file) ");
         if(strcmp(memdev+name_paddr, "useram")==0)
+        /* if(strcmp(memdev+name_paddr, "manifest.json")==0) */
         {
             printf("\n\ntake action on useram file\n\n");
 
-            /* // try to get the pages from the cache */
-            /* // don't forget address_space.nrpages */
-            /* uint64_t xarray_head_vaddr = ((uint64_t*)(memdev+inode_paddr+I_DATA+AS_PAGES+8))[0]; */
-            /* if(xarray_head_vaddr == 0) */
-            /* { */
-            /*     printf("empty xarray!\n"); */
-            /*     return; */
-            /* } */
-            /* printf("here %llx\n", xarray_head_vaddr); */
-            /* uint64_t xarray_head_paddr = TranslationTableWalk(memdev, xarray_head_vaddr); // entry||node */
-            /* uint64_t memory = 0; */
-            /* for (int i=0; i<ULONG_MAX; i++) */
-            /* { */
-            /*     uint64_t temp_node = ((uint64_t*)(memdev+xarray_head_paddr))[i]; */
-            /*     if(temp_node!=0) */
-            /*     { */
-            /*         if(temp_node!=memory) */
-            /*         { */
-            /*             memory = temp_node; */
-            /*             printf("%lu : %llx\n", i, temp_node); */
-            /*             continue; */
-            /*         } */
-            /*     } */
-            /* } */
+            uint64_t xarray_head_vaddr = ((uint64_t*)(memdev+inode_paddr+I_DATA+AS_PAGES+8))[0];
+            if(xarray_head_vaddr == 0)
+            {
+                printf("empty xarray!\n");
+                return;
+            }
+            printf("here %llx\n", xarray_head_vaddr);
+            uint64_t xarray_head_paddr = TranslationTableWalk(memdev, xarray_head_vaddr); // entry||node
+
+            xa_dump(memdev, xarray_head_paddr);
 
         }
     }
