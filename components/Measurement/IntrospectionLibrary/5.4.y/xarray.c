@@ -132,20 +132,39 @@ uint64_t xa_to_sibling(uint64_t entry)
     return xa_to_internal(entry);
 }
 
-void xa_dump_node(uint8_t* memdev, xa_node node)
+void xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
-    for(int i=0; i<4096; i++)
+    /* printf("Printing at node address: %llx\n", node); */
+    unsigned char offset = 0;
+    offset = (memdev+node)[2];
+    uint64_t litmus = ((uint64_t*)(memdev+node+48))[0];
+    uint64_t addr_base = 0xFFFF000000000000;
+    if(addr_base <= litmus && litmus < addr_base+RAM_SIZE)
     {
-        if(i%64==0)
-        {
-            printf("\n\t");
-        }
-        else if(i%8==0)
-        {
-            printf(" ");
-        }
-        printf("%02X", (memdev+node)[i]); 
+        // only measure "data containing" nodes
+        // that is, exclude nodes that only refer to other nodes
+        return;
     }
+
+    /* for(int i=8*6; i<8*72; i++) // should be 8*5? why does the first slot not match? */
+    /* { */
+    /*     if(i%64==0) */
+    /*     { */
+    /*         printf("\n\t"); */
+    /*     } */
+    /*     else if(i%8==0) */
+    /*     { */
+    /*         printf(" "); */
+    /*     } */
+    /*     printf("%02X", (memdev+node)[i]); */ 
+    /* } */
+    /* printf("\n"); */
+
+    uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    HashMeasure(memdev+node+8*6, 63, tempDigest);
+    HashExtend(digest, tempDigest);
+    free(tempDigest);
+
 }
 
 void xa_dump_index(uint64_t index, unsigned int shift)
@@ -171,7 +190,7 @@ uint64_t GetSlots(uint8_t* memdev, uint64_t node, int i)
     return result;
 }
 
-void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shift)
+void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shift, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     if (entry == 0)
         return;
@@ -180,15 +199,15 @@ void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shi
 
     if (xa_is_node(entry)) {
         if (shift == 0) {
-            /* printf("%px\n", entry); */
+            /* printf("%px\n", entry); //never happens? */
         } else {
             uint64_t i;
             xa_node node = xa_to_node(entry);
-            xa_dump_node(memdev, node);
+            xa_dump_node(memdev, node, digest);
             for (i = 0; i < XA_CHUNK_SIZE; i++)
             {
                 xa_dump_entry(memdev, GetSlots(memdev, node, i),
-                        index + (i << GetShift(memdev, node)), GetShift(memdev, node));
+                        index + (i << GetShift(memdev, node)), GetShift(memdev, node), digest);
             }
         }
     }
@@ -219,13 +238,13 @@ void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shi
     }
 }
 
-void xa_dump(uint8_t* memdev, uint64_t xa_head_ptr)
+void xa_dump(uint8_t* memdev, uint64_t xa_head_ptr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     uint64_t shift = 0;
     if (xa_is_node(xa_head_ptr))
     {
         shift = GetShift(memdev, xa_to_node(xa_head_ptr)) + XA_CHUNK_SHIFT;
     }
-    xa_dump_entry(memdev, xa_head_ptr, 0, shift);
+    xa_dump_entry(memdev, xa_head_ptr, 0, shift, digest);
 }
 

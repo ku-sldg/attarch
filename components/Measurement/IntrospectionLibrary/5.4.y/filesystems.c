@@ -63,7 +63,7 @@ void InterpretType(uint8_t* memdev, uint64_t sb_paddr)
     printf("File System Type: %s\n", memdev+name_paddr);
 }
 
-void TraverseDentry(uint8_t* memdev, uint64_t dentry_paddr)
+void TraverseDentry(uint8_t* memdev, uint64_t dentry_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     uint64_t name_vaddr = ((uint64_t*)(memdev+dentry_paddr+DENTRY_DNAME+8))[0];
     if(name_vaddr < 0xffff000000000000)
@@ -91,7 +91,7 @@ void TraverseDentry(uint8_t* memdev, uint64_t dentry_paddr)
         uint64_t subdir_iter = next_subdir_paddr;
         do
         {
-            TraverseDentry(memdev, subdir_iter - DENTRY_CHILD);
+            TraverseDentry(memdev, subdir_iter - DENTRY_CHILD, digest);
             uint64_t temp_vaddr = ((uint64_t*)(memdev+subdir_iter))[0];
             subdir_iter = TranslationTableWalk(memdev, temp_vaddr);
         } while(subdir_iter != next_subdir_paddr);
@@ -115,7 +115,7 @@ void TraverseDentry(uint8_t* memdev, uint64_t dentry_paddr)
             printf("here %llx\n", xarray_head_vaddr);
             uint64_t xarray_head_paddr = TranslationTableWalk(memdev, xarray_head_vaddr); // entry||node
 
-            xa_dump(memdev, xarray_head_paddr);
+            xa_dump(memdev, xarray_head_paddr, digest);
 
         }
     }
@@ -137,25 +137,25 @@ void TraverseDentry(uint8_t* memdev, uint64_t dentry_paddr)
     }
     else
     {
-        printf("???) ");
+        printf("?) ");
     }
 
 }
 
-void InterpretSRoot(uint8_t* memdev, uint64_t sb_paddr)
+void InterpretSRoot(uint8_t* memdev, uint64_t sb_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     uint64_t sroot_vaddr = ((uint64_t*)(memdev+sb_paddr))[S_ROOT/8];
     uint64_t sroot_paddr = TranslationTableWalk(memdev, sroot_vaddr);
-    TraverseDentry(memdev, sroot_paddr);
+    TraverseDentry(memdev, sroot_paddr, digest);
 }
 
-void ActOnSuperblock(uint8_t* memory_device, uint64_t sb_paddr)
+void ActOnSuperblock(uint8_t* memory_device, uint64_t sb_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     InterpretType(memory_device, sb_paddr);
-    InterpretSRoot(memory_device, sb_paddr);
+    InterpretSRoot(memory_device, sb_paddr, digest);
 }
 
-void MeasureFileSystems(uint8_t* memory_device)
+void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     uint64_t sbs_vaddr = 0xffff8000111b4148;
 
@@ -171,7 +171,7 @@ void MeasureFileSystems(uint8_t* memory_device)
                       // So let's only print two for now.
     while(sb_iter != sbs_paddr)
     {
-        ActOnSuperblock(memory_device, sb_iter);
+        ActOnSuperblock(memory_device, sb_iter, digest);
         uint64_t temp_vaddr = ((uint64_t*)(memory_device+sb_iter))[0];
         sb_iter = TranslationTableWalk(memory_device, temp_vaddr);
         if(aye)
