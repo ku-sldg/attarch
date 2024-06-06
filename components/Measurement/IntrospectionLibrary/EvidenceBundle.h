@@ -40,7 +40,7 @@ void PrintBundle(EvidenceBundle *bundle);
 
 void PrintCollection(EvidenceBundle *collection, int numEntries);
 
-void ExportToByteString(EvidenceBundle* list, int list_size, char** evidence);
+void ExportToByteString(EvidenceBundle* list, int list_size, char* evidence);
 
 #endif // EVIDENCE_BUNDLE_H
 

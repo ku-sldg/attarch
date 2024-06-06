@@ -17,7 +17,7 @@ void introspective_measurement__init(void)
     ShaTest();
 }
 
-bool introspective_measurement_request(int id, char** evidence)
+bool introspective_measurement_request(int id)
 {
     printf("DEBUG: here's your measurement id: %d\n", id);
     if(id==0)
@@ -25,10 +25,7 @@ bool introspective_measurement_request(int id, char** evidence)
         EvidenceBundle* resultsBundle = MeasureLinuxKernel();
         int resultsNum = GetCollectionLength(resultsBundle, 100); //TODO find a better supremum
         ExportToByteString(resultsBundle, resultsNum, evidence);
-        /* PrintCollection(resultsBundle, resultsNum); */
         free(resultsBundle);
-        /* printf("doing with %d\n\n", resultsNum); */
-        /* PrintCollection(((EvidenceBundle*)(*evidence)), 3); */
         return true;
     }
     else
@@ -39,7 +36,7 @@ bool introspective_measurement_request(int id, char** evidence)
     return false;
 }
 
-bool introspective_measurement_appraise(int id, const char* evidence, char** appraisal_report)
+bool introspective_measurement_appraise(int id, char** appraisal_report)
 {
     printf("DEBUG: here's your measurement id: %d\n", id);
     if(id==0)

@@ -224,27 +224,19 @@ void PrintCollection(EvidenceBundle *collection, int numEntries) {
     }
 }
 
-void ExportToByteString(EvidenceBundle* list, int list_size, char** evidence) {
+void ExportToByteString(EvidenceBundle* list, int list_size, char* evidence) {
     int bundle_size = sizeof(EvidenceBundle); // Size of each EvidenceBundle in bytes
     int total_size = bundle_size * list_size; // Total byte size for all EvidenceBundles
-
-    // Allocate memory for all EvidenceBundles plus one byte for the null terminator
-    *evidence = malloc(total_size + 1);
-    if (*evidence == NULL) {
-        // Handle memory allocation failure
+    if (evidence == NULL) {
         printf("Error: Memory allocation failed.\n");
         return;
     }
-
     // Copy each EvidenceBundle into the byte string
     for (int i = 0; i < list_size; i++) {
         for(int j=0; j< bundle_size; j++)
         {
-            (*evidence)[i * bundle_size + j] = ((uint8_t*)(&(list[i])))[j];
+            evidence[i * bundle_size + j] = ((uint8_t*)(&(list[i])))[j];
         }
     }
-
-    // Null terminate the byte string
-    (*evidence)[total_size] = '\0';
 }
 

@@ -92,8 +92,7 @@ EvidenceBundle* MeasureLinuxKernel()
 
 bool AppraiseLinuxKernelMeasurement(const char* evidence)
 {
-    int ffi_offset = 64 * 5; // explain
-    EvidenceBundle* bundle = (EvidenceBundle*)(evidence+ffi_offset);
+    EvidenceBundle* bundle = (EvidenceBundle*)(evidence);
     bool result = true;
 
     while(!IsBundleNullBundle(bundle))

@@ -22,8 +22,8 @@ import <TimeServer/TimeServer.camkes>;
 
 procedure measurement {
     // id refers to which measurement is desired
-    bool request(in int id, out string evidence);
-    bool appraise(in int id, in string evidence, out string appraisal_report);
+    bool request(in int id);
+    bool appraise(in int id, out string appraisal_report);
 }
 procedure file_read_string {
     bool request(in string file_path, inout string file_contents, in int size);
@@ -44,12 +44,14 @@ component server_am {
     uses measurement introspective_measurement;
     uses file_read_string file_read;
     uses linux_comm_utils linux_comm;
+    dataport Buf(4096) evidence;
 
     dataport Buf(2097152) cakeML_heap_and_stack_space;
 }
 
 component introspect_memdev {
     provides measurement introspective_measurement;
+    dataport Buf(4096) evidence;
 
     // shared data with the vm
     dataport Buf memdev;
