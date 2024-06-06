@@ -157,8 +157,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
     uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR);
-    char* PGDTablePtr = swapper_pgd_table_paddr;
-    return TranslationTableWalkSuppliedPGD(memory_device, inputAddr,  PGDTablePtr);
+    return TranslationTableWalkSuppliedPGD(memory_device, inputAddr, swapper_pgd_table_paddr);
 }
 
 uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)

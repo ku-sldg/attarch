@@ -176,10 +176,7 @@ uint64_t TranslationTableWalkSuppliedPGD(uint8_t* memory_device, uint64_t inputA
 
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
-    /* printf("translating swapper pgd\n"); */
     uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR + 0x80000);
-    /* char* PGDTablePtr = (char*)swapper_pgd_table_paddr; */
-    /* printf("swapper pgd translated. actually walking table now\n"); */
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr, swapper_pgd_table_paddr);
 }
 
