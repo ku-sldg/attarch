@@ -77,3 +77,16 @@ EvidenceBundle* InspectSystemCallTable(uint8_t* memory_device)
     free(kernelSCTDigest);
     return evidence;
 }
+
+EvidenceBundle* InspectVirtualFileSystems(uint8_t* memory_device)
+{
+    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
+    uint8_t (*VFSDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    MeasureFileSystems(memory_device, VFSDigest);
+    const char bundleName[56] = "VirtualFileSystems";
+    EvidenceBundle vfsBundle = CreateBundle(&RODATA_TYPE, &bundleName, VFSDigest);
+    PackBundleSingle(evidence, 1, &vfsBundle);
+    free(VFSDigest);
+    return evidence;
+}
+
