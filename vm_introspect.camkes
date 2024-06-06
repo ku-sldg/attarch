@@ -34,9 +34,6 @@ procedure linux_comm_utils {
     bool receive_request(out string response);
     bool send_request(in string ip, in string port, in string json_request, out string response);
 }
-procedure hypervisor_call {
-    bool assign_pointer(in string location, in string value);
-}
 
 component dummy {
     dataport Buf(2097152) cakeML_heap_and_stack_space;
@@ -53,7 +50,6 @@ component server_am {
 
 component introspect_memdev {
     provides measurement introspective_measurement;
-    provides hypervisor_call hypervisor;
 
     // shared data with the vm
     dataport Buf memdev;
@@ -65,7 +61,6 @@ component file_server {
 
 component linux_handler {
     provides linux_comm_utils linux_comm;
-    uses hypervisor_call hypervisor;
 
     // shared data with the client in the vm 
     dataport Buf(4096) client_dp;
@@ -107,6 +102,7 @@ assembly {
         // dataports
         connection seL4SharedDataWithCaps server_and_client(from lhandler.client_dp, to vm0.server_dp);
         connection seL4SharedData dummy_space(from server.cakeML_heap_and_stack_space, to dummy.cakeML_heap_and_stack_space);
+        connection seL4SharedDataWithCaps vm_evidence(from md.evidence, to server.evidence);
 
         // notifications
         connection seL4GlobalAsynch server_to_client(from lhandler.client_done, to vm0.server_done);
@@ -116,7 +112,6 @@ assembly {
         connection seL4RPCCall measurement_request(from server.introspective_measurement, to md.introspective_measurement);
         connection seL4RPCCall file_server(from server.file_read, to fserver.file_read);
         connection seL4RPCCall linux_comm(from server.linux_comm, to lhandler.linux_comm);
-        connection seL4RPCCall linux_comm_hyp(from lhandler.hypervisor, to md.hypervisor);
         
 
         // don't know about this ?

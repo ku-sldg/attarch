@@ -23,29 +23,6 @@ bool linux_comm_fire_and_forget(const char* message)
     }
     return true;
 }
-bool InterpretDataportInput(uint8_t* input)
-{
-    uint64_t head = ((uint64_t*)input)[0];
-    if(head == 0x1) // handle only one instruction rn
-    {
-        uint64_t location = ((uint64_t*)input)[1];
-        uint64_t value = ((uint64_t*)input)[2];
-        bool result = hypervisor_assign_pointer((char*)(&location), (char*)(&value));
-        if(result)
-        {
-            printf("hypervisor_assign_pointer succeeded\n");
-        }
-        else
-        {
-            printf("hypervisor_assign_pointer failed\n");
-        }
-    }
-    else
-    {
-        return true;
-    }
-    return false;
-}
 bool linux_comm_receive_request(char** response)
 {
     WaitLinuxDataport();
@@ -59,12 +36,9 @@ bool linux_comm_receive_request(char** response)
         free(contents);
         return false;
     }
-    if(InterpretDataportInput(contents))
+    for(int i=0; i<4096; i++)
     {
-        for(int i=0; i<4096; i++)
-        {
-            (*response)[i] = contents[i];
-        }
+        (*response)[i] = contents[i];
     }
     free(contents);
     return true;
