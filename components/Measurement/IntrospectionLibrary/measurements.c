@@ -18,9 +18,9 @@
 */
 #include "EvidenceBundle.h"
 
-char RODATA_TYPE[8] = {'R','o','d','a','t','a','\0','\0'};
-char MODULE_TYPE[8] = {'M','o','d','u','l','e','\0','\0'};
-char TASK_TYPE[8] = {'T','a','s','k','\0','\0','\0','\0'};
+const char RODATA_TYPE[8] = {'R','o','d','a','t','a','\0','\0'};
+const char MODULE_TYPE[8] = {'M','o','d','u','l','e','\0','\0'};
+const char TASK_TYPE[8] = {'T','a','s','k','\0','\0','\0','\0'};
 
 EvidenceBundle* InspectModules(uint8_t* memory_device)
 {
@@ -36,7 +36,7 @@ EvidenceBundle* InspectModules(uint8_t* memory_device)
         if(IsThisAValidModuleMeasurement(thisModuleName))
         {
             uint8_t (*thisModuleDigest) [DIGEST_NUM_BYTES] = (uint8_t (*) [DIGEST_NUM_BYTES])&((*module_digests)[i*DIGEST_NUM_BYTES]);
-            EvidenceBundle thisBundle = CreateBundle(MODULE_TYPE, thisModuleName, thisModuleDigest);
+            EvidenceBundle thisBundle = CreateBundle(&MODULE_TYPE, thisModuleName, thisModuleDigest);
             PackBundle(evidence, NUM_MODULE_DIGESTS, &thisBundle, 1);
         }
     }
@@ -60,7 +60,7 @@ EvidenceBundle* InspectRodata(uint8_t* memory_device)
     uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     MeasureKernelRodata(memory_device, kernelRodataDigest);
     const char rodataBundleName[56] = "KernelRodata";
-    EvidenceBundle rodataBundle = CreateBundle(RODATA_TYPE, rodataBundleName, kernelRodataDigest);
+    EvidenceBundle rodataBundle = CreateBundle(&RODATA_TYPE, &rodataBundleName, kernelRodataDigest);
     PackBundleSingle(evidence, 1, &rodataBundle);
     free(kernelRodataDigest);
     return evidence;
@@ -72,7 +72,7 @@ EvidenceBundle* InspectSystemCallTable(uint8_t* memory_device)
     uint8_t (*kernelSCTDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     MeasureSystemCallTable(memory_device, kernelSCTDigest);
     const char bundleName[56] = "KernelSystemCallTable";
-    EvidenceBundle syscalltableBundle = CreateBundle(RODATA_TYPE, bundleName, kernelSCTDigest);
+    EvidenceBundle syscalltableBundle = CreateBundle(&RODATA_TYPE, &bundleName, kernelSCTDigest);
     PackBundleSingle(evidence, 1, &syscalltableBundle);
     free(kernelSCTDigest);
     return evidence;

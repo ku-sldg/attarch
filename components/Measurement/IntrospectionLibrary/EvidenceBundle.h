@@ -9,12 +9,12 @@
 typedef struct {
     char type[8];          // 8 bytes for type
     char name[56];         // 56 bytes for name
-    char digest[64];       // 64 bytes for digest
+    uint8_t digest[64];       // 64 bytes for digest
 } EvidenceBundle;
 
-extern char RODATA_TYPE[8];
-extern char MODULE_TYPE[8];
-extern char TASK_TYPE[8];
+extern const char RODATA_TYPE[8];
+extern const char MODULE_TYPE[8];
+extern const char TASK_TYPE[8];
 
 static EvidenceBundle nullEvidenceBundle = {
     .type = {1, 1, 1, 1, 1, 1, 1, 1},  // Set all bytes in 'type' to 1
@@ -28,7 +28,7 @@ bool IsBundleNullBundle(EvidenceBundle* bundle);
 
 bool IsBundleEmpty(EvidenceBundle *bundle, bool logerror);
 
-EvidenceBundle CreateBundle(const char (*type)[8], const char (*name)[56], const char (*digest)[64]);
+EvidenceBundle CreateBundle(const char (*type)[8], const char (*name)[56], const uint8_t (*digest)[64]);
 
 void PackBundleSingle(EvidenceBundle *collection_list, int collection_list_max_size, const EvidenceBundle *input_bundle);
 

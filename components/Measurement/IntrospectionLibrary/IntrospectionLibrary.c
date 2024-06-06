@@ -99,14 +99,14 @@ bool AppraiseLinuxKernelMeasurement(const char* evidence)
     while(!IsBundleNullBundle(bundle))
     {
         PrintBundle(bundle);
-        if(IsThisAKnownDigest(bundle->digest))
+        if(IsThisAKnownDigest(&(bundle->digest)))
         {
             printf("Digest Recognized.\n");
         }
         else
         {
             printf("Digest NOT Recognized:\n");
-            RenderDigestDeclaration(bundle->name, bundle->digest);
+            RenderDigestDeclaration(&(bundle->name), &(bundle->digest));
             result = false;
         }
         printf("\n");

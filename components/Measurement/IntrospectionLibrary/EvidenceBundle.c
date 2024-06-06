@@ -84,7 +84,7 @@ bool IsBundleEmpty(EvidenceBundle *bundle, bool logerror) {
  * @param digest Pointer to a 64-byte digest.
  * @return The created EvidenceBundle.
  */
-EvidenceBundle CreateBundle(const char (*type)[8], const char (*name)[56], const char (*digest)[64]) {
+EvidenceBundle CreateBundle(const char (*type)[8], const char (*name)[56], const uint8_t (*digest)[64]) {
     EvidenceBundle bundle;
 
     for(int i=0; i<8; i++)
