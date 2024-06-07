@@ -13,6 +13,7 @@
 #include "CHOOSE/shelf.c" // choose your version of linux
 #include "system_call_table.c"
 #include "measurementAndAppraisal.c"
+#include "CAmkESFS.c"
 #include "measurements.c"
 
 /* This function is here to easily control which measurements */
@@ -43,6 +44,8 @@ EvidenceBundle* MeasureLinuxKernel()
     EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
     EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
     EvidenceBundle* sctEvidence = InspectSystemCallTable((uint8_t*)memdev);
+
+    EvidenceBundle* cfsEvidence =  InspectCAmkESFileSystem();
 
     /* printf("Here is rodata evidence:\n"); */
     /* PrintBundle(rodataEvidence); */

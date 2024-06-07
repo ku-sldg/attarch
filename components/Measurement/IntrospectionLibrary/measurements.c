@@ -90,3 +90,8 @@ EvidenceBundle* InspectVirtualFileSystems(uint8_t* memory_device)
     return evidence;
 }
 
+EvidenceBundle* InspectCAmkESFileSystem()
+{
+    CheckFS();
+    return NULL;
+}
