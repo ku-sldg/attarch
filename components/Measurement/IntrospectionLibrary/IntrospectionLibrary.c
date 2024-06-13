@@ -44,6 +44,7 @@ EvidenceBundle* MeasureLinuxKernel()
     EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
     EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
     EvidenceBundle* sctEvidence = InspectSystemCallTable((uint8_t*)memdev);
+    EvidenceBundle* vfsEvidence = InspectVirtualFileSystems((uint8_t*)memdev);
 
     EvidenceBundle* cfsEvidence =  InspectCAmkESFileSystem();
 
@@ -55,6 +56,7 @@ EvidenceBundle* MeasureLinuxKernel()
     numEvidenceEntries++; // we want to null terminate this list
     numEvidenceEntries++; // one for the kernel ro-data
     numEvidenceEntries++; // one for the system call table
+    numEvidenceEntries++; // one for the VFS layer
 
     numModuleEvidences += GetCollectionLength(modulesEvidence, NUM_MODULE_DIGESTS * sizeof(EvidenceBundle));
     numEvidenceEntries += numModuleEvidences;
@@ -68,6 +70,7 @@ EvidenceBundle* MeasureLinuxKernel()
     // pack the evidence into a single collection
     PackBundleSingle(evidenceCollection, numEvidenceEntries, rodataEvidence);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, sctEvidence);
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, vfsEvidence);
     PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
     PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
@@ -89,7 +92,11 @@ EvidenceBundle* MeasureLinuxKernel()
     {
         free(sctEvidence);
     }
-    
+    if(vfsEvidence != NULL)
+    {
+        free(vfsEvidence);
+    }
+
     return evidenceCollection;
 }
 
