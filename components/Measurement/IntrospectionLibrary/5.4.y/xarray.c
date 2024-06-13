@@ -132,7 +132,7 @@ uint64_t xa_to_sibling(uint64_t entry)
     return xa_to_internal(entry);
 }
 
-void xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYTES])
+int xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     /* printf("Printing at node address: %llx\n", node); */
     unsigned char offset = 0;
@@ -143,10 +143,10 @@ void xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYT
     {
         // only measure "data containing" nodes
         // that is, exclude nodes that only refer to other nodes
-        return;
+        return 0;
     }
 
-    /* for(int i=8*6; i<8*72; i++) // should be 8*5? why does the first slot not match? */
+    /* for(int i=0; i<8*72; i++) */
     /* { */
     /*     if(i%64==0) */
     /*     { */
@@ -160,10 +160,21 @@ void xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYT
     /* } */
     /* printf("\n"); */
 
-    uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    HashMeasure(memdev+node+8*6, 63, tempDigest);
-    HashExtend(digest, tempDigest);
-    free(tempDigest);
+    /* // Digest the page references */
+    /* uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES); */
+    /* HashMeasure(memdev+node+8*6, 63, tempDigest); */
+    /* HashExtend(digest, tempDigest); */
+    /* free(tempDigest); */
+
+    int ret = 0;
+    for(int i=8*5; i<8*69; i+=8)
+    {
+        if( ((uint64_t*)(memdev + node + i))[0] != 0 )
+        {
+            ret++;
+        }
+    }
+    return ret;
 
 }
 
@@ -190,7 +201,7 @@ uint64_t GetSlots(uint8_t* memdev, uint64_t node, int i)
     return result;
 }
 
-void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shift, uint8_t(*digest)[DIGEST_NUM_BYTES])
+void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shift, uint8_t(*digest)[DIGEST_NUM_BYTES], int* numPages)
 {
     if (entry == 0)
         return;
@@ -203,11 +214,13 @@ void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shi
         } else {
             uint64_t i;
             xa_node node = xa_to_node(entry);
-            xa_dump_node(memdev, node, digest);
+            int thisPages = xa_dump_node(memdev, node, digest);
+            int pagesThusly = *numPages + thisPages;
+            *numPages = pagesThusly;
             for (i = 0; i < XA_CHUNK_SIZE; i++)
             {
                 xa_dump_entry(memdev, GetSlots(memdev, node, i),
-                        index + (i << GetShift(memdev, node)), GetShift(memdev, node), digest);
+                        index + (i << GetShift(memdev, node)), GetShift(memdev, node), digest, numPages);
             }
         }
     }
@@ -245,6 +258,11 @@ void xa_dump(uint8_t* memdev, uint64_t xa_head_ptr, uint8_t(*digest)[DIGEST_NUM_
     {
         shift = GetShift(memdev, xa_to_node(xa_head_ptr)) + XA_CHUNK_SHIFT;
     }
-    xa_dump_entry(memdev, xa_head_ptr, 0, shift, digest);
+    int* numPages = calloc(sizeof(int),1);
+    *numPages = 0;
+    xa_dump_entry(memdev, xa_head_ptr, 0, shift, digest, numPages);
+    printf("\n\n num pages was %d\n\n", *numPages);
+
+    HashMeasure(numPages, sizeof(int), digest);
 }
 
