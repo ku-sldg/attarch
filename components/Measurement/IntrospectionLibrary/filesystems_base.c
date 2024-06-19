@@ -106,6 +106,11 @@ void ActOnSuperblock(uint8_t* memory_device, uint64_t sb_paddr, uint8_t(*digest)
 
 void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
+    if(!CanMeasureFileSystem())
+    {
+        return;
+    }
+    printf("measuring\n");
     /* uint64_t sbs_vaddr = 0xffff8000111b4148; */
 
     // sbs_paddr is the offset to the "super_blocks" symbol.

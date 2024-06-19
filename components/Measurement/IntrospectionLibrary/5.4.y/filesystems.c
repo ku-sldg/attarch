@@ -15,6 +15,11 @@
 #define INODE_I_DATA 376
 #define ADDRESS_SPACE_I_PAGES 8
 
+bool CanMeasureFileSystem()
+{
+    return true;
+}
+
 
 void MeasureFileInode(uint8_t* memory_device, uint64_t inode_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {

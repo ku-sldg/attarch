@@ -15,6 +15,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+bool CanMeasureTasks()
+{
+    return true;
+}
+
 void DebugLog(char* msg)
 {
     if(INTRO_TASK_DEBUG)

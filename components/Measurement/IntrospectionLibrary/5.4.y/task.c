@@ -23,6 +23,11 @@
 #define COMM_OFFSET 1712
 #define PGD_OFFSET 64
 
+bool CanMeasureTasks()
+{
+    return true;
+}
+
 
 void DebugLog(char* msg)
 {

@@ -49,6 +49,10 @@ EvidenceBundle* InspectModules(uint8_t* memory_device)
 
 EvidenceBundle* InspectTasks(uint8_t* memory_device)
 {
+    if(!CanMeasureTasks())
+    {
+        return NULL;
+    }
     TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memory_device);
     FreeTaskTree(rootTaskMeasurement);
     return NULL;
