@@ -34,13 +34,14 @@ static int __init poison_init(void)
     printk("kimage_vaddr is %llx \n", KIMAGE_VADDR);
     printk("VA_BITS is %llx \n", VA_BITS);
 
-    printDefinition("MM_OFFSET", offsetof(struct task_struct, mm));
-    printDefinition("PID_OFFSET", offsetof(struct task_struct, pid));
-    printDefinition("PARENT_OFFSET", offsetof(struct task_struct, parent));
-    printDefinition("CHILDREN_OFFSET", offsetof(struct task_struct, children));
-    printDefinition("SIBLING_OFFSET", offsetof(struct task_struct, sibling));
-    printDefinition("REAL_CRED_OFFSET", offsetof(struct task_struct, real_cred));
-    printDefinition("PGD_OFFSET", offsetof(struct mm_struct, pgd));
+    printDefinition("SUPER_BLOCK_S_TYPE", offsetof(struct super_block, s_type));
+    printDefinition("SUPER_BLOCK_S_ROOT", offsetof(struct super_block, s_root));
+    printDefinition("DENTRY_D_INODE", offsetof(struct dentry, d_inode));
+    printDefinition("DENTRY_D_NAME", offsetof(struct dentry, d_name));
+    printDefinition("DENTRY_D_SUBDIRS", offsetof(struct dentry, d_subdirs));
+    printDefinition("DENTRY_D_CHILD", offsetof(struct dentry, d_child));
+    printDefinition("INODE_I_DATA", offsetof(struct inode, i_data));
+    printDefinition("ADDRESS_SPACE_I_PAGES", offsetof(struct address_space, i_pages));
 
     return 0;
 }
