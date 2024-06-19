@@ -132,12 +132,12 @@ uint64_t xa_to_sibling(uint64_t entry)
     return xa_to_internal(entry);
 }
 
-int xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYTES])
+int xa_dump_node(uint8_t* memory_device, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     /* printf("Printing at node address: %llx\n", node); */
     unsigned char offset = 0;
-    offset = (memdev+node)[2];
-    uint64_t litmus = ((uint64_t*)(memdev+node+48))[0];
+    offset = (memory_device+node)[2];
+    uint64_t litmus = ((uint64_t*)(memory_device+node+48))[0];
     uint64_t addr_base = 0xFFFF000000000000;
     if(addr_base <= litmus && litmus < addr_base+RAM_SIZE)
     {
@@ -156,20 +156,20 @@ int xa_dump_node(uint8_t* memdev, xa_node node, uint8_t(*digest)[DIGEST_NUM_BYTE
     /*     { */
     /*         printf(" "); */
     /*     } */
-    /*     printf("%02X", (memdev+node)[i]); */ 
+    /*     printf("%02X", (memory_device+node)[i]); */ 
     /* } */
     /* printf("\n"); */
 
     /* // Digest the page references */
     /* uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES); */
-    /* HashMeasure(memdev+node+8*6, 63, tempDigest); */
+    /* HashMeasure(memory_device+node+8*6, 63, tempDigest); */
     /* HashExtend(digest, tempDigest); */
     /* free(tempDigest); */
 
     int ret = 0;
     for(int i=8*5; i<8*69; i+=8)
     {
-        if( ((uint64_t*)(memdev + node + i))[0] != 0 )
+        if( ((uint64_t*)(memory_device + node + i))[0] != 0 )
         {
             ret++;
         }
@@ -188,20 +188,20 @@ void xa_dump_index(uint64_t index, unsigned int shift)
     /*     printf("%lu-%lu: ", index, index | ((1UL << shift) - 1)); */
 }
 
-uint8_t GetShift(uint8_t* memdev, uint64_t node)
+uint8_t GetShift(uint8_t* memory_device, uint64_t node)
 {
-    uint8_t shift = (memdev+node)[0];
+    uint8_t shift = (memory_device+node)[0];
     return shift;
 }
 
-uint64_t GetSlots(uint8_t* memdev, uint64_t node, int i)
+uint64_t GetSlots(uint8_t* memory_device, uint64_t node, int i)
 {
-    uint64_t result = ((uint64_t*)(memdev+node+XA_SLOTS))[i];
-    result = TranslationTableWalk(memdev, result);
+    uint64_t result = ((uint64_t*)(memory_device+node+XA_SLOTS))[i];
+    result = TranslationTableWalk(memory_device, result);
     return result;
 }
 
-void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shift, uint8_t(*digest)[DIGEST_NUM_BYTES], int* numPages)
+void xa_dump_entry(uint8_t* memory_device, uint64_t entry, uint64_t index, uint64_t shift, uint8_t(*digest)[DIGEST_NUM_BYTES], int* numPages)
 {
     if (entry == 0)
         return;
@@ -214,13 +214,13 @@ void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shi
         } else {
             uint64_t i;
             xa_node node = xa_to_node(entry);
-            int thisPages = xa_dump_node(memdev, node, digest);
+            int thisPages = xa_dump_node(memory_device, node, digest);
             int pagesThusly = *numPages + thisPages;
             *numPages = pagesThusly;
             for (i = 0; i < XA_CHUNK_SIZE; i++)
             {
-                xa_dump_entry(memdev, GetSlots(memdev, node, i),
-                        index + (i << GetShift(memdev, node)), GetShift(memdev, node), digest, numPages);
+                xa_dump_entry(memory_device, GetSlots(memory_device, node, i),
+                        index + (i << GetShift(memory_device, node)), GetShift(memory_device, node), digest, numPages);
             }
         }
     }
@@ -251,18 +251,25 @@ void xa_dump_entry(uint8_t* memdev, uint64_t entry, uint64_t index, uint64_t shi
     }
 }
 
-void xa_dump(uint8_t* memdev, uint64_t xa_head_ptr, uint8_t(*digest)[DIGEST_NUM_BYTES])
+void xa_dump(uint8_t* memory_device, uint64_t xa_head_ptr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
     uint64_t shift = 0;
     if (xa_is_node(xa_head_ptr))
     {
-        shift = GetShift(memdev, xa_to_node(xa_head_ptr)) + XA_CHUNK_SHIFT;
+        shift = GetShift(memory_device, xa_to_node(xa_head_ptr)) + XA_CHUNK_SHIFT;
     }
     int* numPages = calloc(sizeof(int),1);
     *numPages = 0;
-    xa_dump_entry(memdev, xa_head_ptr, 0, shift, digest, numPages);
-    printf("\n\n num pages was %d\n\n", *numPages);
-
+    xa_dump_entry(memory_device, xa_head_ptr, 0, shift, digest, numPages);
+    if(*numPages==0)
+    {
+        //some cases require different counting
+        //when a node has only one page
+        //the xa_node slots array is not considered
+        //instead, the xa_head points to the single page
+        *numPages = 1;
+    }
+    printf("%d) ", *numPages);
     HashMeasure(numPages, sizeof(int), digest);
 }
 

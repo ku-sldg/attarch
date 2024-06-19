@@ -11,6 +11,7 @@
 #include "KnownDigests.h"
 #include "logging.c"
 #include "CHOOSE/shelf.c" // choose your version of linux
+#include "filesystems_base.c"
 #include "system_call_table.c"
 #include "measurementAndAppraisal.c"
 #include "CAmkESFS.c"
