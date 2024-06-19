@@ -19,16 +19,9 @@
 #define S_ISBLK(m)  (((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m) (((m) & S_IFMT) == S_IFIFO)
 
-#define S_TYPE 40
-#define S_ROOT 104
-#define DENTRY_INODE 48
-#define DENTRY_DNAME 32
-#define DENTRY_SUBDIRS 160
-#define DENTRY_CHILD 144
-
 void InterpretType(uint8_t* memory_device, uint64_t sb_paddr)
 {
-    uint64_t type_vaddr = ((uint64_t*)(memory_device+sb_paddr))[S_TYPE/8];
+    uint64_t type_vaddr = ((uint64_t*)(memory_device+sb_paddr))[SUPER_BLOCK_S_TYPE/8];
     uint64_t type_paddr = TranslationTableWalk(memory_device, type_vaddr);
     uint64_t name_vaddr = ((uint64_t*)(memory_device+type_paddr))[0];
     uint64_t name_paddr = TranslationTableWalk(memory_device, name_vaddr);
@@ -37,20 +30,20 @@ void InterpretType(uint8_t* memory_device, uint64_t sb_paddr)
 
 void TraverseDentry(uint8_t* memory_device, uint64_t dentry_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
-    uint64_t name_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_DNAME+8))[0];
+    uint64_t name_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_D_NAME+8))[0];
     if(name_vaddr < 0xffff000000000000)
     {
         return;
     }
     uint64_t name_paddr = TranslationTableWalk(memory_device, name_vaddr);
     printf("(%s, ", memory_device+name_paddr);
-    uint64_t inode_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_INODE))[0];
+    uint64_t inode_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_D_INODE))[0];
     uint64_t inode_paddr = TranslationTableWalk(memory_device, inode_vaddr);
     uint32_t imode = ((uint32_t*)(memory_device+inode_paddr))[0];
     if(S_ISDIR(imode))
     {
         printf("directory) ");
-        uint64_t next_subdir_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_SUBDIRS))[0];
+        uint64_t next_subdir_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_D_SUBDIRS))[0];
         if(next_subdir_vaddr == 0)
         {
             return;
@@ -59,7 +52,7 @@ void TraverseDentry(uint8_t* memory_device, uint64_t dentry_paddr, uint8_t(*dige
         uint64_t subdir_iter = next_subdir_paddr;
         do
         {
-            TraverseDentry(memory_device, subdir_iter - DENTRY_CHILD, digest);
+            TraverseDentry(memory_device, subdir_iter - DENTRY_D_CHILD, digest);
             uint64_t temp_vaddr = ((uint64_t*)(memory_device+subdir_iter))[0];
             subdir_iter = TranslationTableWalk(memory_device, temp_vaddr);
         } while(subdir_iter != next_subdir_paddr);
@@ -100,7 +93,7 @@ void TraverseDentry(uint8_t* memory_device, uint64_t dentry_paddr, uint8_t(*dige
 
 void InterpretSRoot(uint8_t* memory_device, uint64_t sb_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
-    uint64_t sroot_vaddr = ((uint64_t*)(memory_device+sb_paddr))[S_ROOT/8];
+    uint64_t sroot_vaddr = ((uint64_t*)(memory_device+sb_paddr))[SUPER_BLOCK_S_ROOT/8];
     uint64_t sroot_paddr = TranslationTableWalk(memory_device, sroot_vaddr);
     TraverseDentry(memory_device, sroot_paddr, digest);
 }
