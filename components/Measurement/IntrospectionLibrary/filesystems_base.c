@@ -19,13 +19,27 @@
 #define S_ISBLK(m)  (((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m) (((m) & S_IFMT) == S_IFIFO)
 
-void InterpretType(uint8_t* memory_device, uint64_t sb_paddr)
+bool InterpretType(uint8_t* memory_device, uint64_t sb_paddr)
 {
-    uint64_t type_vaddr = ((uint64_t*)(memory_device+sb_paddr))[SUPER_BLOCK_S_TYPE/8];
-    uint64_t type_paddr = TranslationTableWalk(memory_device, type_vaddr);
+    if(sb_paddr > 0xFFFF000000000000 + RAM_SIZE)
+    {
+        return false;
+    }
+    uint64_t type_vaddr = ((uint64_t*)(memory_device+sb_paddr+SUPER_BLOCK_S_TYPE))[0];
+    uint64_t type_paddr = TranslateVaddr(memory_device, type_vaddr);
+    if(type_paddr > 0xFFFF000000000000 + RAM_SIZE)
+    {
+        return false;
+    }
     uint64_t name_vaddr = ((uint64_t*)(memory_device+type_paddr))[0];
     uint64_t name_paddr = TranslationTableWalk(memory_device, name_vaddr);
+    if(name_paddr > 0xFFFF000000000000 + RAM_SIZE)
+    {
+        printf("bad name_paddr: %llx\n", name_paddr);
+        return false;
+    }
     printf("File System Type: %s\n", memory_device+name_paddr);
+    return true;
 }
 
 void TraverseDentry(uint8_t* memory_device, uint64_t dentry_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
@@ -100,8 +114,10 @@ void InterpretSRoot(uint8_t* memory_device, uint64_t sb_paddr, uint8_t(*digest)[
 
 void ActOnSuperblock(uint8_t* memory_device, uint64_t sb_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
-    InterpretType(memory_device, sb_paddr);
-    InterpretSRoot(memory_device, sb_paddr, digest);
+    if(InterpretType(memory_device, sb_paddr))
+    {
+        InterpretSRoot(memory_device, sb_paddr, digest);
+    }
 }
 
 void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTES])
@@ -117,7 +133,7 @@ void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTE
     // it is the administrative list_head (not within a struct super_block)
     uint64_t sbs_paddr = TranslateVaddr(memory_device, INTRO_SUPER_BLOCKS_VADDR);
     uint64_t sb_iter = sbs_paddr;
-    sb_iter = TranslationTableWalk(memory_device, ((uint64_t*)(memory_device+sb_iter))[0]);
+    sb_iter = TranslateVaddr(memory_device, ((uint64_t*)(memory_device+sb_iter))[0]);
     bool aye = false; // this bool makes output readable right now
                       // without it, every file system gets fully printed
                       // there are about a dozen, and some are densely packed
@@ -125,9 +141,10 @@ void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTE
                       // So let's only print two for now.
     while(sb_iter != sbs_paddr)
     {
+        /* printf("sb iter is : %llx\n", sb_iter); */
         ActOnSuperblock(memory_device, sb_iter, digest);
         uint64_t temp_vaddr = ((uint64_t*)(memory_device+sb_iter))[0];
-        sb_iter = TranslationTableWalk(memory_device, temp_vaddr);
+        sb_iter = TranslateVaddr(memory_device, temp_vaddr);
         if(aye)
         {
             return;
