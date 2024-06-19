@@ -3,3 +3,4 @@
 #include "kernel_modules.c"
 #include "task.c"
 #include "kernel_rodata.c"
+#include "filesystems.c"
