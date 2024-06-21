@@ -5,13 +5,20 @@
  * April 2024
  */
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define INCLUDE_SHELF(version) TOSTRING(version/shelf.c)
+#define INCLUDE_DEFS(version) TOSTRING(version/definitions.c)
+
 #include "armv8a.h"
 #include "EvidenceBundle.h"
 #include "hash.h"
 #include "KnownDigests.h"
 #include "logging.c"
+#include INCLUDE_DEFS(LINUX_VERSION)
+#include "AddressTranslation.c"
 #include "task_prefix.c"
-#include "CHOOSE/shelf.c" // choose your version of linux
+#include INCLUDE_SHELF(LINUX_VERSION)
 #include "task_postfix.c"
 #include "filesystems_postfix.c"
 #include "system_call_table.c"

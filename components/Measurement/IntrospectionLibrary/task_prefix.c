@@ -14,6 +14,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MM_OFFSET 1096
+#define PID_OFFSET 1272
+#define PARENT_OFFSET 1296
+#define CHILDREN_OFFSET 1304
+#define SIBLING_OFFSET 1320
+#define REAL_CRED_OFFSET 1688
+#define COMM_OFFSET 1712
+#define PGD_OFFSET 64
+
 void DebugLog(char* msg)
 {
     if(INTRO_TASK_DEBUG)
@@ -129,5 +138,123 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
             "\n\tRead-only Data SHA512 Digest:\n");
     PrintDigest((uint8_t (*) [DIGEST_NUM_BYTES])(msmt->rodataDigest));
     printf("\n");
+}
+
+void GetTaskNamePointer(uint8_t* memory_device, uint64_t task, char (*output_name)[TASK_COMM_LEN])
+{
+    char* index = ((char*)memory_device) + task + COMM_OFFSET;
+    for(int i=0; i<TASK_COMM_LEN; i++)
+    {
+       (*output_name)[i] = (uint8_t)(index[i]);
+    }
+}
+
+/* We use this function to check whether a given address "task"
+** acutally points to a genuine task_struct in VM memory.
+*/
+bool ValidateTaskStruct(uint8_t* memory_device, uint64_t task)
+{
+    if(task > RAM_SIZE)
+    {
+        /* printf("out of range\n"); */
+        return false;
+    }
+    int nameLoc = task + COMM_OFFSET;
+    if(((char*)memory_device+nameLoc)[0] == '\0')
+    {
+        /* printf("null name\n"); */
+        return false;
+    }
+    for(int i=0; i<TASK_COMM_LEN; i++)
+    {
+        if(((char*)memory_device+nameLoc)[i] > 127)
+        {
+            /* printf("illegal characters in name\n"); */
+            /* int thisShouldBeNameData = nameLoc; */
+            /* introspectScan(&thisShouldBeNameData, 64, "offending task?:\n"); */
+            return false;
+        }
+    }
+    return true;
+}
+
+/* takes an address to a task_struct in vm memory
+** returns its pid
+*/
+void GetPID(uint8_t* memory_device, uint64_t task, int* myPid)
+{
+    int myPidLoc = task + PID_OFFSET;
+    *myPid =((int*)((char*)memory_device+myPidLoc))[0];
+}
+
+/* takes an address to a task_struct in vm memory
+** returns its pid and its parent's pid
+*/
+void GetPIDs(uint8_t* memory_device, uint64_t task, int* myPid, int* parentPid)
+{
+    GetPID(memory_device, task, myPid);
+    uint64_t parentAddrLoc = task + PARENT_OFFSET;
+    uint64_t parentAddr = ((uint64_t*)((char*)memory_device+parentAddrLoc))[0];
+    uint64_t parent = TranslateVaddr(memory_device, parentAddr);
+    if(ValidateTaskStruct(memory_device, parent))
+    {
+        GetPID(memory_device, parent, parentPid);
+    }
+}
+
+/* takes an address to a task_struct in vm memory
+** returns a cred struct populated with the task's creds
+*/
+void InterpretCred(uint8_t* memory_device, uint64_t task, struct cred* cred)
+{
+    uint64_t credAddrLoc = task + REAL_CRED_OFFSET; //"real_cred"
+    uint64_t credVaddr = ((uint64_t*)((char*)memory_device+credAddrLoc))[0];
+    uint64_t credPaddr = TranslateVaddr(memory_device, credVaddr);
+    // These offsets may all have changed
+    /* cred->usage = ((int*)((char*)memory_device+credPaddr))[0]; */
+    /* cred->uid = ((int*)((char*)memory_device+credPaddr+4))[0]; */
+    /* cred->gid = ((int*)((char*)memory_device+credPaddr+8))[0]; */
+    /* cred->suid = ((int*)((char*)memory_device+credPaddr+12))[0]; */
+    /* cred->sgid = ((int*)((char*)memory_device+credPaddr+16))[0]; */
+    /* cred->euid = ((int*)((char*)memory_device+credPaddr+20))[0]; */
+    /* cred->egid = ((int*)((char*)memory_device+credPaddr+24))[0]; */
+    /* cred->fsuid = ((int*)((char*)memory_device+credPaddr+28))[0]; */
+    /* cred->fsgid = ((int*)((char*)memory_device+credPaddr+32))[0]; */
+    /* cred->securebits = ((int*)((char*)memory_device+credPaddr+36))[0]; */
+    /* cred->cap_inheritable = ((uint64_t*)((char*)memory_device+credPaddr+40))[0]; */
+    /* cred->cap_permitted = ((uint64_t*)((char*)memory_device+credPaddr+48))[0]; */
+    /* cred->cap_effective = ((uint64_t*)((char*)memory_device+credPaddr+56))[0]; */
+    /* cred->cap_bset = ((uint64_t*)((char*)memory_device+credPaddr+64))[0]; */
+    /* cred->cap_ambient = ((uint64_t*)((char*)memory_device+credPaddr+72))[0]; */
+    /* cred->jit_keyring = ((char*)memory_device+credPaddr+80)[0]; */
+    /* cred->session_keyring = ((uint64_t*)((char*)memory_device+credPaddr+88))[0]; */
+    /* cred->process_keyring = ((uint64_t*)((char*)memory_device+credPaddr+96))[0]; */
+    /* cred->thread_keyring = ((uint64_t*)((char*)memory_device+credPaddr+104))[0]; */
+    /* cred->request_key_auth = ((uint64_t*)((char*)memory_device+credPaddr+112))[0]; */
+    /* cred->security = ((uint64_t*)((char*)memory_device+credPaddr+120))[0]; */
+    /* cred->user_struct = ((uint64_t*)((char*)memory_device+credPaddr+128))[0]; */
+    /* cred->user_namespace = ((uint64_t*)((char*)memory_device+credPaddr+136))[0]; */
+    /* cred->group_info = ((uint64_t*)((char*)memory_device+credPaddr+144))[0]; */
+}
+
+/* InterpretTaskStruct takes an address to a task_struct in vm memory
+** it returns the addresses of it's leftmost child and left sibling
+*/
+void InterpretTaskStruct(uint8_t* memory_device, uint64_t thisTaskStructPaddr, uint64_t* children, uint64_t* sibling)//, uint64_t* parent)
+{
+    int childLoc = thisTaskStructPaddr + CHILDREN_OFFSET;
+    uint64_t firstChild = ((uint64_t*)((char*)memory_device+childLoc))[0];
+    /* printf("firstChild: %p\n", firstChild); */
+    *children = TranslateVaddr(memory_device, firstChild)-SIBLING_OFFSET;
+
+    int siblingLoc = thisTaskStructPaddr + SIBLING_OFFSET;
+    uint64_t leftSibling = ((uint64_t*)((char*)memory_device+siblingLoc))[0];
+    /* printf("leftSibling: %p\n", leftSibling); */
+    *sibling = TranslateVaddr(memory_device, leftSibling)-SIBLING_OFFSET;
+    if(!ValidateTaskStruct(memory_device, *sibling) )
+    {
+        // fall back to a table walk
+        *sibling = TranslationTableWalk(memory_device, leftSibling)-SIBLING_OFFSET;
+    }
 }
 

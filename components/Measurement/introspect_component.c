@@ -4,6 +4,8 @@
  * 09 June 2023
  */
 
+#define LINUX_VERSION 5_4_y
+
 #include <camkes.h>
 #include <stdbool.h> // for bool type
 #include <stdint.h> // for uint64_t and other unsigned integer types
