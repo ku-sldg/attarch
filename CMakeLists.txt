@@ -180,9 +180,9 @@ AddFileToOverlayDir(
 )
 
 AddFileToOverlayDir(
-    "S91crossvm_test"
+    "start.sh"
     ${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/introspect_vm_test
-    "etc/init.d"
+    "useram"
     overlay
 )
 

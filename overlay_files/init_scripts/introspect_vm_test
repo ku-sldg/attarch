@@ -1,14 +1,6 @@
 #!/bin/sh
-#
-# Copyright 2020, Data61, CSIRO (ABN 41 687 119 230)
-#
-# SPDX-License-Identifier: BSD-2-Clause
-#
 
-set -e
+export CML_STACK_SIZE=10
+export CML_HEAP_SIZE=10
 
-#/usr/bin/useramClientTest 127.0.0.1
-
-# The simplest introspection mechanical test.
-# "Do we have access to the VM memory?"
-#/usr/bin/introspect
+time /useram/useram -m /useram/manifest.json -k /useram/private.key -t /useram/term.json
