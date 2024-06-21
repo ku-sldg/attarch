@@ -27,6 +27,9 @@ void MeasureFileInode(uint8_t* memory_device, uint64_t inode_paddr, uint8_t(*dig
     uint64_t xarray_head_vaddr = ((uint64_t*)(memory_device+inode_paddr+INODE_I_DATA+ADDRESS_SPACE_I_PAGES+8))[0];
     if(xarray_head_vaddr == 0)
     {
+        uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+        HashExtend(digest, tempDigest); // extend hash by a zero string
+        free(tempDigest);
         return;
     }
     uint64_t xarray_head_paddr = TranslationTableWalk(memdev, xarray_head_vaddr); // entry||node
