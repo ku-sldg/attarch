@@ -56,17 +56,17 @@ struct cred {
 */
 typedef struct TaskMeasurement
 {
+    char name[TASK_COMM_LEN];
+    uint8_t rodataDigest[DIGEST_NUM_BYTES];
     uint64_t paddr; // physical address of the task struct in VM memory
     struct TaskMeasurement* parent;
     struct TaskMeasurement* real_parent;
     struct TaskMeasurement* children[NUM_CHILD_TASKS];
-    char name[TASK_COMM_LEN];
     int uid;
     uint32_t myPid;
     uint32_t parentPid;
     uint32_t flags;
     struct cred cred;
-    uint8_t rodataDigest[DIGEST_NUM_BYTES];
 } TaskMeasurement;
 
 
@@ -508,6 +508,39 @@ void FreeTaskTree(TaskMeasurement* root)
     }
     free(queue->array);
     free(queue);
+}
+
+void DigestTaskTree(TaskMeasurement* root, uint8_t (*digest)[DIGEST_NUM_BYTES])
+{
+    struct Queue* queue = createQueue(1000);
+    enqueue(queue, root);
+    while(!isEmpty(queue))
+    {
+        TaskMeasurement* thisTaskMsmt = dequeue(queue);
+        if(!IsDigestEmpty((uint8_t (*)[DIGEST_NUM_BYTES])(thisTaskMsmt->rodataDigest)))
+        {
+            RenderDigestDeclaration((char (*) [INTRO_MODULE_NAME_LEN])(thisTaskMsmt->name), (uint8_t (*)[DIGEST_NUM_BYTES])thisTaskMsmt->rodataDigest);
+        }
+        for(int i=0; i<NUM_CHILD_TASKS; i++)
+        {
+            TaskMeasurement* iter = thisTaskMsmt->children[i];
+            if(iter != NULL)
+            {
+                enqueue(queue, iter);
+                continue;
+            }
+            break;
+        }
+        uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+
+        int staticPrefixLen = TASK_COMM_LEN+DIGEST_NUM_BYTES;
+        HashMeasure((char*)thisTaskMsmt, staticPrefixLen, tempDigest);
+        HashExtend(digest, tempDigest); // extend hash by a zero string
+        free(tempDigest);
+    }
+    free(queue->array);
+    free(queue);
+    return;
 }
 
 /* MeasureTaskTree returns a tree of TaskMeasurements which correspond

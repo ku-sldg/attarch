@@ -35,9 +35,7 @@ bool MeasureAndAppraiseLinux()
 
 EvidenceBundle* MeasureLinuxKernel()
 {
-    int numRodataEvidences = 0;
     int numModuleEvidences = 0;
-    int numTaskEvidences = 0;
 
     // Execute the measurements
     // we have to free these
@@ -46,7 +44,6 @@ EvidenceBundle* MeasureLinuxKernel()
     EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
     EvidenceBundle* sctEvidence = InspectSystemCallTable((uint8_t*)memdev);
     EvidenceBundle* vfsEvidence = InspectVirtualFileSystems((uint8_t*)memdev);
-
     EvidenceBundle* cfsEvidence =  InspectCAmkESFileSystem();
 
     /* printf("Here is rodata evidence:\n"); */
@@ -56,15 +53,13 @@ EvidenceBundle* MeasureLinuxKernel()
     int numEvidenceEntries = 0;
     numEvidenceEntries++; // we want to null terminate this list
     numEvidenceEntries++; // one for the kernel ro-data
+    numEvidenceEntries++; // one for the task tree digest
     numEvidenceEntries++; // one for the system call table
     numEvidenceEntries++; // one for the VFS layer
 
     numModuleEvidences += GetCollectionLength(modulesEvidence, NUM_MODULE_DIGESTS * sizeof(EvidenceBundle));
     numEvidenceEntries += numModuleEvidences;
 
-    numTaskEvidences += GetCollectionLength(tasksEvidence, NUM_TASKS * sizeof(EvidenceBundle));
-    numEvidenceEntries += numTaskEvidences;
-    
     // allocate memory
     EvidenceBundle* evidenceCollection = calloc(numEvidenceEntries, sizeof(EvidenceBundle));
 
@@ -72,8 +67,8 @@ EvidenceBundle* MeasureLinuxKernel()
     PackBundleSingle(evidenceCollection, numEvidenceEntries, rodataEvidence);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, sctEvidence);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, vfsEvidence);
+    PackBundleSingle(evidenceCollection, numEvidenceEntries, tasksEvidence);
     PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
-    PackBundle(evidenceCollection, numEvidenceEntries, tasksEvidence, numTaskEvidences);
     PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
 
     // free the extra bundles

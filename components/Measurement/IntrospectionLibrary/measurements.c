@@ -54,8 +54,15 @@ EvidenceBundle* InspectTasks(uint8_t* memory_device)
         return NULL;
     }
     TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memory_device);
+    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    DigestTaskTree(rootTaskMeasurement, digest);
+    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
+    const char rodataBundleName[56] = "Kernel and User Tasks";
+    EvidenceBundle rodataBundle = CreateBundle(&TASK_TYPE, &rodataBundleName, digest);
+    PackBundleSingle(evidence, 1, &rodataBundle);
+    free(digest);
     FreeTaskTree(rootTaskMeasurement);
-    return NULL;
+    return evidence;
 }
 
 EvidenceBundle* InspectRodata(uint8_t* memory_device)
