@@ -21,6 +21,7 @@
 #include INCLUDE_SHELF(LINUX_VERSION)
 #include "task_postfix.c"
 #include "modules_postfix.c"
+#include "kernel_rodata_postfix.c"
 #include "filesystems_postfix.c"
 #include "system_call_table.c"
 #include "measurementAndAppraisal.c"
