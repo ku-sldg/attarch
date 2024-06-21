@@ -9,6 +9,7 @@
 #define TOSTRING(x) STRINGIFY(x)
 #define INCLUDE_SHELF(version) TOSTRING(version/shelf.c)
 #define INCLUDE_DEFS(version) TOSTRING(version/definitions.c)
+#define BAD_ADDRESS_EXIT_STR "Bad Address. Check #define LINUX_VERSION in introspect_component.c, which must match the version of Linux being used.\n"
 
 #include "armv8a.h"
 #include "EvidenceBundle.h"

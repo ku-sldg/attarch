@@ -122,6 +122,11 @@ uint64_t intro_virt_to_phys(uint64_t virtaddr)
 uint64_t TranslationTableWalk(uint8_t* memory_device, uint64_t inputAddr)
 {
     uint64_t swapper_pgd_table_paddr = intro_virt_to_phys((uint64_t)INTRO_SWAPPER_PG_DIR_VADDR + SWAPPER_OFFSET);
+    if(RAM_SIZE < swapper_pgd_table_paddr)
+    {
+        printf(BAD_ADDRESS_EXIT_STR);
+        return 0;
+    }
     return TranslationTableWalkSuppliedPGD(memory_device, inputAddr, swapper_pgd_table_paddr);
 }
 
@@ -129,7 +134,12 @@ uint64_t TranslateVaddr(uint8_t* memory_device, uint64_t vaddr)
 {
     if( PAGE_OFFSET < vaddr )
     {
-        return intro_virt_to_phys(vaddr);
+        uint64_t paddr = intro_virt_to_phys(vaddr);
+        if(RAM_SIZE < paddr)
+        {
+            printf(BAD_ADDRESS_EXIT_STR);
+            return 0;
+        }
     }
     return TranslationTableWalk(memory_device, vaddr);
 }
