@@ -69,7 +69,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
     {
         uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
         uint64_t tempBasePtr = TranslationTableWalk(memory_device, thisModuleLayout.base + i);
-        HashMeasure(memory_device+tempBasePtr, 4096, tempDigest);
+        HashMeasure(memory_device, tempBasePtr, 4096, tempDigest);
         HashExtend(rodataDigest, tempDigest);
         free(tempDigest);
     }

@@ -31,7 +31,7 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
         }
         MeasureKernelRodataPage((char*)memory_device, (uint8_t (*) [DIGEST_NUM_BYTES])&((*digestArray)[i*DIGEST_NUM_BYTES]), thisPageVaddr + SWAPPER_OFFSET);
     }
-    HashMeasure((uint8_t*)digestArray, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
+    HashMeasure((uint8_t*)digestArray, 0, NUM_RODATA_PAGES * DIGEST_NUM_BYTES, output_digest);
     free(digestArray);
 }
 

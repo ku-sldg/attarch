@@ -150,7 +150,7 @@ void DigestTaskTree(TaskMeasurement* root, uint8_t (*digest)[DIGEST_NUM_BYTES])
         uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
 
         int staticPrefixLen = TASK_COMM_LEN+DIGEST_NUM_BYTES;
-        HashMeasure((char*)thisTaskMsmt, staticPrefixLen, tempDigest);
+        HashMeasure((uint8_t*)thisTaskMsmt, 0, staticPrefixLen, tempDigest);
         HashExtend(digest, tempDigest); // extend hash by a zero string
         free(tempDigest);
     }

@@ -11,6 +11,6 @@ void MeasureSystemCallTable(uint8_t* memory_device, uint8_t (*output_digest)[DIG
     // The output digest is consistent between boots
     // and across builds
     uint64_t sctPaddr = TranslateVaddr(memory_device, INTRO_SYS_CALL_TABLE_VADDR);
-    HashMeasure(memory_device+sctPaddr, sizeof(uint64_t) * NUM_SYS_CALL_TABLE_ENTRIES, output_digest);
+    HashMeasure(memory_device, sctPaddr, sizeof(uint64_t) * NUM_SYS_CALL_TABLE_ENTRIES, output_digest);
 }
 

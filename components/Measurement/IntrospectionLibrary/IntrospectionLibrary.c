@@ -10,9 +10,6 @@
 #define INCLUDE_SHELF(version) TOSTRING(version/shelf.c)
 #define INCLUDE_DEFS(version) TOSTRING(version/definitions.c)
 
-#define EXIT_STRING "Bad Address. Check #define LINUX_VERSION in introspect_component.c!"
-#define MAYBE_EXIT(val) do { if (val > RAM_SIZE) {printf(EXIT_STRING); return;} } while (0)
-
 #include "armv8a.h"
 #include "EvidenceBundle.h"
 #include "hash.h"

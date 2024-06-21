@@ -271,7 +271,7 @@ void xa_dump(uint8_t* memory_device, uint64_t xa_head_ptr, uint8_t(*digest)[DIGE
     }
     /* printf("%d", *numPages); */
     uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    HashMeasure(numPages, sizeof(int), tempDigest);
+    HashMeasure(numPages, 0, sizeof(int), tempDigest);
     HashExtend(digest, tempDigest);
     free(tempDigest);
 }

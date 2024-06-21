@@ -222,12 +222,12 @@ void CrawlProgramHeaders(uint8_t* memory_device, struct elf64header* elf, uint8_
         if(!(thisPhdr.p_flags & 2)) // "if this progrm header refers to a non-writable segment..."
         {
             // Interestingly, p_paddr seems to always match p_vaddr :shrug:
-            HashMeasure( ((char*)memory_device+thisPhdr.p_paddr), thisPhdr.p_memsz, (uint8_t (*) [DIGEST_NUM_BYTES])&segmentDigests[numDigests*DIGEST_NUM_BYTES] );
+            HashMeasure(memory_device, thisPhdr.p_paddr, thisPhdr.p_memsz, (uint8_t (*) [DIGEST_NUM_BYTES])&segmentDigests[numDigests*DIGEST_NUM_BYTES]);
             numDigests++;
         }
         segmentPtr+=elf->e_phentsize;
     }
-    HashMeasure(segmentDigests, DIGEST_NUM_BYTES*numDigests, outputDigest);
+    HashMeasure(segmentDigests, 0, DIGEST_NUM_BYTES*numDigests, outputDigest);
     free(segmentDigests);
 }
 

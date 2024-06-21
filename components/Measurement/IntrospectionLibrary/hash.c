@@ -23,9 +23,14 @@ void ShaTest()
     free(output);
 }
 
-void HashMeasure(uint8_t* input, int inputLen, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+void HashMeasure(uint8_t* base_pointer, uint64_t offset, int inputLen, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
 {
-    Hacl_Hash_SHA2_hash_512(input, inputLen, ((uint8_t*)output_digest));
+    if(RAM_SIZE < offset)
+    {
+        printf("Bad Address. Check #define LINUX_VERSION in introspect_component.c, which must match the version of Linux being used.\n");
+        return;
+    }
+    Hacl_Hash_SHA2_hash_512(base_pointer+offset, inputLen, ((uint8_t*)output_digest));
 }
 
 void HashExtend(uint8_t (*baseHash)[DIGEST_NUM_BYTES], uint8_t (*newHash)[DIGEST_NUM_BYTES])
@@ -39,7 +44,7 @@ void HashExtend(uint8_t (*baseHash)[DIGEST_NUM_BYTES], uint8_t (*newHash)[DIGEST
     {
         longHash[i+DIGEST_NUM_BYTES] = ((uint8_t*)newHash)[i];
     }
-    HashMeasure(longHash, 2*DIGEST_NUM_BYTES, baseHash);
+    HashMeasure(longHash, 0, 2*DIGEST_NUM_BYTES, baseHash);
     free(longHash);
 }
 
