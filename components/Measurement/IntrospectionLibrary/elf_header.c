@@ -234,9 +234,7 @@ void CrawlProgramHeaders(uint8_t* memory_device, struct elf64header* elf, uint8_
 bool TryMeasureElfRodata(uint8_t* memory_device, uint64_t elfAddr, uint64_t pgd, uint8_t (*outputDigest)[DIGEST_NUM_BYTES])
 {
     struct elf64header elf = CollectElfHeaderData(memory_device, elfAddr);
-    uint8_t* intermediateDigest = calloc( 1, DIGEST_NUM_BYTES );
-    CrawlProgramHeaders(memory_device, &elf, intermediateDigest);
-    HashExtend(outputDigest, intermediateDigest);
-    free(intermediateDigest);
+    /* PrintElfHeaderData(&elf); */
+    CrawlProgramHeaders(memory_device, &elf, outputDigest);
     return true;
 }
