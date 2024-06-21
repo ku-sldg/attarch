@@ -126,30 +126,15 @@ void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTE
     {
         return;
     }
-    printf("measuring\n");
-    /* uint64_t sbs_vaddr = 0xffff8000111b4148; */
-
-    // sbs_paddr is the offset to the "super_blocks" symbol.
     // it is the administrative list_head (not within a struct super_block)
     uint64_t sbs_paddr = TranslateVaddr(memory_device, INTRO_SUPER_BLOCKS_VADDR);
     uint64_t sb_iter = sbs_paddr;
     sb_iter = TranslateVaddr(memory_device, ((uint64_t*)(memory_device+sb_iter))[0]);
-    bool aye = false; // this bool makes output readable right now
-                      // without it, every file system gets fully printed
-                      // there are about a dozen, and some are densely packed
-                      // But the second FS is the typical one,
-                      // So let's only print two for now.
     while(sb_iter != sbs_paddr)
     {
-        /* printf("sb iter is : %llx\n", sb_iter); */
         ActOnSuperblock(memory_device, sb_iter, digest);
         uint64_t temp_vaddr = ((uint64_t*)(memory_device+sb_iter))[0];
         sb_iter = TranslateVaddr(memory_device, temp_vaddr);
-        if(aye)
-        {
-            return;
-        }
-        aye = true;
     } 
     printf("Done measuring file systems\n");
 }
