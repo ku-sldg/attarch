@@ -19,6 +19,14 @@
 #define S_ISBLK(m)  (((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m) (((m) & S_IFMT) == S_IFIFO)
 
+#define DEBUG_PRINT_ENABLED 0
+
+#if DEBUG_PRINT_ENABLED
+    #define FSBPRINT(...) printf(__VA_ARGS__)
+#else
+    #define FSBPRINT(...) do {} while (0)
+#endif
+
 bool InterpretType(uint8_t* memory_device, uint64_t sb_paddr)
 {
     if(sb_paddr > 0xFFFF000000000000 + RAM_SIZE)
@@ -35,10 +43,10 @@ bool InterpretType(uint8_t* memory_device, uint64_t sb_paddr)
     uint64_t name_paddr = TranslationTableWalk(memory_device, name_vaddr);
     if(name_paddr > 0xFFFF000000000000 + RAM_SIZE)
     {
-        printf("bad name_paddr: %llx\n", name_paddr);
+        FSBPRINT("bad name_paddr: %llx\n", name_paddr);
         return false;
     }
-    printf("File System Type: %s\n", memory_device+name_paddr);
+    FSBPRINT("File System Type: %s\n", memory_device+name_paddr);
     return true;
 }
 
@@ -50,13 +58,13 @@ void TraverseDentry(uint8_t* memory_device, uint64_t dentry_paddr, uint8_t(*dige
         return;
     }
     uint64_t name_paddr = TranslationTableWalk(memory_device, name_vaddr);
-    printf("(%s, ", memory_device+name_paddr);
+    FSBPRINT("(%s, ", memory_device+name_paddr);
     uint64_t inode_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_D_INODE))[0];
     uint64_t inode_paddr = TranslationTableWalk(memory_device, inode_vaddr);
     uint32_t imode = ((uint32_t*)(memory_device+inode_paddr))[0];
     if(S_ISDIR(imode))
     {
-        printf("directory) ");
+        FSBPRINT("directory) ");
         uint64_t next_subdir_vaddr = ((uint64_t*)(memory_device+dentry_paddr+DENTRY_D_SUBDIRS))[0];
         if(next_subdir_vaddr == 0)
         {
@@ -70,37 +78,37 @@ void TraverseDentry(uint8_t* memory_device, uint64_t dentry_paddr, uint8_t(*dige
             uint64_t temp_vaddr = ((uint64_t*)(memory_device+subdir_iter))[0];
             subdir_iter = TranslationTableWalk(memory_device, temp_vaddr);
         } while(subdir_iter != next_subdir_paddr);
-        /* printf("\n"); */
 
     }
     else if(S_ISREG(imode))
     {
-        printf("file, ");
+        FSBPRINT("file, ");
         if(strcmp(memory_device+name_paddr, "useram")==0)
         {
-            /* printf("take action on a specific file\n"); */
+            FSBPRINT("take action on a specific file\n");
         }
         MeasureFileInode(memory_device, inode_paddr, digest);
+        FSBPRINT(") ");
     }
     else if(S_ISLNK(imode))
     {
-        printf("symlink) ");
+        FSBPRINT("symlink) ");
     }
     else if(S_ISCHR(imode))
     {
-        printf("chr) ");
+        FSBPRINT("chr) ");
     }
     else if(S_ISBLK(imode))
     {
-        printf("block) ");
+        FSBPRINT("block) ");
     }
     else if(S_ISFIFO(imode))
     {
-        printf("fifo) ");
+        FSBPRINT("fifo) ");
     }
     else
     {
-        printf("?) ");
+        FSBPRINT("?) ");
     }
 
 }
@@ -133,8 +141,9 @@ void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTE
     while(sb_iter != sbs_paddr)
     {
         ActOnSuperblock(memory_device, sb_iter, digest);
+        FSBPRINT("\n");
         uint64_t temp_vaddr = ((uint64_t*)(memory_device+sb_iter))[0];
         sb_iter = TranslateVaddr(memory_device, temp_vaddr);
     } 
-    printf("Done measuring file systems\n");
+    FSBPRINT("Done measuring file systems\n");
 }
