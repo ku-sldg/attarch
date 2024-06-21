@@ -25,33 +25,6 @@ struct module_layout {
 
 struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int physAddr)
 {
-    int index = physAddr;
-    index += 16; // skip list_head
-    index += 56; // skip name
-    index += 96; //skip mkobj
-    index += 8; // skio modinfo_attrs
-    index += 8; // skip version
-    index += 8; // skip srcversion
-    index += 8; // skip holders_dir
-    index += 8; // skip syms
-    index += 8; // skip crcs
-    index += 4; // skip num_syms
-    index += 40; // skip struct mutex
-    index += 8; // skip kp
-    index += 4; // num_kp
-    index += 4; // num_gpl_syms
-    index += 8; // gpl_syms
-    index += 8; // gpl_crcs
-    index += 1; //async_probe_requested
-    index += 3; // to fill a 4-byte buffer
-    index += 8; // gpl_future_syms
-    index += 8; // gpl_future_crcs
-    index += 4; // num_gpl_future_syms
-    index += 4; // num_exentries
-    index += 8; // extable
-    index += 8; // (*init*(void)
-
-    //by inspection
     struct module_layout thisModule;
     thisModule.base = ((uint64_t*)((char*)memory_device+physAddr+47*8))[0];
     thisModule.size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[2];
@@ -104,6 +77,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
 
 void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
+    ModuleDebugLog("DEBUG: Measurement: Beginning kernel module measurement.\n");
     ModuleDebugLog("Collecting module pointers...\n");
     /* modulePtrs is a list of offsets into memory_device that refer to kernel
     ** modules. They are physical memory addresses with the RAM_BASE
@@ -116,7 +90,7 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
     }
     int numModulePtrs = 0;
     ModuleDebugLog("Translating modules list_head vaddr\n");
-    uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR);
+    uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR + SWAPPER_OFFSET);
     if(MODULE_DEBUG_LOG)
     {
         printf("Modules list head %llx to %llx\n", INTRO_MODULES_VADDR, list_head_paddr);
@@ -127,15 +101,14 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
     {
         printf("Start List Head Contents\n%llx\n%llx\nEnd List Head Contents\n", list_head_ptr[0], list_head_ptr[1]);
     }
-
-    uint64_t module_pointer = TranslateVaddr(memory_device, list_head_ptr[0]);
+    uint64_t module_pointer = TranslationTableWalk(memory_device, list_head_ptr[0]);
     while(module_pointer != list_head_paddr)
     {
         modulePtrs[numModulePtrs] = module_pointer;
         numModulePtrs++;
         char* modBytePtr = ((char*)memory_device)+module_pointer;
         uint64_t* modLongPtr = (uint64_t*)modBytePtr;
-        module_pointer = TranslateVaddr(memory_device, modLongPtr[0]);
+        module_pointer = TranslationTableWalk(memory_device, modLongPtr[0]);
     }
     ModuleDebugLog("Collecting digests over module rodata...\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
