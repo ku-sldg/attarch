@@ -543,12 +543,12 @@ void DigestTaskTree(TaskMeasurement* root, uint8_t (*digest)[DIGEST_NUM_BYTES])
     return;
 }
 
-/* MeasureTaskTree returns a tree of TaskMeasurements which correspond
+/* BuildTaskTree returns a tree of TaskMeasurements which correspond
 ** to the real task tree in VM memory. It requires a defined value:
 ** INTRO_INIT_TASK_VADDR, which is collected from the System.map file generated as a
 ** side-effect of linux kernel compilation.
 */
-TaskMeasurement* MeasureTaskTree(uint8_t* memory_device)
+TaskMeasurement* BuildTaskTree(uint8_t* memory_device)
 {
     DebugLog("Measurement: Beginning task tree measurement.\n");
     uint64_t init_task_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_INIT_TASK_VADDR);
@@ -557,5 +557,14 @@ TaskMeasurement* MeasureTaskTree(uint8_t* memory_device)
     DebugLog("after build tree\n");
     swapperMeasurement->parent = swapperMeasurement;
     return swapperMeasurement;
+}
+
+void MeasureTaskTree(uint8_t* memory_device, uint8_t (*digest)[DIGEST_NUM_BYTES])
+{
+    if(CanMeasureTasks())
+    {
+        TaskMeasurement* msmt = BuildTaskTree(memory_device);
+        DigestTaskTree(msmt, digest);
+    }
 }
 

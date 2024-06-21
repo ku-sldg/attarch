@@ -41,7 +41,7 @@ bool IsModulesOkay(uint8_t* memory_device)
 
 bool IsTasksOkay(uint8_t* memory_device)
 {
-    TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memory_device);
+    TaskMeasurement* rootTaskMeasurement = BuildTaskTree(memory_device);
     printf("DEBUG: Measurement: Appraising tasks\n");
     bool result = AppraiseTaskTree(rootTaskMeasurement);
     FreeTaskTree(rootTaskMeasurement);

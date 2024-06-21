@@ -22,6 +22,25 @@ const char RODATA_TYPE[8] = {'R','o','d','a','t','a','\0','\0'};
 const char MODULE_TYPE[8] = {'M','o','d','u','l','e','\0','\0'};
 const char TASK_TYPE[8] = {'T','a','s','k','\0','\0','\0','\0'};
 
+typedef void (*MeasurementRoutine)(uint8_t* memory_device, uint8_t (*digest)[DIGEST_NUM_BYTES]);
+
+
+EvidenceBundle RunMeasurement(uint8_t* memory_device, const char name[56], MeasurementRoutine measure)
+{
+    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    measure(memory_device, digest);
+    EvidenceBundle bundle = CreateBundle(&RODATA_TYPE, name, digest);
+    free(digest);
+    return bundle;
+}
+
+EvidenceBundle* PrepareLoneBundle(EvidenceBundle bundle)
+{
+    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
+    PackBundleSingle(evidence, 1, &bundle);
+    return evidence;
+}
+
 EvidenceBundle* InspectModules(uint8_t* memory_device)
 {
     uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES] = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
@@ -49,56 +68,30 @@ EvidenceBundle* InspectModules(uint8_t* memory_device)
 
 EvidenceBundle* InspectTasks(uint8_t* memory_device)
 {
-    if(!CanMeasureTasks())
-    {
-        return NULL;
-    }
-    TaskMeasurement* rootTaskMeasurement = MeasureTaskTree(memory_device);
-    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    DigestTaskTree(rootTaskMeasurement, digest);
-    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
-    const char rodataBundleName[56] = "Kernel and User Tasks";
-    EvidenceBundle rodataBundle = CreateBundle(&TASK_TYPE, &rodataBundleName, digest);
-    PackBundleSingle(evidence, 1, &rodataBundle);
-    free(digest);
-    FreeTaskTree(rootTaskMeasurement);
-    return evidence;
+    const char bundleName[56] = "ProcessTree";
+    EvidenceBundle bundle = RunMeasurement(memory_device, bundleName, MeasureTaskTree);
+    return PrepareLoneBundle(bundle);
 }
 
 EvidenceBundle* InspectRodata(uint8_t* memory_device)
 {
-    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
-    uint8_t (*kernelRodataDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    MeasureKernelRodata(memory_device, kernelRodataDigest);
-    const char rodataBundleName[56] = "KernelRodata";
-    EvidenceBundle rodataBundle = CreateBundle(&RODATA_TYPE, &rodataBundleName, kernelRodataDigest);
-    PackBundleSingle(evidence, 1, &rodataBundle);
-    free(kernelRodataDigest);
-    return evidence;
+    const char bundleName[56] = "KernelRodata";
+    EvidenceBundle bundle = RunMeasurement(memory_device, bundleName, MeasureKernelRodata);
+    return PrepareLoneBundle(bundle);
 }
 
 EvidenceBundle* InspectSystemCallTable(uint8_t* memory_device)
 {
-    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
-    uint8_t (*kernelSCTDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    MeasureSystemCallTable(memory_device, kernelSCTDigest);
     const char bundleName[56] = "KernelSystemCallTable";
-    EvidenceBundle syscalltableBundle = CreateBundle(&RODATA_TYPE, &bundleName, kernelSCTDigest);
-    PackBundleSingle(evidence, 1, &syscalltableBundle);
-    free(kernelSCTDigest);
-    return evidence;
+    EvidenceBundle bundle = RunMeasurement(memory_device, bundleName, MeasureSystemCallTable);
+    return PrepareLoneBundle(bundle);
 }
 
 EvidenceBundle* InspectVirtualFileSystems(uint8_t* memory_device)
 {
-    EvidenceBundle* evidence = calloc(1, sizeof(EvidenceBundle));
-    uint8_t (*VFSDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
-    MeasureFileSystems(memory_device, VFSDigest);
     const char bundleName[56] = "VirtualFileSystems";
-    EvidenceBundle vfsBundle = CreateBundle(&RODATA_TYPE, &bundleName, VFSDigest);
-    PackBundleSingle(evidence, 1, &vfsBundle);
-    free(VFSDigest);
-    return evidence;
+    EvidenceBundle bundle = RunMeasurement(memory_device, bundleName, MeasureFileSystems);
+    return PrepareLoneBundle(bundle);
 }
 
 EvidenceBundle* InspectCAmkESFileSystem()
