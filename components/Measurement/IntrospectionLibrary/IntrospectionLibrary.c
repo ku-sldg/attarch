@@ -28,7 +28,6 @@ EvidenceBundle* RunMeasurement(uint8_t* memory_device, MeasurementRoutine measur
 
 #include "hash.h"
 #include "KnownDigests.h"
-#include "logging.c"
 #include INCLUDE_DEFS(LINUX_VERSION)
 #include "AddressTranslation.c"
 #include "task_prefix.c"

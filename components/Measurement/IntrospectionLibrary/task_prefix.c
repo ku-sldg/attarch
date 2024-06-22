@@ -126,16 +126,7 @@ void PrintTaskEvidence(struct TaskMeasurement* msmt)
     sprintf(parentPid, "%ld", msmt->parentPid);
     char suid[10];
     sprintf(suid, "%d", msmt->cred.suid);
-    introLog(9,
-            "Task Evidence:\n\tName: ",
-            msmt->name,
-            "\n\tPID: ",
-            &myPid,
-            "\n\tParent PID: ",
-            &parentPid,
-            "\n\tSUID: ",
-            &suid,
-            "\n\tRead-only Data SHA512 Digest:\n");
+    printf("Task Evidence:\n\tName: %s\n\tPID:%s\n\tParent PID:%s\n\tSUID:%s\n\tRead-only Data Digest:\n", msmt->name, myPid, parentPid, suid);
     PrintDigest((uint8_t (*) [DIGEST_NUM_BYTES])(msmt->rodataDigest));
     printf("\n");
 }
@@ -171,7 +162,6 @@ bool ValidateTaskStruct(uint8_t* memory_device, uint64_t task)
         {
             /* printf("illegal characters in name\n"); */
             /* int thisShouldBeNameData = nameLoc; */
-            /* introspectScan(&thisShouldBeNameData, 64, "offending task?:\n"); */
             return false;
         }
     }

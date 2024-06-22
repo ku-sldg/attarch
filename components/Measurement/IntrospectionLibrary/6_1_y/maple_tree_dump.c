@@ -22,7 +22,6 @@ static bool MeasureThisVMA(void *entry, char* memory_device, uint64_t pgd_paddr,
 {
     uint64_t this_entry_paddr = TranslateVaddr(memory_device, entry);
     /* printf("paddr = %llx\n", this_entry_paddr); */
-    /* introspectScanManyLongs(memory_device, this_entry_paddr, 4, "Entry, 4 longs, should be the prefix of a vm_area_struct: "); */
 
     // Retrieve the first 2 longs of this_entry_paddr, which is a
     // vm_area_struct. long 1 is start. long 2 is end.
@@ -167,7 +166,6 @@ static void mt_dump_node(const struct maple_tree *mt, void *entry,
 {
     /* struct maple_node *node = mte_to_node(entry); */
     struct maple_node *node = (struct maple_node *)(memory_device+TranslateVaddr(memory_device, mte_to_node(entry)));
-    /* introspectScanManyLongs(memory_device, TranslateVaddr(memory_device, mte_to_node(entry)), 32, "the promised node"); */
 
     unsigned int type = mte_node_type(entry);
     unsigned int i;

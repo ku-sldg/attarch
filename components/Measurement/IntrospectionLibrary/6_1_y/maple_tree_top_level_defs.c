@@ -124,34 +124,6 @@ struct ma_state {
     unsigned char mas_flags;
 };
 
-/* void PrintNodeData(char* memory_device, uint64_t node_paddr) */
-/* { */
-/*     printf("Begin Printing Node Data\n"); */
-/*     introspectScanManyLongs(memory_device, node_paddr, 32, "complete node"); // the node is 256B */
-/*     printf("Interpreting as arange_64\n"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+0, 1, "parent (0)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+8, 1, "pivot (8)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+80, 1, "slot (80)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+160, 1, "gap (160)"); */
-/*     printf("maple_metadata: end = %u and gap = %u\n", ((char*)memory_device+240)[0], ((char*)memory_device+240)[1]); */
-/*     printf("Interpreting as range_64\n"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+0, 1, "parent (0)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+8, 1, "pivot (8)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+128, 1, "slot (128)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+128, 1, "pad (128)"); */
-/*     printf("maple_metadata: end = %u and gap = %u\n", ((char*)memory_device+248)[0], ((char*)memory_device+248)[1]); */
-/*     printf("Interpreting as maple_alloc. Just kidding.\n"); */
-/*     printf("Interpreting as maple_leaf\n"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+0, 1, "parent (0)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+8, 1, "slot (8)"); */
-/*     printf("Interpreting as the other one\n"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+0, 1, "pad (0)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+8, 2, "rcu_head (8)"); */
-/*     introspectScanManyLongs(memory_device, node_paddr+24, 1, "piv_parent (24)"); */
-/*     printf("maple_type = %u\n", ((unsigned int *)((char*)memory_device+36))[0]); */
-/*     printf("Done Printing Node Data\n"); */
-/* } */
-
 #define MA_STATE(name, mt, first, end)                  \
     struct ma_state name = {                    \
         .tree = mt,                     \

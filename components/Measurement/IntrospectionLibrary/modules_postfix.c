@@ -58,8 +58,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
 
     if(MODULE_DEBUG_LOG)
     {
-        char msg[13] = "Found Module ";
-        introLog(3, msg, (*name), "\n");
+        printf("Found module: %s\n", name);
     }
 
     struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, inputAddress);
