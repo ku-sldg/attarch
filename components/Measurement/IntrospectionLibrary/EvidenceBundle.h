@@ -22,25 +22,19 @@ static EvidenceBundle nullEvidenceBundle = {
     .digest = {0}                      // The bytes in 'digest' will be automatically set to 0
 };
 
-bool memoryCompare(uint8_t* first, uint8_t* second, int numBytes);
+bool IsFinalBundle(EvidenceBundle bundle);
 
-bool IsBundleNullBundle(EvidenceBundle* bundle);
-
-bool IsBundleEmpty(EvidenceBundle *bundle, bool logerror);
-
-EvidenceBundle CreateBundle(const char (*type)[8], const char (*name)[56], const uint8_t (*digest)[64]);
-
-void PackBundleSingle(EvidenceBundle *collection_list, int collection_list_max_size, const EvidenceBundle *input_bundle);
-
-void PackBundle(EvidenceBundle *collection_list, int collection_list_max_size, const EvidenceBundle *input_list, int input_list_size);
+EvidenceBundle* AllocBundle(const char (*type)[8], const char (*name)[56], const uint8_t (*digest)[64]);
 
 int GetCollectionLength(EvidenceBundle *collection, int maxSize);
 
 void PrintBundle(EvidenceBundle *bundle);
 
-void PrintCollection(EvidenceBundle *collection, int numEntries);
+void PrintCollection(EvidenceBundle *collection);
 
 void ExportToByteString(EvidenceBundle* list, int list_size, char* evidence);
+
+void AppendBundle(EvidenceBundle** list, EvidenceBundle bundle);
 
 #endif // EVIDENCE_BUNDLE_H
 

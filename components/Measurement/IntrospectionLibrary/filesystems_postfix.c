@@ -128,12 +128,8 @@ void ActOnSuperblock(uint8_t* memory_device, uint64_t sb_paddr, uint8_t(*digest)
     }
 }
 
-void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTES])
+void DigestFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTES])
 {
-    if(!CanMeasureFileSystem())
-    {
-        return;
-    }
     // it is the administrative list_head (not within a struct super_block)
     uint64_t sbs_paddr = TranslateVaddr(memory_device, INTRO_SUPER_BLOCKS_VADDR);
     uint64_t sb_iter = sbs_paddr;
@@ -145,5 +141,20 @@ void MeasureFileSystems(uint8_t* memory_device, uint8_t(*digest)[DIGEST_NUM_BYTE
         uint64_t temp_vaddr = ((uint64_t*)(memory_device+sb_iter))[0];
         sb_iter = TranslateVaddr(memory_device, temp_vaddr);
     } 
-    FSBPRINT("Done measuring file systems\n");
 }
+
+EvidenceBundle* MeasureFileSystems(uint8_t* memory_device, int* count) 
+{
+    const char name[56] = "VirtualFileSystems";
+    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    if(CanMeasureFileSystem())
+    {
+        DigestFileSystems(memory_device, digest);
+        FSBPRINT("Done measuring file systems\n");
+    }
+    EvidenceBundle* bundle = AllocBundle(&FILE_SYSTEM_TYPE, name, digest);
+    free(digest);
+    *count = 1;
+    return bundle;
+}
+

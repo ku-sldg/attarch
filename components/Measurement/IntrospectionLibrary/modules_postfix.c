@@ -23,7 +23,7 @@ struct module_layout {
     unsigned int ro_after_init_size;
 };
 
-struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int physAddr)
+struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, uint64_t physAddr)
 {
     struct module_layout thisModule;
     thisModule.base = ((uint64_t*)((char*)memory_device+physAddr+47*8))[0];
@@ -33,6 +33,20 @@ struct module_layout GetModuleLayoutFromListHead(uint8_t* memory_device, int phy
     thisModule.ro_after_init_size = ((unsigned int*)((char*)memory_device+physAddr+47*8))[5];
 
     return thisModule;
+}
+
+bool IsThisAValidModuleMeasurement(char (*moduleName)[INTRO_MODULE_NAME_LEN])
+{
+    for(int i=0; i<INTRO_MODULE_NAME_LEN; i++)
+    {
+        if((*moduleName)[i] != '\0')
+        {
+            // an invalid (unused) module name should be completely
+            // zeroed out
+            return true;
+        }
+    }
+    return false;
 }
 
 void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES], char (*name)[INTRO_MODULE_NAME_LEN])
@@ -48,7 +62,7 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
         introLog(3, msg, (*name), "\n");
     }
 
-    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, (int)inputAddress);
+    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, inputAddress);
     uint64_t basePtr = TranslateVaddr(memory_device, thisModuleLayout.base);
 
     if(MODULE_DEBUG_LOG)
@@ -75,14 +89,9 @@ void InterpretKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_
     }
 }
 
-void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
+int CollectKernelModulesData(uint8_t* memory_device, uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES], char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN])
 {
     ModuleDebugLog("DEBUG: Measurement: Beginning kernel module measurement.\n");
-    ModuleDebugLog("Collecting module pointers...\n");
-    /* modulePtrs is a list of offsets into memory_device that refer to kernel
-    ** modules. They are physical memory addresses with the RAM_BASE
-    ** already subtracted.
-    */
     uint64_t modulePtrs[NUM_MODULE_DIGESTS];
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
     {
@@ -119,17 +128,53 @@ void MeasureKernelModules(uint8_t* memory_device, uint8_t (*module_digests)[NUM_
         }
     }
 }
-bool IsThisAValidModuleMeasurement(char (*moduleName)[INTRO_MODULE_NAME_LEN])
+
+void DigestThisKernelModule(uint8_t* memory_device, uint64_t inputAddress, uint8_t (*rodataDigest)[DIGEST_NUM_BYTES])
 {
-    for(int i=0; i<INTRO_MODULE_NAME_LEN; i++)
+    struct module_layout thisModuleLayout = GetModuleLayoutFromListHead(memory_device, inputAddress);
+    uint64_t basePtr = TranslationTableWalk(memory_device, thisModuleLayout.base);
+    for(int i=0; i<thisModuleLayout.ro_size; i+=INTRO_PAGE_SIZE)
     {
-        if((*moduleName)[i] != '\0')
-        {
-            // an invalid (unused) module name should be completely
-            // zeroed out
-            return true;
-        }
+        uint8_t (*tempDigest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+        uint64_t tempBasePtr = TranslationTableWalk(memory_device, thisModuleLayout.base + i);
+        HashMeasure(memory_device, tempBasePtr, 4096, tempDigest);
+        HashExtend(rodataDigest, tempDigest);
+        free(tempDigest);
     }
-    return false;
+}
+
+EvidenceBundle* BundleThisKernelModule(uint8_t* memory_device, uint64_t paddr)
+{
+    char* tempname = "1234567890123456";
+    for(int j=16; j<INTRO_MODULE_NAME_LEN+16; j++)
+    {
+        tempname[j-16] = ((char*)memory_device)[paddr+j];
+    }
+    const char* name = (const char*)tempname;
+    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    DigestThisKernelModule(memory_device, paddr, digest);
+    EvidenceBundle* bundle = AllocBundle(&MODULE_TYPE, name, digest);
+    free(digest);
+    return bundle;
+}
+
+EvidenceBundle* MeasureKernelModules(uint8_t* memory_device, int* count)
+{
+    EvidenceBundle* list = NULL;
+    *count = 0;
+    uint64_t list_head_paddr = TranslateVaddr(memory_device, (uint64_t)INTRO_MODULES_VADDR + SWAPPER_OFFSET);
+    uint64_t* list_head_ptr = (uint64_t*)(memory_device+list_head_paddr);
+    uint64_t module_pointer = TranslationTableWalk(memory_device, list_head_ptr[0]);
+    while(module_pointer != list_head_paddr)
+    {
+        EvidenceBundle* evidence = BundleThisKernelModule(memory_device, module_pointer);
+        AppendBundle(&list, *evidence);
+        free(evidence);
+        uint64_t next_module_vaddr = ((uint64_t*)(memory_device+module_pointer))[0];
+        module_pointer = TranslationTableWalk(memory_device, next_module_vaddr);
+        (*count)++;
+    }
+    printf("found %d modules\n", *count);
+    return list;
 }
 

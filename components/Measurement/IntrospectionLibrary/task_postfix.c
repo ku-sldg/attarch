@@ -175,12 +175,20 @@ TaskMeasurement* BuildTaskTree(uint8_t* memory_device)
     return swapperMeasurement;
 }
 
-void MeasureTaskTree(uint8_t* memory_device, uint8_t (*digest)[DIGEST_NUM_BYTES])
+EvidenceBundle* MeasureTaskTree(uint8_t* memory_device, int* count) 
 {
+    const char name[56] = "ProcessTree";
+    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
     if(CanMeasureTasks())
     {
         TaskMeasurement* msmt = BuildTaskTree(memory_device);
         DigestTaskTree(msmt, digest);
+        FreeTaskTree(msmt);
     }
+    EvidenceBundle* bundle = AllocBundle(&TASK_TYPE, name, digest);
+    free(digest);
+    *count = 1;
+    return bundle;
 }
+
 

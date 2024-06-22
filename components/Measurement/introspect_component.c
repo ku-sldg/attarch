@@ -24,7 +24,7 @@ bool introspective_measurement_request(int id)
     printf("DEBUG: here's your measurement id: %d\n", id);
     if(id==0)
     {
-        EvidenceBundle* resultsBundle = MeasureLinuxKernel();
+        EvidenceBundle* resultsBundle = MeasureLinuxKernel((uint8_t*)memdev);
         int resultsNum = GetCollectionLength(resultsBundle, 100); //TODO find a better supremum
         ExportToByteString(resultsBundle, resultsNum, evidence);
         free(resultsBundle);

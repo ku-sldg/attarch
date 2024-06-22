@@ -35,8 +35,14 @@ void CollectRodataHashingAsWeGo(uint8_t* memory_device, uint8_t (*output_digest)
     free(digestArray);
 }
 
-void MeasureKernelRodata(uint8_t* memory_device, uint8_t (*output_digest)[DIGEST_NUM_BYTES])
+EvidenceBundle* MeasureKernelRodata(uint8_t* memory_device, int* count)
 {
-    CollectRodataHashingAsWeGo(memory_device, output_digest);
+    const char name[56] = "KernelRodata";
+    uint8_t (*digest)[DIGEST_NUM_BYTES] = calloc(1, DIGEST_NUM_BYTES);
+    CollectRodataHashingAsWeGo(memory_device, digest);
+    EvidenceBundle* bundle = AllocBundle(&RODATA_TYPE, name, digest);
+    free(digest);
+    *count = 1;
+    return bundle;
 }
 

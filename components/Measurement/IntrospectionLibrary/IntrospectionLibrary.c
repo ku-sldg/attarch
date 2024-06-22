@@ -13,6 +13,19 @@
 
 #include "armv8a.h"
 #include "EvidenceBundle.h"
+
+typedef EvidenceBundle* (*MeasurementRoutine)(uint8_t* memory_device, int* count);
+
+const char RODATA_TYPE[8] = {'R','o','d','a','t','a','\0','\0'};
+const char MODULE_TYPE[8] = {'M','o','d','u','l','e','\0','\0'};
+const char TASK_TYPE[8] = {'T','a','s','k','\0','\0','\0','\0'};
+const char FILE_SYSTEM_TYPE[8] = {'F','i','l','e','S','y','s','.'};
+
+EvidenceBundle* RunMeasurement(uint8_t* memory_device, MeasurementRoutine measure, int* count)
+{
+    return measure(memory_device, count);
+}
+
 #include "hash.h"
 #include "KnownDigests.h"
 #include "logging.c"
@@ -27,93 +40,48 @@
 #include "system_call_table.c"
 #include "measurementAndAppraisal.c"
 #include "CAmkESFS.c"
-#include "measurements.c"
 
 /* This function is here to easily control which measurements */
 /* are performed for which versions of linux. */
-bool MeasureAndAppraiseLinux()
+bool MeasureAndAppraiseLinux(uint8_t* memory_device)
 {
-        bool rodata_appraisal = IsKernelRodataOkay((uint8_t*)memdev);
-        bool modules_appraisal = IsModulesOkay((uint8_t*)memdev);
-        bool tasks_appraisal =  IsTasksOkay((uint8_t*)memdev);
-
+        bool rodata_appraisal = IsKernelRodataOkay((uint8_t*)memory_device);
+        bool modules_appraisal = IsModulesOkay((uint8_t*)memory_device);
+        bool tasks_appraisal =  IsTasksOkay((uint8_t*)memory_device);
         bool overall_appraisal = true;
         overall_appraisal &= rodata_appraisal;
         overall_appraisal &= modules_appraisal;
         overall_appraisal &= tasks_appraisal;
-       
         return overall_appraisal;
 }
 
-EvidenceBundle* MeasureLinuxKernel()
+void ExtendMeasurementList(uint8_t* memory_device, EvidenceBundle** master, MeasurementRoutine measurement)
 {
-    int numModuleEvidences = 0;
-
-    // Execute the measurements
-    // we have to free these
-    EvidenceBundle* rodataEvidence = InspectRodata((uint8_t*)memdev);
-    EvidenceBundle* modulesEvidence = InspectModules((uint8_t*)memdev);
-    EvidenceBundle* tasksEvidence = InspectTasks((uint8_t*)memdev);
-    EvidenceBundle* sctEvidence = InspectSystemCallTable((uint8_t*)memdev);
-    EvidenceBundle* vfsEvidence = InspectVirtualFileSystems((uint8_t*)memdev);
-    EvidenceBundle* cfsEvidence =  InspectCAmkESFileSystem();
-
-    /* printf("Here is rodata evidence:\n"); */
-    /* PrintBundle(rodataEvidence); */
-
-    // Count the evidence entries so we know how much space we need.
-    int numEvidenceEntries = 0;
-    numEvidenceEntries++; // we want to null terminate this list
-    numEvidenceEntries++; // one for the kernel ro-data
-    numEvidenceEntries++; // one for the task tree digest
-    numEvidenceEntries++; // one for the system call table
-    numEvidenceEntries++; // one for the VFS layer
-
-    numModuleEvidences += GetCollectionLength(modulesEvidence, NUM_MODULE_DIGESTS * sizeof(EvidenceBundle));
-    numEvidenceEntries += numModuleEvidences;
-
-    // allocate memory
-    EvidenceBundle* evidenceCollection = calloc(numEvidenceEntries, sizeof(EvidenceBundle));
-
-    // pack the evidence into a single collection
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, rodataEvidence);
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, sctEvidence);
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, vfsEvidence);
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, tasksEvidence);
-    PackBundle(evidenceCollection, numEvidenceEntries, modulesEvidence, numModuleEvidences);
-    PackBundleSingle(evidenceCollection, numEvidenceEntries, &nullEvidenceBundle); // null-terminate the list
-
-    // free the extra bundles
-    if(rodataEvidence != NULL)
+    int count = 0;
+    EvidenceBundle* evidence = RunMeasurement(memory_device, measurement, &count);
+    for(int i=0; i<count; i++)
     {
-        free(rodataEvidence);
+        AppendBundle(master, evidence[i]);
     }
-    if(modulesEvidence != NULL)
-    {
-        free(modulesEvidence);
-    }
-    if(tasksEvidence != NULL)
-    {
-        free(tasksEvidence);
-    }
-    if(sctEvidence != NULL)
-    {
-        free(sctEvidence);
-    }
-    if(vfsEvidence != NULL)
-    {
-        free(vfsEvidence);
-    }
+}
 
-    return evidenceCollection;
+EvidenceBundle* MeasureLinuxKernel(uint8_t* memory_device)
+{
+    EvidenceBundle* master = NULL;
+    ExtendMeasurementList(memory_device, &master, MeasureKernelRodata);
+    ExtendMeasurementList(memory_device, &master, MeasureTaskTree);
+    ExtendMeasurementList(memory_device, &master, MeasureFileSystems);
+    ExtendMeasurementList(memory_device, &master, MeasureSystemCallTable);
+    ExtendMeasurementList(memory_device, &master, MeasureKernelModules);
+    ExtendMeasurementList(memory_device, &master, MeasureCAmkESInitRD);
+    return master;
 }
 
 bool AppraiseLinuxKernelMeasurement(const char* evidence)
 {
     EvidenceBundle* bundle = (EvidenceBundle*)(evidence);
     bool result = true;
-
-    while(!IsBundleNullBundle(bundle))
+    while(!IsFinalBundle(*bundle))
     {
         PrintBundle(bundle);
         if(IsThisAKnownDigest(&(bundle->digest)))

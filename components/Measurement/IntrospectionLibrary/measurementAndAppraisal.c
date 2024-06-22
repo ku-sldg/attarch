@@ -9,7 +9,7 @@ bool IsModulesOkay(uint8_t* memory_device)
     bool result = true;
     uint8_t (*module_digests)[NUM_MODULE_DIGESTS * DIGEST_NUM_BYTES] = calloc(NUM_MODULE_DIGESTS, DIGEST_NUM_BYTES);
     char (*module_names)[NUM_MODULE_DIGESTS * INTRO_MODULE_NAME_LEN] = calloc(NUM_MODULE_DIGESTS, INTRO_MODULE_NAME_LEN);
-    MeasureKernelModules(memory_device, module_digests, module_names);
+    CollectKernelModulesData(memory_device, module_digests, module_names);
 
     printf("DEBUG: Measurement: Appraising modules\n");
     for(int i=0; i<NUM_MODULE_DIGESTS; i++)
