@@ -16,7 +16,7 @@
 
 bool CanMeasureFileSystem()
 {
-    return true;
+    return false;
 }
 
 void MeasureFileInode(uint8_t* memory_device, uint64_t inode_paddr, uint8_t(*digest)[DIGEST_NUM_BYTES])
